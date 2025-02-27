@@ -1,18 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.VFSFilenameIterator;
-import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
-import net.lax1dude.eaglercraft.v1_8.internal.vfs2.EaglerFileSystemException;
-import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFSIterator2.BreakLoop;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -27,19 +13,47 @@ import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFSIterator2.BreakLoop;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
-public class DebugFilesystem implements PlatformFilesystem.IFilesystemProvider {
 
-	public static DebugFilesystem initialize(File filesystemRoot) {
+package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import net.lax1dude.eaglercraft.v1_8.internal.IEaglerFilesystem;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.VFSFilenameIterator;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
+import net.lax1dude.eaglercraft.v1_8.internal.vfs2.EaglerFileSystemException;
+import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFSIterator2.BreakLoop;
+
+public class DebugFilesystem implements IEaglerFilesystem {
+
+	public static DebugFilesystem initialize(String fsName, File filesystemRoot) {
 		if(!filesystemRoot.isDirectory() && !filesystemRoot.mkdirs()) {
 			throw new EaglerFileSystemException("Could not create directory for virtual filesystem: " + filesystemRoot.getAbsolutePath());
 		}
-		return new DebugFilesystem(filesystemRoot);
+		return new DebugFilesystem(fsName, filesystemRoot);
 	}
 
 	private final File filesystemRoot;
+	private final String fsName;
 
-	private DebugFilesystem(File root) {
+	private DebugFilesystem(String fsName, File root) {
+		this.fsName = fsName;
 		this.filesystemRoot = root;
+	}
+
+	@Override
+	public String getFilesystemName() {
+		return fsName;
+	}
+
+	@Override
+	public String getInternalDBName() {
+		return "desktopruntime:" + filesystemRoot.getAbsolutePath();
 	}
 
 	@Override
@@ -78,7 +92,7 @@ public class DebugFilesystem implements PlatformFilesystem.IFilesystemProvider {
 				return tmp;
 			}catch (IOException e) {
 				throw new EaglerFileSystemException("Failed to read: " + f.getAbsolutePath(), e);
-			}catch(ArrayIndexOutOfBoundsException ex) {
+			}catch(IndexOutOfBoundsException ex) {
 				throw new EaglerFileSystemException("ERROR: Expected " + fileSize + " bytes, buffer overflow reading: " + f.getAbsolutePath(), ex);
 			}finally {
 				if(buf != null) {
@@ -221,4 +235,15 @@ public class DebugFilesystem implements PlatformFilesystem.IFilesystemProvider {
 			f.delete();
 		}
 	}
+
+	@Override
+	public boolean isRamdisk() {
+		return false;
+	}
+
+	@Override
+	public void closeHandle() {
+		
+	}
+
 }

@@ -1,13 +1,14 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> CHANGE  2 : 5  @  2 : 6
+> CHANGE  2 : 6  @  2 : 6
 
 ~ import net.lax1dude.eaglercraft.v1_8.Keyboard;
+~ import net.lax1dude.eaglercraft.v1_8.minecraft.EnumInputEvent;
 ~ import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
 ~ import net.lax1dude.eaglercraft.v1_8.sp.gui.GuiScreenIntegratedServerBusy;
 
@@ -73,5 +74,19 @@
 
 ~ 		this.drawCenteredString(this.fontRendererObj,
 ~ 				I18n.format(duplicate ? "selectWorld.duplicate" : "selectWorld.renameTitle", new Object[0]),
+
+> INSERT  6 : 17  @  6
+
++ 
++ 	@Override
++ 	public boolean showCopyPasteButtons() {
++ 		return field_146583_f.isFocused();
++ 	}
++ 
++ 	@Override
++ 	public void fireInputEvent(EnumInputEvent event, String param) {
++ 		field_146583_f.fireInputEvent(event, param);
++ 	}
++ 
 
 > EOF

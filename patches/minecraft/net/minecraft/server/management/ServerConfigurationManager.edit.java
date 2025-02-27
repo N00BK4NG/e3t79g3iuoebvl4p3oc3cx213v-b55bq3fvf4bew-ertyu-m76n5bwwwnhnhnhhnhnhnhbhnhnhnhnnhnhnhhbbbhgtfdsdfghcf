@@ -1,11 +1,15 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> CHANGE  5 : 8  @  5 : 9
+> INSERT  2 : 3  @  2
+
++ import com.carrotsearch.hppc.cursors.ObjectCursor;
+
+> CHANGE  3 : 6  @  3 : 7
 
 ~ import net.lax1dude.eaglercraft.v1_8.mojang.authlib.GameProfile;
 ~ import net.lax1dude.eaglercraft.v1_8.netty.Unpooled;
@@ -26,9 +30,14 @@
 
 + import net.minecraft.util.ChatComponentText;
 
-> CHANGE  12 : 17  @  12 : 14
+> CHANGE  12 : 22  @  12 : 14
 
+~ import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePluginMessageConstants;
+~ import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePluginMessageProtocol;
+~ import net.lax1dude.eaglercraft.v1_8.socket.protocol.client.GameProtocolMessageController;
+~ import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketUpdateCertEAG;
 ~ import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerMinecraftServer;
+~ import net.lax1dude.eaglercraft.v1_8.sp.server.WorldsDB;
 ~ import net.lax1dude.eaglercraft.v1_8.sp.server.socket.IntegratedServerPlayerNetworkManager;
 ~ import net.lax1dude.eaglercraft.v1_8.sp.server.voice.IntegratedVoiceService;
 ~ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
@@ -57,16 +66,25 @@
 
 ~ 		this.maxPlayers = 100;
 
-> CHANGE  2 : 4  @  2 : 8
+> CHANGE  2 : 6  @  2 : 8
 
-~ 	public void initializeConnectionToPlayer(IntegratedServerPlayerNetworkManager netManager, EntityPlayerMP playerIn) {
+~ 	public void initializeConnectionToPlayer(IntegratedServerPlayerNetworkManager netManager, EntityPlayerMP playerIn,
+~ 			int protocolVersion, EaglercraftUUID clientBrandUUID) {
+~ 		playerIn.clientBrandUUID = clientBrandUUID;
 ~ 		GameProfile gameprofile1 = playerIn.getGameProfile();
 
 > CHANGE  3 : 4  @  3 : 7
 
 ~ 		String s1 = "channel:" + netManager.playerChannel;
 
-> DELETE  12  @  12 : 14
+> INSERT  8 : 12  @  8
+
++ 		nethandlerplayserver.setEaglerMessageController(new GameProtocolMessageController(
++ 				GamePluginMessageProtocol.getByVersion(protocolVersion), GamePluginMessageConstants.SERVER_TO_CLIENT,
++ 				GameProtocolMessageController.createServerHandler(protocolVersion, nethandlerplayserver),
++ 				(ch, msg) -> nethandlerplayserver.sendPacket(new S3FPacketCustomPayload(ch, msg))));
+
+> DELETE  4  @  4 : 6
 
 > INSERT  1 : 4  @  1
 
@@ -90,17 +108,18 @@
 + 			playerIn.addChatMessage(shaderF4Msg);
 + 		}
 
-> INSERT  23 : 35  @  23
+> CHANGE  8 : 10  @  8 : 10
+
+~ 		for (ObjectCursor<PotionEffect> potioneffect : playerIn.getActivePotionEffects()) {
+~ 			nethandlerplayserver.sendPacket(new S1DPacketEntityEffect(playerIn.getEntityId(), potioneffect.value));
+
+> INSERT  13 : 21  @  13
 
 + 		if (EagRuntime.getConfiguration().allowUpdateSvc()) {
 + 			for (int i = 0, l = playerEntityList.size(); i < l; ++i) {
 + 				EntityPlayerMP playerItr = playerEntityList.get(i);
 + 				if (playerItr != playerIn && playerItr.updateCertificate != null) {
-+ 					nethandlerplayserver
-+ 							.sendPacket(new S3FPacketCustomPayload("EAG|UpdateCert-1.8",
-+ 									new PacketBuffer(Unpooled
-+ 											.buffer(playerItr.updateCertificate, playerItr.updateCertificate.length)
-+ 											.writerIndex(playerItr.updateCertificate.length))));
++ 					nethandlerplayserver.sendEaglerMessage(new SPacketUpdateCertEAG(playerItr.updateCertificate));
 + 				}
 + 			}
 + 		}
@@ -175,7 +194,26 @@
 ~ 		for (int i = 0, l = arraylist.size(); i < l; ++i) {
 ~ 			arraylist.get(i).playerNetServerHandler.kickPlayerFromServer("You logged in from another location");
 
-> CHANGE  205 : 206  @  205 : 206
+> INSERT  32 : 34  @  32
+
++ 		entityplayermp.updateCertificate = playerIn.updateCertificate;
++ 		entityplayermp.clientBrandUUID = playerIn.clientBrandUUID;
+
+> CHANGE  63 : 66  @  63 : 65
+
+~ 		for (ObjectCursor<PotionEffect> potioneffect : playerIn.getActivePotionEffects()) {
+~ 			playerIn.playerNetServerHandler
+~ 					.sendPacket(new S1DPacketEntityEffect(playerIn.getEntityId(), potioneffect.value));
+
+> DELETE  10  @  10 : 11
+
+> DELETE  35  @  35 : 36
+
+> DELETE  1  @  1 : 2
+
+> DELETE  8  @  8 : 10
+
+> CHANGE  49 : 50  @  49 : 50
 
 ~ 			for (int i = 0, l = this.playerEntityList.size(); i < l; ++i) {
 
@@ -237,25 +275,31 @@
 ~ 		String name = playerIn.getName();
 ~ 		StatisticsFile statisticsfile = (StatisticsFile) this.playerStatFiles.get(name);
 
-> CHANGE  1 : 2  @  1 : 2
+> CHANGE  1 : 4  @  1 : 11
 
-~ 			VFile2 file1 = new VFile2(this.mcServer.worldServerForDimension(0).getSaveHandler().getWorldDirectory(),
-
-> CHANGE  1 : 2  @  1 : 9
-
-~ 			VFile2 file2 = new VFile2(file1, name + ".json");
+~ 			VFile2 file1 = WorldsDB
+~ 					.newVFile(this.mcServer.worldServerForDimension(0).getSaveHandler().getWorldDirectory(), "stats");
+~ 			VFile2 file2 = WorldsDB.newVFile(file1, name + ".json");
 
 > CHANGE  2 : 3  @  2 : 3
 
 ~ 			this.playerStatFiles.put(name, statisticsfile);
 
-> CHANGE  8 : 11  @  8 : 9
+> INSERT  7 : 8  @  7
+
++ 		int entityViewDist = getEntityViewDistance();
+
+> CHANGE  1 : 4  @  1 : 2
 
 ~ 			WorldServer[] srv = this.mcServer.worldServers;
 ~ 			for (int i = 0; i < srv.length; ++i) {
 ~ 				WorldServer worldserver = srv[i];
 
-> DELETE  4  @  4 : 5
+> INSERT  2 : 3  @  2
+
++ 					worldserver.getEntityTracker().updateMaxTrackingThreshold(entityViewDist);
+
+> DELETE  2  @  2 : 3
 
 > CHANGE  7 : 8  @  7 : 8
 

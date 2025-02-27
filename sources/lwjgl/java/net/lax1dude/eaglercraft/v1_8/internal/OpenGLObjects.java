@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,6 +13,9 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
 class OpenGLObjects {
 
 	static class BufferGL implements IBufferGL {
@@ -25,6 +26,10 @@ class OpenGLObjects {
 			this.ptr = ptr;
 		}
 
+		public int hashCode() {
+			return ptr;
+		}
+
 		@Override
 		public void free() {
 			PlatformOpenGL._wglDeleteBuffers(this);
@@ -32,12 +37,16 @@ class OpenGLObjects {
 		
 	}
 
-	static class BufferArrayGL implements IBufferArrayGL {
+	static class VertexArrayGL implements IVertexArrayGL {
 		
 		final int ptr;
 		
-		BufferArrayGL(int ptr) {
+		VertexArrayGL(int ptr) {
 			this.ptr = ptr;
+		}
+
+		public int hashCode() {
+			return ptr;
 		}
 
 		@Override
@@ -50,16 +59,38 @@ class OpenGLObjects {
 	static class TextureGL implements ITextureGL {
 		
 		final int ptr;
+		int width;
+		int height;
 		
 		TextureGL(int ptr) {
 			this.ptr = ptr;
+		}
+
+		public int hashCode() {
+			return ptr;
 		}
 
 		@Override
 		public void free() {
 			PlatformOpenGL._wglDeleteTextures(this);
 		}
-		
+
+		@Override
+		public void setCacheSize(int w, int h) {
+			width = w;
+			height = h;
+		}
+
+		@Override
+		public int getWidth() {
+			return width;
+		}
+
+		@Override
+		public int getHeight() {
+			return height;
+		}
+
 	}
 
 	static class ProgramGL implements IProgramGL {
@@ -68,6 +99,10 @@ class OpenGLObjects {
 		
 		ProgramGL(int ptr) {
 			this.ptr = ptr;
+		}
+
+		public int hashCode() {
+			return ptr;
 		}
 
 		@Override
@@ -85,6 +120,10 @@ class OpenGLObjects {
 			this.ptr = ptr;
 		}
 
+		public int hashCode() {
+			return ptr;
+		}
+
 		@Override
 		public void free() {
 		}
@@ -97,6 +136,10 @@ class OpenGLObjects {
 		
 		ShaderGL(int ptr) {
 			this.ptr = ptr;
+		}
+
+		public int hashCode() {
+			return ptr;
 		}
 
 		@Override
@@ -114,6 +157,10 @@ class OpenGLObjects {
 			this.ptr = ptr;
 		}
 
+		public int hashCode() {
+			return ptr;
+		}
+
 		@Override
 		public void free() {
 			PlatformOpenGL._wglDeleteFramebuffer(this);
@@ -129,6 +176,10 @@ class OpenGLObjects {
 			this.ptr = ptr;
 		}
 
+		public int hashCode() {
+			return ptr;
+		}
+
 		@Override
 		public void free() {
 			PlatformOpenGL._wglDeleteRenderbuffer(this);
@@ -142,6 +193,10 @@ class OpenGLObjects {
 		
 		QueryGL(int ptr) {
 			this.ptr = ptr;
+		}
+
+		public int hashCode() {
+			return ptr;
 		}
 
 		@Override

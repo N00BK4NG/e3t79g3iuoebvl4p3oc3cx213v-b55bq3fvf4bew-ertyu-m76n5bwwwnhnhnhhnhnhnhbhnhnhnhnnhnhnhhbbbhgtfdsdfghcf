@@ -1,14 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.lax1dude.eaglercraft.v1_8.profile.SkinPackets;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.play.client.C17PacketCustomPayload;
-import net.minecraft.util.ChatComponentTranslation;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -23,6 +13,16 @@ import net.minecraft.util.ChatComponentTranslation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
+import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.client.CPacketInstallSkinSPEAG;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ChatComponentTranslation;
+
 public class SkullCommand {
 
 	private final Minecraft mc;
@@ -44,9 +44,9 @@ public class SkullCommand {
 			if(fr == null || mc.thePlayer == null || mc.thePlayer.sendQueue == null) {
 				return;
 			}
-			ImageData loaded = ImageData.loadImageFile(fr.fileData);
+			ImageData loaded = ImageData.loadImageFile(fr.fileData, ImageData.getMimeFromType(fr.fileName));
 			if(loaded == null) {
-				mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentTranslation("command.skull.error.invalid.png"));
+				mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentTranslation("command.skull.error.invalid.format"));
 				return;
 			}
 			if(loaded.width != 64 || loaded.height > 64) {
@@ -57,12 +57,12 @@ public class SkullCommand {
 			for(int i = 0, j, k; i < 4096; ++i) {
 				j = i << 2;
 				k = loaded.pixels[i];
-				rawSkin[j] = (byte)(k >> 24);
-				rawSkin[j + 1] = (byte)(k >> 16);
-				rawSkin[j + 2] = (byte)(k >> 8);
+				rawSkin[j] = (byte)(k >>> 24);
+				rawSkin[j + 1] = (byte)(k >>> 16);
+				rawSkin[j + 2] = (byte)(k >>> 8);
 				rawSkin[j + 3] = (byte)(k & 0xFF);
 			}
-			mc.thePlayer.sendQueue.addToSendQueue(new C17PacketCustomPayload("EAG|Skins-1.8", SkinPackets.writeCreateCustomSkull(rawSkin)));
+			mc.thePlayer.sendQueue.sendEaglerMessage(new CPacketInstallSkinSPEAG(rawSkin));
 		}
 	}
 

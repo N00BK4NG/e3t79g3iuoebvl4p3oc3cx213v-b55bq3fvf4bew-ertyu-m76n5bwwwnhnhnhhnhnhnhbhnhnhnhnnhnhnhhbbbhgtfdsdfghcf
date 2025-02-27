@@ -1,13 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -22,6 +13,16 @@ import org.json.JSONObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class ShaderPackInfo {
 
 	public final String name;
@@ -45,6 +46,7 @@ public class ShaderPackInfo {
 	public final boolean POST_LENS_FLARES;
 	public final boolean POST_BLOOM;
 	public final boolean POST_FXAA;
+	public final boolean SUBSURFACE_SCATTERING;
 
 	public ShaderPackInfo(JSONObject json) {
 		name = json.optString("name", "Untitled");
@@ -52,7 +54,7 @@ public class ShaderPackInfo {
 		vers = json.optString("vers", "Unknown");
 		author = json.optString("author", "Unknown");
 		apiVers = json.optInt("api_vers", -1);
-		supportedFeatures = new HashSet();
+		supportedFeatures = new HashSet<>();
 		JSONArray features = json.getJSONArray("features");
 		if(features.length() == 0) {
 			throw new JSONException("No supported features list has been defined for this shader pack!");
@@ -74,6 +76,7 @@ public class ShaderPackInfo {
 		POST_LENS_FLARES = supportedFeatures.contains("POST_LENS_FLARES");
 		POST_BLOOM = supportedFeatures.contains("POST_BLOOM");
 		POST_FXAA = supportedFeatures.contains("POST_FXAA");
+		SUBSURFACE_SCATTERING = supportedFeatures.contains("SUBSURFACE_SCATTERING");
 	}
 
 }

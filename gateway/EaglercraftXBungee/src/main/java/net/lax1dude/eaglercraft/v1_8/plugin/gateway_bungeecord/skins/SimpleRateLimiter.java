@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,19 +13,24 @@ package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+
 public class SimpleRateLimiter {
 
 	private long timer;
 	private int count;
 
 	public SimpleRateLimiter() {
-		timer = System.currentTimeMillis();
+		timer = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		count = 0;
 	}
 
 	public boolean rateLimit(int maxPerMinute) {
 		int t = 60000 / maxPerMinute;
-		long millis = System.currentTimeMillis();
+		long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		int decr = (int)(millis - timer) / t;
 		if(decr > 0) {
 			timer += decr * t;

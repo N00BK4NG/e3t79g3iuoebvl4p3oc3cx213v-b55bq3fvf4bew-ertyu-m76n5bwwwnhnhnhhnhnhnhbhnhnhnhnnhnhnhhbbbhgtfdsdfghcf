@@ -1,18 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import java.net.URL;
-
-import net.lax1dude.eaglercraft.v1_8.internal.paulscode.lwjgl3.LibraryLWJGLOpenAL;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.util.MathHelper;
-import paulscode.sound.SoundSystem;
-import paulscode.sound.SoundSystemConfig;
-import paulscode.sound.SoundSystemLogger;
-import paulscode.sound.codecs.CodecJOrbis;
-import paulscode.sound.codecs.CodecWav;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -27,6 +13,21 @@ import paulscode.sound.codecs.CodecWav;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import java.net.URL;
+
+import net.lax1dude.eaglercraft.v1_8.internal.paulscode.lwjgl3.LibraryLWJGLOpenAL;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.minecraft.util.MathHelper;
+import paulscode.sound.SoundSystem;
+import paulscode.sound.SoundSystemConfig;
+import paulscode.sound.SoundSystemLogger;
+import paulscode.sound.codecs.CodecJOrbis;
+import paulscode.sound.codecs.CodecWav;
+
 public class PlatformAudio {
 	
 	protected static class PaulscodeAudioResource implements IAudioResource {
@@ -43,30 +44,39 @@ public class PlatformAudio {
 		
 		protected final String sourceName;
 		protected long stall;
+		protected boolean paused = false;
 		
 		protected PaulscodeAudioHandle(String sourceName) {
 			this.sourceName = sourceName;
-			this.stall = System.currentTimeMillis();
+			this.stall = PlatformRuntime.steadyTimeMillis();
 		}
 
 		@Override
 		public void pause(boolean setPaused) {
 			if(setPaused) {
-				if(sndSystem.playing(sourceName)) {
+				if(!paused) {
 					sndSystem.pause(sourceName);
+					paused = true;
 				}
 			}else {
-				if(!sndSystem.playing(sourceName)) {
+				if(paused) {
 					sndSystem.play(sourceName);
+					paused = false;
 				}
 			}
 		}
 
 		@Override
+		public void repeat(boolean en) {
+			sndSystem.setLooping(sourceName, en);
+		}
+
+		@Override
 		public void restart() {
-			this.stall = System.currentTimeMillis();
+			this.stall = PlatformRuntime.steadyTimeMillis();
 			sndSystem.rewind(sourceName);
 			sndSystem.play(sourceName);
+			paused = false;
 		}
 
 		@Override
@@ -87,13 +97,14 @@ public class PlatformAudio {
 		@Override
 		public void end() {
 			sndSystem.stop(sourceName);
+			paused = false;
 		}
 
 		@Override
 		public boolean shouldFree() {
-			return !sndSystem.playing(sourceName) && System.currentTimeMillis() - this.stall > 250l; //TODO: I hate this hack
+			return !paused && !sndSystem.playing(sourceName) && PlatformRuntime.steadyTimeMillis() - this.stall > 250l; //TODO: I hate this hack
 		}
-		
+
 	}
 	
 	public static IAudioResource loadAudioData(String filename, boolean holdInCache) {
@@ -113,10 +124,6 @@ public class PlatformAudio {
 		
 	}
 
-	public static interface IAudioCacheLoader {
-		byte[] loadFile(String filename);
-	}
-
 	public static IAudioResource loadAudioDataNew(String filename, boolean holdInCache, IAudioCacheLoader loader) {
 		throw new UnsupportedOperationException("Browser only!");
 	}
@@ -125,7 +132,7 @@ public class PlatformAudio {
 	private static SoundSystem sndSystem = null;
 	
 	static void platformInitialize() {
-		logger.info("Eaglercraft still uses Paul Lamb's SoundSystem but with LWJGL3");
+		logger.info("Eaglercraft uses Paul Lamb's SoundSystem (with LWJGL3)");
 		logger.info("    \"Author: Paul Lamb, www.paulscode.com\"");
 		try {
 			SoundSystemConfig.addLibrary(LibraryLWJGLOpenAL.class);
@@ -171,7 +178,7 @@ public class PlatformAudio {
 	private static int sourceCounter = 0;
 	
 	public static IAudioHandle beginPlayback(IAudioResource track, float x, float y, float z,
-			float volume, float pitch) {
+			float volume, float pitch, boolean repeat) {
 		if(sndSystem == null) {
 			return null;
 		}
@@ -187,12 +194,13 @@ public class PlatformAudio {
 		sndSystem.setTemporary(srcName, true);
 		sndSystem.setPitch(srcName, pitch);
 		sndSystem.setVolume(srcName, volume);
+		sndSystem.setLooping(srcName, repeat);
 		sndSystem.play(srcName);
 		
 		return new PaulscodeAudioHandle(srcName);
 	}
 	
-	public static IAudioHandle beginPlaybackStatic(IAudioResource track, float volume, float pitch) {
+	public static IAudioHandle beginPlaybackStatic(IAudioResource track, float volume, float pitch, boolean repeat) {
 		if(sndSystem == null) {
 			return null;
 		}
@@ -203,6 +211,7 @@ public class PlatformAudio {
 		sndSystem.setTemporary(srcName, true);
 		sndSystem.setPitch(srcName, pitch);
 		sndSystem.setVolume(srcName, volume);
+		sndSystem.setLooping(srcName, repeat);
 		sndSystem.play(srcName);
 		
 		return new PaulscodeAudioHandle(srcName);

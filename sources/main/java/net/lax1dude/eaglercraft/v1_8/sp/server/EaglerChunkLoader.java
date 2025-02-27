@@ -1,21 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.server;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.MinecraftException;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.AnvilChunkLoader;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-
-/**
+/*
  * Copyright (c) 2023-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -30,6 +13,23 @@ import net.minecraft.nbt.NBTTagCompound;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.server;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+
 public class EaglerChunkLoader extends AnvilChunkLoader {
 
 	private static final String hex = "0123456789ABCDEF";
@@ -41,8 +41,8 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 		
 		char[] path = new char[12];
 		for(int i = 5; i >= 0; --i) {
-			path[i] = hex.charAt((unsignedX >> (i * 4)) & 0xF);
-			path[i + 6] = hex.charAt((unsignedZ >> (i * 4)) & 0xF);
+			path[i] = hex.charAt((unsignedX >>> (i << 2)) & 0xF);
+			path[i + 6] = hex.charAt((unsignedZ >>> (i << 2)) & 0xF);
 		}
 		
 		return new String(path);
@@ -71,7 +71,7 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 
 	@Override
 	public Chunk loadChunk(World var1, int var2, int var3) throws IOException {
-		VFile2 file = new VFile2(chunkDirectory, getChunkPath(var2, var3) + ".dat");
+		VFile2 file = WorldsDB.newVFile(chunkDirectory, getChunkPath(var2, var3) + ".dat");
 		if(!file.exists()) {
 			return null;
 		}
@@ -88,12 +88,13 @@ public class EaglerChunkLoader extends AnvilChunkLoader {
 	}
 
 	@Override
-	public void saveChunk(World var1, Chunk var2) throws IOException, MinecraftException {
+	public void saveChunk(World var1, Chunk var2) throws IOException {
+		var1.alfheim$getLightingEngine().processLightUpdates();
 		NBTTagCompound chunkData = new NBTTagCompound();
 		this.writeChunkToNBT(var2, var1, chunkData);
 		NBTTagCompound fileData = new NBTTagCompound();
 		fileData.setTag("Level", chunkData);
-		VFile2 file = new VFile2(chunkDirectory, getChunkPath(var2.xPosition, var2.zPosition) + ".dat");
+		VFile2 file = WorldsDB.newVFile(chunkDirectory, getChunkPath(var2.xPosition, var2.zPosition) + ".dat");
 		try(OutputStream os = file.getOutputStream()) {
 			CompressedStreamTools.writeCompressed(fileData, os);
 		}

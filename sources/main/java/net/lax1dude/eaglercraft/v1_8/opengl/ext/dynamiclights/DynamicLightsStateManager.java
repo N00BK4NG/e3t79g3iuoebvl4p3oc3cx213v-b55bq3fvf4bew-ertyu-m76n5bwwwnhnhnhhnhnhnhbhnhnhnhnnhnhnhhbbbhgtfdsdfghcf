@@ -1,18 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionPipeline;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
-import net.minecraft.client.particle.EffectRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.util.MathHelper;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -27,13 +13,30 @@ import net.minecraft.util.MathHelper;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
+import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionPipeline;
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
+import net.minecraft.client.particle.EffectRenderer;
+import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.util.MathHelper;
+
 public class DynamicLightsStateManager {
 
 	static final DynamicLightsPipelineCompiler deferredExtPipeline = new DynamicLightsPipelineCompiler();
-	private static List<DynamicLightInstance> lightInstancePool = new ArrayList();
+	private static List<DynamicLightInstance> lightInstancePool = new ArrayList<>();
 	private static int instancePoolIndex = 0;
 	private static int maxListLengthTracker = 0;
-	static final List<DynamicLightInstance> lightRenderList = new LinkedList();
+	static final List<DynamicLightInstance> lightRenderList = new LinkedList<>();
 	static final Matrix4f inverseViewMatrix = new Matrix4f();
 	static int inverseViewMatrixSerial = 0;
 	static DynamicLightBucketLoader bucketLoader = null;
@@ -41,11 +44,11 @@ public class DynamicLightsStateManager {
 	static int lastTotal = 0;
 	private static long lastTick = 0l;
 
-	public static final void enableDynamicLightsRender() {
+	public static void enableDynamicLightsRender() {
 		if(bucketLoader == null) {
 			bucketLoader = new DynamicLightBucketLoader();
 			bucketLoader.initialize();
-			bucketLoader.bindUniformBuffer(0);
+			bucketLoader.bindLightSourceBucket(-999, -999, -999, 0);
 			FixedFunctionPipeline.loadExtensionPipeline(deferredExtPipeline);
 		}
 		if(accelParticleRenderer == null) {
@@ -57,11 +60,11 @@ public class DynamicLightsStateManager {
 		maxListLengthTracker = 0;
 	}
 
-	public static final void bindAcceleratedEffectRenderer(EffectRenderer renderer) {
+	public static void bindAcceleratedEffectRenderer(EffectRenderer renderer) {
 		renderer.acceleratedParticleRenderer = accelParticleRenderer;
 	}
 
-	public static final void disableDynamicLightsRender(boolean unloadPipeline) {
+	public static void disableDynamicLightsRender(boolean unloadPipeline) {
 		if(bucketLoader != null) {
 			bucketLoader.destroy();
 			bucketLoader = null;
@@ -79,30 +82,30 @@ public class DynamicLightsStateManager {
 		maxListLengthTracker = 0;
 	}
 
-	public static final boolean isDynamicLightsRender() {
+	public static boolean isDynamicLightsRender() {
 		return bucketLoader != null;
 	}
 
-	public static final boolean isInDynamicLightsPass() {
+	public static boolean isInDynamicLightsPass() {
 		return GlStateManager.isExtensionPipeline() && bucketLoader != null;
 	}
 
-	public static final void reportForwardRenderObjectPosition(int centerX, int centerY, int centerZ) {
+	public static void reportForwardRenderObjectPosition(int centerX, int centerY, int centerZ) {
 		if(bucketLoader != null) {
-			bucketLoader.loadLightSourceBucket(centerX, centerY, centerZ);
+			bucketLoader.bindLightSourceBucket(centerX, centerY, centerZ, 0);
 		}
 	}
 
-	public static final void reportForwardRenderObjectPosition2(float x, float y, float z) {
+	public static void reportForwardRenderObjectPosition2(float x, float y, float z) {
 		if(bucketLoader != null) {
 			float posX = (float)((x + TileEntityRendererDispatcher.staticPlayerX) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerX / 16.0) << 4));
 			float posY = (float)((y + TileEntityRendererDispatcher.staticPlayerY) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerY / 16.0) << 4));
 			float posZ = (float)((z + TileEntityRendererDispatcher.staticPlayerZ) - (MathHelper.floor_double(TileEntityRendererDispatcher.staticPlayerZ / 16.0) << 4));
-			bucketLoader.loadLightSourceBucket((int)posX, (int)posY, (int)posZ);
+			bucketLoader.bindLightSourceBucket((int)posX, (int)posY, (int)posZ, 0);
 		}
 	}
 
-	public static final void renderDynamicLight(String lightName, double posX, double posY, double posZ, float radius) {
+	public static void renderDynamicLight(String lightName, double posX, double posY, double posZ, float radius) {
 		if(bucketLoader != null) {
 			DynamicLightInstance dl;
 			if(instancePoolIndex < lightInstancePool.size()) {
@@ -116,7 +119,7 @@ public class DynamicLightsStateManager {
 		}
 	}
 
-	public static final void clearRenderList() {
+	public static void clearRenderList() {
 		if(instancePoolIndex > maxListLengthTracker) {
 			maxListLengthTracker = instancePoolIndex;
 		}
@@ -124,7 +127,7 @@ public class DynamicLightsStateManager {
 		instancePoolIndex = 0;
 	}
 
-	public static final void commitLightSourceBuckets(double renderPosX, double renderPosY, double renderPosZ) {
+	public static void commitLightSourceBuckets(double renderPosX, double renderPosY, double renderPosZ) {
 		lastTotal = lightRenderList.size();
 		if(bucketLoader != null) {
 			bucketLoader.clearBuckets();
@@ -146,17 +149,17 @@ public class DynamicLightsStateManager {
 		clearRenderList();
 	}
 
-	public static final void setupInverseViewMatrix() {
+	public static void setupInverseViewMatrix() {
 		Matrix4f.invert(GlStateManager.getModelViewReference(), inverseViewMatrix);
 		inverseViewMatrixSerial = GlStateManager.getModelViewSerial();
 	}
 
-	private static final void updateTimers() {
-		long millis = System.currentTimeMillis();
+	private static void updateTimers() {
+		long millis = EagRuntime.steadyTimeMillis();
 		if(millis - lastTick > 5000l) {
 			lastTick = millis;
 			if(maxListLengthTracker < (lightInstancePool.size() >> 1)) {
-				List<DynamicLightInstance> newPool = new ArrayList(Math.max(maxListLengthTracker, 16));
+				List<DynamicLightInstance> newPool = new ArrayList<>(Math.max(maxListLengthTracker, 16));
 				for(int i = 0; i < maxListLengthTracker; ++i) {
 					newPool.add(lightInstancePool.get(i));
 				}
@@ -166,12 +169,16 @@ public class DynamicLightsStateManager {
 		}
 	}
 
-	public static final void destroyAll() {
-		lightInstancePool = new ArrayList();
+	public static void destroyAll() {
+		lightInstancePool = new ArrayList<>();
 	}
 
 	public static String getF3String() {
 		return "DynamicLightsTotal: " + lastTotal;
+	}
+
+	public static boolean isSupported() {
+		return EaglercraftGPU.checkOpenGLESVersion() >= 300;
 	}
 
 }

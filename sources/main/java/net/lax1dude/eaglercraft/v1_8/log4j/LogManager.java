@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.log4j;
-
-import java.util.HashMap;
-import java.util.Map;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,9 +13,15 @@ import java.util.Map;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.log4j;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class LogManager {
 	
-	private static final Map<String,Logger> loggerInstances = new HashMap();
+	private static final Map<String,Logger> loggerInstances = new HashMap<>();
 	
 	public static final Object logLock = new Object();
 	public static Level logLevel = Level.DEBUG;

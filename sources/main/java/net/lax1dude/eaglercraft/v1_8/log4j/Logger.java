@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.log4j;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,6 +13,15 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.log4j;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+
 public class Logger {
 	
 	public final String loggerName;
@@ -101,7 +102,7 @@ public class Logger {
 		log(Level.FATAL, msg);
 	}
 	
-	private static final SimpleDateFormat fmt = EagRuntime.fixDateFormat(new SimpleDateFormat("hh:mm:ss+SSS"));
+	private static final SimpleDateFormat fmt = new SimpleDateFormat("hh:mm:ss+SSS");
 	private static final Date dateInstance = new Date();
 	
 	public void log(Level level, String msg) {
@@ -159,6 +160,10 @@ public class Logger {
 	}
 	
 	private void logExcp(final Level level, String h, Throwable msg) {
+		if(msg == null) {
+			log(level, "{}: <null>", h);
+			return;
+		}
 		log(level, "{}: {}", h, msg.toString());
 		EagRuntime.getStackTrace(msg, (e) -> log(level, "    at {}", e));
 		PlatformRuntime.printJSExceptionIfBrowser(msg);

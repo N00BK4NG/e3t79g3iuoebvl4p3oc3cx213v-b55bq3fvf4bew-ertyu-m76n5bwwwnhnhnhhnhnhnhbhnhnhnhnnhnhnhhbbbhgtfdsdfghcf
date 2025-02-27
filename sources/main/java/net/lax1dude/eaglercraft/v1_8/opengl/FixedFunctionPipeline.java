@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.opengl;
 
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
@@ -10,7 +26,7 @@ import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
 import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
 
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.IBufferArrayGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IVertexArrayGL;
 import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
 import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
 import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
@@ -27,26 +43,11 @@ import net.minecraft.util.MathHelper;
 import static net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionState.*;
 import static net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionConstants.*;
 
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class FixedFunctionPipeline {
 	
 	private static final Logger LOGGER = LogManager.getLogger("FixedFunctionPipeline");
 
-	static final int getFragmentState() {
+	static int getFragmentState() {
 		return (GlStateManager.stateTexture[0] ? STATE_ENABLE_TEXTURE2D : 0) |
 				(GlStateManager.stateTexture[1] ? STATE_ENABLE_LIGHTMAP : 0) |
 				(GlStateManager.stateAlphaTest ? STATE_ENABLE_ALPHA_TEST : 0) |
@@ -76,8 +77,8 @@ public class FixedFunctionPipeline {
 		StreamBufferInstance sb = self.streamBuffer.getBuffer(buffer.remaining());
 		self.currentVertexArray = sb;
 		
-		EaglercraftGPU.bindGLBufferArray(sb.vertexArray);
-		EaglercraftGPU.bindGLArrayBuffer(sb.vertexBuffer);
+		EaglercraftGPU.bindGLVertexArray(sb.getVertexArray());
+		EaglercraftGPU.bindGLArrayBuffer(sb.getVertexBuffer());
 		
 		_wglBufferSubData(GL_ARRAY_BUFFER, 0, buffer);
 		
@@ -97,34 +98,34 @@ public class FixedFunctionPipeline {
 			self = getPipelineInstanceCore(baseState);
 		}
 		
-		EaglercraftGPU.bindGLBufferArray(list.vertexArray);
-		EaglercraftGPU.bindGLArrayBuffer(list.vertexBuffer);
+		EaglercraftGPU.bindGLVertexArray(list.vertexArray);
+		EaglercraftGPU.bindVAOGLArrayBuffer(list.vertexBuffer);
 		
-		_wglEnableVertexAttribArray(0);
-		_wglVertexAttribPointer(0, VertexFormat.COMPONENT_POSITION_SIZE,
+		EaglercraftGPU.enableVertexAttribArray(0);
+		EaglercraftGPU.vertexAttribPointer(0, VertexFormat.COMPONENT_POSITION_SIZE,
 				VertexFormat.COMPONENT_POSITION_FORMAT, false, self.attribStride, 0);
 
 		if(self.attribTextureIndex != -1) {
-			_wglEnableVertexAttribArray(self.attribTextureIndex);
-			_wglVertexAttribPointer(self.attribTextureIndex, VertexFormat.COMPONENT_TEX_SIZE,
+			EaglercraftGPU.enableVertexAttribArray(self.attribTextureIndex);
+			EaglercraftGPU.vertexAttribPointer(self.attribTextureIndex, VertexFormat.COMPONENT_TEX_SIZE,
 					VertexFormat.COMPONENT_TEX_FORMAT, false, self.attribStride, self.attribTextureOffset);
 		}
 		
 		if(self.attribColorIndex != -1) {
-			_wglEnableVertexAttribArray(self.attribColorIndex);
-			_wglVertexAttribPointer(self.attribColorIndex, VertexFormat.COMPONENT_COLOR_SIZE,
+			EaglercraftGPU.enableVertexAttribArray(self.attribColorIndex);
+			EaglercraftGPU.vertexAttribPointer(self.attribColorIndex, VertexFormat.COMPONENT_COLOR_SIZE,
 					VertexFormat.COMPONENT_COLOR_FORMAT, true, self.attribStride, self.attribColorOffset);
 		}
 		
 		if(self.attribNormalIndex != -1) {
-			_wglEnableVertexAttribArray(self.attribNormalIndex);
-			_wglVertexAttribPointer(self.attribNormalIndex, VertexFormat.COMPONENT_NORMAL_SIZE,
+			EaglercraftGPU.enableVertexAttribArray(self.attribNormalIndex);
+			EaglercraftGPU.vertexAttribPointer(self.attribNormalIndex, VertexFormat.COMPONENT_NORMAL_SIZE,
 					VertexFormat.COMPONENT_NORMAL_FORMAT, true, self.attribStride, self.attribNormalOffset);
 		}
 		
 		if(self.attribLightmapIndex != -1) {
-			_wglEnableVertexAttribArray(self.attribLightmapIndex);
-			_wglVertexAttribPointer(self.attribLightmapIndex, VertexFormat.COMPONENT_LIGHTMAP_SIZE,
+			EaglercraftGPU.enableVertexAttribArray(self.attribLightmapIndex);
+			EaglercraftGPU.vertexAttribPointer(self.attribLightmapIndex, VertexFormat.COMPONENT_LIGHTMAP_SIZE,
 					VertexFormat.COMPONENT_LIGHTMAP_FORMAT, false, self.attribStride, self.attribLightmapOffset);
 		}
 		
@@ -145,7 +146,7 @@ public class FixedFunctionPipeline {
 	
 	void drawArrays(int mode, int offset, int count) {
 		EaglercraftGPU.bindGLShaderProgram(shaderProgram);
-		PlatformOpenGL._wglDrawArrays(mode, offset, count);
+		EaglercraftGPU.drawArrays(mode, offset, count);
 	}
 	
 	void drawDirectArrays(int mode, int offset, int count) {
@@ -160,7 +161,7 @@ public class FixedFunctionPipeline {
 				}else {
 					EaglercraftGPU.attachQuad32EmulationBuffer(count, false);
 				}
-				PlatformOpenGL._wglDrawElements(GL_TRIANGLES, count + (count >> 1),
+				EaglercraftGPU.drawElements(GL_TRIANGLES, count + (count >> 1),
 						GL_UNSIGNED_INT, 0);
 			}else {
 				if(!sb.bindQuad16) {
@@ -170,17 +171,17 @@ public class FixedFunctionPipeline {
 				}else {
 					EaglercraftGPU.attachQuad16EmulationBuffer(count, false);
 				}
-				PlatformOpenGL._wglDrawElements(GL_TRIANGLES, count + (count >> 1),
+				EaglercraftGPU.drawElements(GL_TRIANGLES, count + (count >> 1),
 						GL_UNSIGNED_SHORT, 0);
 			}
 		}else {
-			PlatformOpenGL._wglDrawArrays(mode, offset, count);
+			EaglercraftGPU.drawArrays(mode, offset, count);
 		}
 	}
 	
 	void drawElements(int mode, int count, int type, int offset) {
 		EaglercraftGPU.bindGLShaderProgram(shaderProgram);
-		PlatformOpenGL._wglDrawElements(mode, count, type, offset);
+		EaglercraftGPU.drawElements(mode, count, type, offset);
 	}
 	
 	private static IExtPipelineCompiler extensionProvider;
@@ -192,7 +193,7 @@ public class FixedFunctionPipeline {
 
 	private static final FixedFunctionPipeline[] pipelineStateCache = new FixedFunctionPipeline[fixedFunctionStatesBits + 1];
 	private static final FixedFunctionPipeline[][] pipelineExtStateCache = new FixedFunctionPipeline[fixedFunctionStatesBits + 1][];
-	private static final List<FixedFunctionPipeline> pipelineListTracker = new ArrayList(1024);
+	private static final List<FixedFunctionPipeline> pipelineListTracker = new ArrayList<>(1024);
 
 	private static String shaderSourceCacheVSH = null;
 	private static String shaderSourceCacheFSH = null;
@@ -232,22 +233,16 @@ public class FixedFunctionPipeline {
 			fshSource = extSource[1];
 		}else {
 			if(shaderSourceCacheVSH == null) {
-				shaderSourceCacheVSH = EagRuntime.getResourceString(FILENAME_VSH);
-				if(shaderSourceCacheVSH == null) {
-					throw new RuntimeException("Could not load: " + FILENAME_VSH);
-				}
+				shaderSourceCacheVSH = EagRuntime.getRequiredResourceString(FILENAME_VSH);
 			}
 			vshSource = shaderSourceCacheVSH;
 			if(shaderSourceCacheFSH == null) {
-				shaderSourceCacheFSH = EagRuntime.getResourceString(FILENAME_FSH);
-				if(shaderSourceCacheFSH == null) {
-					throw new RuntimeException("Could not load: " + FILENAME_FSH);
-				}
+				shaderSourceCacheFSH = EagRuntime.getRequiredResourceString(FILENAME_FSH);
 			}
 			fshSource = shaderSourceCacheFSH;
 		}
 		
-		StringBuilder macros = new StringBuilder(VERSION + "\n");
+		StringBuilder macros = new StringBuilder();
 		if((coreBits & STATE_HAS_ATTRIB_TEXTURE) != 0) {
 			macros.append("#define " + MACRO_ATTRIB_TEXTURE + "\n");
 		}
@@ -291,7 +286,8 @@ public class FixedFunctionPipeline {
 		
 		IShaderGL vsh = _wglCreateShader(GL_VERTEX_SHADER);
 		
-		_wglShaderSource(vsh, macros.toString() + vshSource);
+		String macrosStr = macros.toString();
+		_wglShaderSource(vsh, GLSLHeader.getVertexHeaderCompat(vshSource, macrosStr));
 		_wglCompileShader(vsh);
 		
 		if(_wglGetShaderi(vsh, GL_COMPILE_STATUS) != GL_TRUE) {
@@ -309,7 +305,7 @@ public class FixedFunctionPipeline {
 		
 		IShaderGL fsh = _wglCreateShader(GL_FRAGMENT_SHADER);
 		
-		_wglShaderSource(fsh, macros.toString() + fshSource);
+		_wglShaderSource(fsh, GLSLHeader.getFragmentHeaderCompat(fshSource, macrosStr));
 		_wglCompileShader(fsh);
 		
 		if(_wglGetShaderi(fsh, GL_COMPILE_STATUS) != GL_TRUE) {
@@ -580,46 +576,46 @@ public class FixedFunctionPipeline {
 		
 		streamBuffer = new StreamBuffer(FixedFunctionShader.initialSize, FixedFunctionShader.initialCount,
 				FixedFunctionShader.maxCount, (vertexArray, vertexBuffer) -> {
-					EaglercraftGPU.bindGLBufferArray(vertexArray);
-					EaglercraftGPU.bindGLArrayBuffer(vertexBuffer);
+					EaglercraftGPU.bindGLVertexArray(vertexArray);
+					EaglercraftGPU.bindVAOGLArrayBuffer(vertexBuffer);
 
-					_wglEnableVertexAttribArray(0);
-					_wglVertexAttribPointer(0, VertexFormat.COMPONENT_POSITION_SIZE,
+					EaglercraftGPU.enableVertexAttribArray(0);
+					EaglercraftGPU.vertexAttribPointer(0, VertexFormat.COMPONENT_POSITION_SIZE,
 							VertexFormat.COMPONENT_POSITION_FORMAT, false, attribStride, 0);
 
 					if(attribTextureIndex != -1) {
-						_wglEnableVertexAttribArray(attribTextureIndex);
-						_wglVertexAttribPointer(attribTextureIndex, VertexFormat.COMPONENT_TEX_SIZE,
+						EaglercraftGPU.enableVertexAttribArray(attribTextureIndex);
+						EaglercraftGPU.vertexAttribPointer(attribTextureIndex, VertexFormat.COMPONENT_TEX_SIZE,
 								VertexFormat.COMPONENT_TEX_FORMAT, false, attribStride, attribTextureOffset);
 					}
 					
 					if(attribColorIndex != -1) {
-						_wglEnableVertexAttribArray(attribColorIndex);
-						_wglVertexAttribPointer(attribColorIndex, VertexFormat.COMPONENT_COLOR_SIZE,
+						EaglercraftGPU.enableVertexAttribArray(attribColorIndex);
+						EaglercraftGPU.vertexAttribPointer(attribColorIndex, VertexFormat.COMPONENT_COLOR_SIZE,
 								VertexFormat.COMPONENT_COLOR_FORMAT, true, attribStride, attribColorOffset);
 					}
 					
 					if(attribNormalIndex != -1) {
-						_wglEnableVertexAttribArray(attribNormalIndex);
-						_wglVertexAttribPointer(attribNormalIndex, VertexFormat.COMPONENT_NORMAL_SIZE,
+						EaglercraftGPU.enableVertexAttribArray(attribNormalIndex);
+						EaglercraftGPU.vertexAttribPointer(attribNormalIndex, VertexFormat.COMPONENT_NORMAL_SIZE,
 								VertexFormat.COMPONENT_NORMAL_FORMAT, true, attribStride, attribNormalOffset);
 					}
 					
 					if(attribLightmapIndex != -1) {
-						_wglEnableVertexAttribArray(attribLightmapIndex);
-						_wglVertexAttribPointer(attribLightmapIndex, VertexFormat.COMPONENT_LIGHTMAP_SIZE,
+						EaglercraftGPU.enableVertexAttribArray(attribLightmapIndex);
+						EaglercraftGPU.vertexAttribPointer(attribLightmapIndex, VertexFormat.COMPONENT_LIGHTMAP_SIZE,
 								VertexFormat.COMPONENT_LIGHTMAP_FORMAT, false, attribStride, attribLightmapOffset);
 					}
 				});
 
-		stateEnableTexture2D = (bits & STATE_ENABLE_TEXTURE2D) == STATE_ENABLE_TEXTURE2D;
-		stateEnableLightmap = (bits & STATE_ENABLE_LIGHTMAP) == STATE_ENABLE_LIGHTMAP;
-		stateEnableAlphaTest = (bits & STATE_ENABLE_ALPHA_TEST) == STATE_ENABLE_ALPHA_TEST;
-		stateEnableMCLighting = (bits & STATE_ENABLE_MC_LIGHTING) == STATE_ENABLE_MC_LIGHTING;
-		stateEnableEndPortal = (bits & STATE_ENABLE_END_PORTAL) == STATE_ENABLE_END_PORTAL;
-		stateEnableAnisotropicFix = (bits & STATE_ENABLE_ANISOTROPIC_FIX) == STATE_ENABLE_ANISOTROPIC_FIX;
-		stateEnableFog = (bits & STATE_ENABLE_FOG) == STATE_ENABLE_FOG;
-		stateEnableBlendAdd = (bits & STATE_ENABLE_BLEND_ADD) == STATE_ENABLE_BLEND_ADD;
+		stateEnableTexture2D = (bits & STATE_ENABLE_TEXTURE2D) != 0;
+		stateEnableLightmap = (bits & STATE_ENABLE_LIGHTMAP) != 0;
+		stateEnableAlphaTest = (bits & STATE_ENABLE_ALPHA_TEST) != 0;
+		stateEnableMCLighting = (bits & STATE_ENABLE_MC_LIGHTING) != 0;
+		stateEnableEndPortal = (bits & STATE_ENABLE_END_PORTAL) != 0;
+		stateEnableAnisotropicFix = (bits & STATE_ENABLE_ANISOTROPIC_FIX) != 0;
+		stateEnableFog = (bits & STATE_ENABLE_FOG) != 0;
+		stateEnableBlendAdd = (bits & STATE_ENABLE_BLEND_ADD) != 0;
 		
 		for(int i = 0; i < stateLightsVectors.length; ++i) { 
 			stateLightsVectors[i] = new Vector4f(-999.0f, -999.0f, -999.0f, 0.0f);
@@ -1068,7 +1064,6 @@ public class FixedFunctionPipeline {
 	}
 
 	static void optimize() {
-		FixedFunctionPipeline pp;
 		for(int i = 0, l = pipelineListTracker.size(); i < l; ++i) {
 			pipelineListTracker.get(i).streamBuffer.optimize();
 		}
@@ -1108,7 +1103,7 @@ public class FixedFunctionPipeline {
 		streamBuffer.destroy();
 	}
 	
-	public IBufferArrayGL getDirectModeBufferArray() {
+	public IVertexArrayGL getDirectModeVertexArray() {
 		return currentVertexArray.vertexArray;
 	}
 }

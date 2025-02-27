@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -20,9 +20,11 @@
 
 > DELETE  2  @  2 : 4
 
-> CHANGE  1 : 6  @  1 : 4
+> CHANGE  1 : 8  @  1 : 4
 
 ~ 
+~ import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+~ import net.lax1dude.eaglercraft.v1_8.EagUtils;
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 ~ import net.lax1dude.eaglercraft.v1_8.futures.FutureTask;
@@ -30,15 +32,15 @@
 
 > DELETE  8  @  8 : 11
 
-> CHANGE  1 : 2  @  1 : 3
+> CHANGE  1 : 2  @  1 : 5
 
 ~ import net.minecraft.network.play.server.S41PacketServerDifficulty;
 
-> DELETE  1  @  1 : 2
-
 > DELETE  7  @  7 : 8
 
-> CHANGE  10 : 11  @  10 : 12
+> DELETE  4  @  4 : 5
+
+> CHANGE  5 : 6  @  5 : 7
 
 ~ import net.minecraft.world.chunk.Chunk;
 
@@ -59,7 +61,7 @@
 
 ~ 	protected final List<ITickable> playersOnline = Lists.newArrayList();
 
-> CHANGE  2 : 3  @  2 : 5
+> CHANGE  1 : 2  @  1 : 5
 
 ~ 	private final EaglercraftRandom random = new EaglercraftRandom();
 
@@ -81,7 +83,7 @@
 
 > CHANGE  1 : 2  @  1 : 4
 
-~ 	protected final Queue<FutureTask<?>> futureTaskQueue = new LinkedList();
+~ 	protected final Queue<FutureTask<?>> futureTaskQueue = new LinkedList<>();
 
 > CHANGE  1 : 4  @  1 : 2
 
@@ -128,7 +130,21 @@
 + 		}
 + 
 
-> DELETE  26  @  26 : 29
+> CHANGE  12 : 14  @  12 : 14
+
+~ 					this.worldServers[j] = (WorldServer) (new DemoWorldServer(this, isavehandler, worldinfo, b0))
+~ 							.init();
+
+> CHANGE  1 : 2  @  1 : 3
+
+~ 					this.worldServers[j] = (WorldServer) (new WorldServer(this, isavehandler, worldinfo, b0)).init();
+
+> CHANGE  4 : 6  @  4 : 6
+
+~ 				this.worldServers[j] = (WorldServer) (new WorldServerMulti(this, isavehandler, b0,
+~ 						this.worldServers[0])).init();
+
+> DELETE  3  @  3 : 6
 
 > CHANGE  3 : 11  @  3 : 5
 
@@ -181,7 +197,11 @@
 ~ 			for (int i = 0; i < this.worldServers.length; ++i) {
 ~ 				WorldServer worldserver = this.worldServers[i];
 
-> DELETE  20  @  20 : 23
+> CHANGE  6 : 7  @  6 : 11
+
+~ 					worldserver.saveAllChunks(true, (IProgressUpdate) null);
+
+> DELETE  9  @  9 : 12
 
 > CHANGE  16 : 22  @  16 : 21
 
@@ -202,11 +222,23 @@
 
 > DELETE  17  @  17 : 21
 
-> DELETE  45  @  45 : 53
+> CHANGE  29 : 30  @  29 : 30
+
+~ 					EagUtils.sleep(Math.max(1L, 50L - i));
+
+> DELETE  15  @  15 : 23
 
 > DELETE  15  @  15 : 40
 
-> DELETE  17  @  17 : 24
+> CHANGE  7 : 8  @  7 : 8
+
+~ 		long i = EagRuntime.nanoTime();
+
+> DELETE  3  @  3 : 5
+
+> DELETE  2  @  2 : 3
+
+> DELETE  1  @  1 : 8
 
 > CHANGE  1 : 8  @  1 : 4
 
@@ -222,21 +254,57 @@
 
 ~ 			this.isSpawnChunksLoaded = loadSpawnChunks;
 
-> DELETE  13  @  13 : 16
+> DELETE  3  @  3 : 4
 
-> DELETE  1  @  1 : 5
+> DELETE  2  @  2 : 3
 
-> CHANGE  58 : 59  @  58 : 59
+> CHANGE  2 : 3  @  2 : 16
+
+~ 		this.tickTimeArray[this.tickCounter % 100] = EagRuntime.nanoTime() - i;
+
+> DELETE  3  @  3 : 4
+
+> DELETE  6  @  6 : 8
+
+> CHANGE  1 : 2  @  1 : 2
+
+~ 			long i = EagRuntime.nanoTime();
+
+> DELETE  2  @  2 : 3
+
+> DELETE  1  @  1 : 2
+
+> DELETE  4  @  4 : 5
+
+> DELETE  2  @  2 : 4
+
+> DELETE  17  @  17 : 19
+
+> DELETE  1  @  1 : 3
+
+> CHANGE  2 : 3  @  2 : 3
+
+~ 			this.timeOfLastDimensionTick[j][this.tickCounter % 100] = EagRuntime.nanoTime() - i;
+
+> CHANGE  2 : 3  @  2 : 5
 
 ~ 		EaglerIntegratedServerWorker.tick();
 
-> DELETE  20  @  20 : 24
+> DELETE  1  @  1 : 2
+
+> DELETE  4  @  4 : 6
+
+> DELETE  11  @  11 : 15
 
 > CHANGE  29 : 30  @  29 : 30
 
 ~ 		return "eagler";
 
-> CHANGE  28 : 29  @  28 : 29
+> CHANGE  5 : 6  @  5 : 8
+
+~ 				return "N/A (disabled)";
+
+> CHANGE  20 : 21  @  20 : 21
 
 ~ 			List<String> list = this.commandManager.getTabCompletionOptions(sender, input, pos);
 
@@ -290,7 +358,11 @@
 
 > DELETE  28  @  28 : 32
 
-> DELETE  20  @  20 : 36
+> CHANGE  1 : 2  @  1 : 2
+
+~ 		return EagRuntime.steadyTimeMillis();
+
+> DELETE  18  @  18 : 34
 
 > CHANGE  4 : 7  @  4 : 6
 

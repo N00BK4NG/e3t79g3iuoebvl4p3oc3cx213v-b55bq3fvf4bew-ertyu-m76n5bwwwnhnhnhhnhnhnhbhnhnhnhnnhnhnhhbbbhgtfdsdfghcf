@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import org.json.JSONObject;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,6 +13,14 @@ import org.json.JSONObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import org.json.JSONObject;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EagUtils;
+
 public interface IServerQuery {
 
 	public static final long defaultTimeout = 10000l;
@@ -41,6 +45,8 @@ public interface IServerQuery {
 		}
 
 	}
+
+	void update();
 
 	void send(String str);
 
@@ -73,12 +79,9 @@ public interface IServerQuery {
 	EnumServerRateLimit getRateLimit();
 
 	default boolean awaitResponseAvailable(long timeout) {
-		long start = System.currentTimeMillis();
-		while(isOpen() && responsesAvailable() <= 0 && (timeout <= 0l || System.currentTimeMillis() - start < timeout)) {
-			try {
-				Thread.sleep(0l, 250000);
-			} catch (InterruptedException e) {
-			}
+		long start = EagRuntime.steadyTimeMillis();
+		while(isOpen() && responsesAvailable() <= 0 && (timeout <= 0l || EagRuntime.steadyTimeMillis() - start < timeout)) {
+			EagUtils.sleep(5);
 		}
 		return responsesAvailable() > 0;
 	}
@@ -88,12 +91,9 @@ public interface IServerQuery {
 	}
 	
 	default boolean awaitResponseBinaryAvailable(long timeout) {
-		long start = System.currentTimeMillis();
-		while(isOpen() && binaryResponsesAvailable() <= 0 && (timeout <= 0l || System.currentTimeMillis() - start < timeout)) {
-			try {
-				Thread.sleep(0l, 250000);
-			} catch (InterruptedException e) {
-			}
+		long start = EagRuntime.steadyTimeMillis();
+		while(isOpen() && binaryResponsesAvailable() <= 0 && (timeout <= 0l || EagRuntime.steadyTimeMillis() - start < timeout)) {
+			EagUtils.sleep(5);
 		}
 		return binaryResponsesAvailable() > 0;
 	}

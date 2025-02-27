@@ -1,9 +1,24 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.sp.lan;
 
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.EagUtils;
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
 import net.lax1dude.eaglercraft.v1_8.EaglerZLIB;
-import net.lax1dude.eaglercraft.v1_8.IOUtils;
 import net.lax1dude.eaglercraft.v1_8.internal.EnumEaglerConnectionState;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
@@ -20,25 +35,9 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.IChatComponent;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class LANClientNetworkManager extends EaglercraftNetworkManager {
 
 	private static final Logger logger = LogManager.getLogger("LANClientNetworkManager");
@@ -75,15 +74,17 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 	public static LANClientNetworkManager connectToWorld(RelayServerSocket sock, String displayCode, String displayRelay) {
 		PlatformWebRTC.clearLANClientState();
 		int connectState = PRE;
-		IPacket pkt;
+		RelayPacket pkt;
 		mainLoop: while(!sock.isClosed()) {
+			PlatformWebRTC.runScheduledTasks();
+			sock.update();
 			if((pkt = sock.readPacket()) != null) {
-				if(pkt instanceof IPacket00Handshake) {
+				if(pkt instanceof RelayPacket00Handshake) {
 					if(connectState == PRE) {
 
 						// %%%%%%  Process IPacket00Handshake  %%%%%%
 
-						logger.info("Relay [{}|{}] recieved handshake, client id: {}", displayRelay, displayCode, ((IPacket00Handshake)pkt).connectionCode);
+						logger.info("Relay [{}|{}] recieved handshake, client id: {}", displayRelay, displayCode, ((RelayPacket00Handshake)pkt).connectionCode);
 						connectState = INIT;
 
 					}else {
@@ -91,17 +92,17 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 						logger.error("Relay [{}|{}] unexpected packet: IPacket00Handshake in state {}", displayRelay, displayCode, initStateNames[connectState]);
 						return null;
 					}
-				}else if(pkt instanceof IPacket01ICEServers) {
+				}else if(pkt instanceof RelayPacket01ICEServers) {
 					if(connectState == INIT) {
 
 						// %%%%%%  Process IPacket01ICEServers  %%%%%%
 
-						IPacket01ICEServers ipkt = (IPacket01ICEServers) pkt;
+						RelayPacket01ICEServers ipkt = (RelayPacket01ICEServers) pkt;
 
 						// print servers
 						logger.info("Relay [{}|{}] provided ICE servers:", displayRelay, displayCode);
-						List<String> servers = new ArrayList();
-						for(ICEServerSet.RelayServer srv : ipkt.servers) {
+						List<String> servers = new ArrayList<>();
+						for(RelayPacket01ICEServers.RelayServer srv : ipkt.servers) {
 							logger.info("Relay [{}|{}]     {}: {}", displayRelay, displayCode, srv.type.name(), srv.address);
 							servers.add(srv.getICEString());
 						}
@@ -110,20 +111,21 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 						PlatformWebRTC.clientLANSetICEServersAndConnect(servers.toArray(new String[servers.size()]));
 
 						// await result
-						long lm = System.currentTimeMillis();
+						long lm = EagRuntime.steadyTimeMillis();
 						do {
+							PlatformWebRTC.runScheduledTasks();
 							String c = PlatformWebRTC.clientLANAwaitDescription();
 							if(c != null) {
 								logger.info("Relay [{}|{}] client sent description", displayRelay, displayCode);
 
 								// 'this.descriptionHandler' was called, send result:
-								sock.writePacket(new IPacket04Description("", c));
+								sock.writePacket(new RelayPacket04Description("", c));
 
 								connectState = SENT_DESCRIPTION;
 								continue mainLoop;
 							}
-							EagUtils.sleep(20l);
-						}while(System.currentTimeMillis() - lm < 5000l);
+							EagUtils.sleep(20);
+						}while(EagRuntime.steadyTimeMillis() - lm < 5000l);
 
 						// no description was sent
 						sock.close();
@@ -135,34 +137,35 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 						logger.error("Relay [{}|{}] unexpected packet: IPacket01ICEServers in state {}", displayRelay, displayCode, initStateNames[connectState]);
 						return null;
 					}
-				}else if(pkt instanceof IPacket03ICECandidate) {
+				}else if(pkt instanceof RelayPacket03ICECandidate) {
 					if(connectState == SENT_ICE_CANDIDATE) {
 
 						// %%%%%%  Process IPacket03ICECandidate  %%%%%%
 
-						IPacket03ICECandidate ipkt = (IPacket03ICECandidate) pkt;
+						RelayPacket03ICECandidate ipkt = (RelayPacket03ICECandidate) pkt;
 
 						// process
 						logger.info("Relay [{}|{}] recieved server ICE candidate", displayRelay, displayCode);
-						PlatformWebRTC.clientLANSetICECandidate(ipkt.candidate);
+						PlatformWebRTC.clientLANSetICECandidate(ipkt.getCandidateString());
 
 						// await result
-						long lm = System.currentTimeMillis();
+						long lm = EagRuntime.steadyTimeMillis();
 						do {
+							PlatformWebRTC.runScheduledTasks();
 							if(PlatformWebRTC.clientLANAwaitChannel()) {
 								logger.info("Relay [{}|{}] client opened data channel", displayRelay, displayCode);
 
 								// 'this.remoteDataChannelHandler' was called, success
-								sock.writePacket(new IPacket05ClientSuccess(ipkt.peerId));
+								sock.writePacket(new RelayPacket05ClientSuccess(ipkt.peerId));
 								sock.close();
 								return new LANClientNetworkManager(displayCode, displayRelay);
 
 							}
-							EagUtils.sleep(20l);
-						}while(System.currentTimeMillis() - lm < 5000l);
+							EagUtils.sleep(20);
+						}while(EagRuntime.steadyTimeMillis() - lm < 10000l);
 
 						// no channel was opened
-						sock.writePacket(new IPacket06ClientFailure(ipkt.peerId));
+						sock.writePacket(new RelayPacket06ClientFailure(ipkt.peerId));
 						sock.close();
 						logger.error("Relay [{}|{}] client open data channel timeout", displayRelay, displayCode);
 						return null;
@@ -172,32 +175,33 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 						logger.error("Relay [{}|{}] unexpected packet: IPacket03ICECandidate in state {}", displayRelay, displayCode, initStateNames[connectState]);
 						return null;
 					}
-				}else if(pkt instanceof IPacket04Description) {
+				}else if(pkt instanceof RelayPacket04Description) {
 					if(connectState == SENT_DESCRIPTION) {
 
 						// %%%%%%  Process IPacket04Description  %%%%%%
 
-						IPacket04Description ipkt = (IPacket04Description) pkt;
+						RelayPacket04Description ipkt = (RelayPacket04Description) pkt;
 
 						// process
 						logger.info("Relay [{}|{}] recieved server description", displayRelay, displayCode);
-						PlatformWebRTC.clientLANSetDescription(ipkt.description);
+						PlatformWebRTC.clientLANSetDescription(ipkt.getDescriptionString());
 
 						// await result
-						long lm = System.currentTimeMillis();
+						long lm = EagRuntime.steadyTimeMillis();
 						do {
+							PlatformWebRTC.runScheduledTasks();
 							String c = PlatformWebRTC.clientLANAwaitICECandidate();
 							if(c != null) {
 								logger.info("Relay [{}|{}] client sent ICE candidate", displayRelay, displayCode);
 
 								// 'this.iceCandidateHandler' was called, send result:
-								sock.writePacket(new IPacket03ICECandidate("", c));
+								sock.writePacket(new RelayPacket03ICECandidate("", c));
 
 								connectState = SENT_ICE_CANDIDATE;
 								continue mainLoop;
 							}
-							EagUtils.sleep(20l);
-						}while(System.currentTimeMillis() - lm < 5000l);
+							EagUtils.sleep(20);
+						}while(EagRuntime.steadyTimeMillis() - lm < 10000l);
 
 						// no ice candidates were sent
 						sock.close();
@@ -209,12 +213,12 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 						logger.error("Relay [{}|{}] unexpected packet: IPacket04Description in state {}", displayRelay, displayCode, initStateNames[connectState]);
 						return null;
 					}
-				}else if(pkt instanceof IPacketFFErrorCode) {
+				}else if(pkt instanceof RelayPacketFFErrorCode) {
 
 					// %%%%%%  Process IPacketFFErrorCode  %%%%%%
 
-					IPacketFFErrorCode ipkt = (IPacketFFErrorCode) pkt;
-					logger.error("Relay [{}|{}] connection failed: {}({}): {}", displayRelay, displayCode, IPacketFFErrorCode.code2string(ipkt.code), ipkt.code, ipkt.desc);
+					RelayPacketFFErrorCode ipkt = (RelayPacketFFErrorCode) pkt;
+					logger.error("Relay [{}|{}] connection failed: {}({}): {}", displayRelay, displayCode, RelayPacketFFErrorCode.code2string(ipkt.code), ipkt.code, ipkt.desc);
 					Throwable t;
 					while((t = sock.getException()) != null) {
 						logger.error(t);
@@ -231,7 +235,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 					return null;
 				}
 			}
-			EagUtils.sleep(20l);
+			EagUtils.sleep(20);
 		}
 		return null;
 	}
@@ -291,7 +295,7 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 		return !clientDisconnected;
 	}
 
-	private List<byte[]> fragmentedPacket = new ArrayList();
+	private List<byte[]> fragmentedPacket = new ArrayList<>();
 
 	@Override
 	public void processReceivedPackets() throws IOException {
@@ -302,13 +306,26 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 			}
 			for(int k = 0, l = packets.size(); k < l; ++k) {
 				byte[] data = packets.get(k);
+
+				if(firstPacket) {
+					// 1.5 kick packet
+					if(data.length == 31 && data[0] == (byte)0xFF && data[1] == (byte)0x00 && data[2] == (byte)0x0E) {
+						logger.error("Detected a 1.5 LAN server!");
+						this.closeChannel(new ChatComponentTranslation("singleplayer.outdatedLANServerKick"));
+						firstPacket = false;
+						return;
+					}
+					firstPacket = false;
+				}
+
 				byte[] fullData;
 				boolean compressed = false;
+				int off = 0;
 
 				if (data[0] == 0 || data[0] == 2) {
 					if(fragmentedPacket.isEmpty()) {
-						fullData = new byte[data.length - 1];
-						System.arraycopy(data, 1, fullData, 0, fullData.length);
+						fullData = data;
+						off = 1;
 					}else {
 						fragmentedPacket.add(data);
 						int len = 0;
@@ -335,34 +352,23 @@ public class LANClientNetworkManager extends EaglercraftNetworkManager {
 				}
 
 				if(compressed) {
-					if(fullData.length < 4) {
+					if(fullData.length < 4 + off) {
 						throw new IOException("Recieved invalid " + fullData.length + " byte compressed packet");
 					}
-					EaglerInputStream bi = new EaglerInputStream(fullData);
-					int i = (bi.read() << 24) | (bi.read() << 16) | (bi.read() << 8) | bi.read();
-					fullData = new byte[i];
-					int r;
-					try(InputStream inflaterInputStream = EaglerZLIB.newInflaterInputStream(bi)) {
-						r = IOUtils.readFully(inflaterInputStream, fullData);
-					}
+					int i = (((int) fullData[off] & 0xFF) << 24) | (((int) fullData[off + 1] & 0xFF) << 16)
+							| (((int) fullData[off + 2] & 0xFF) << 8) | ((int) fullData[off + 3] & 0xFF);
+					byte[] fullData2 = new byte[i];
+					int r = EaglerZLIB.inflateFull(fullData, off + 4, fullData.length - off - 4, fullData2, 0, i);
+					fullData = fullData2;
+					off = 0;
 					if (i != r) {
 						logger.warn("Decompressed packet expected size {} differs from actual size {}!", i, r);
 					}
 				}
 
-				if(firstPacket) {
-					// 1.5 kick packet
-					if(fullData.length == 31 && fullData[0] == (byte)0xFF && fullData[1] == (byte)0x00 && fullData[2] == (byte)0x0E) {
-						logger.error("Detected a 1.5 LAN server!");
-						this.closeChannel(new ChatComponentTranslation("singleplayer.outdatedLANServerKick"));
-						firstPacket = false;
-						return;
-					}
-					firstPacket = false;
-				}
-
 				ByteBuf nettyBuffer = Unpooled.buffer(fullData, fullData.length);
 				nettyBuffer.writerIndex(fullData.length);
+				nettyBuffer.readerIndex(off);
 				PacketBuffer input = new PacketBuffer(nettyBuffer);
 				int pktId = input.readVarIntFromBuffer();
 

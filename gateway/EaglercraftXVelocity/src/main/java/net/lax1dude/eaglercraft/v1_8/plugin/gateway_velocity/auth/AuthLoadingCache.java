@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,6 +13,18 @@ import java.util.Map.Entry;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
+
 public class AuthLoadingCache<K, V> {
 
 	private static class CacheEntry<V> {
@@ -28,7 +33,7 @@ public class AuthLoadingCache<K, V> {
 		private V instance;
 		
 		private CacheEntry(V instance) {
-			this.lastHit = System.currentTimeMillis();
+			this.lastHit = EaglerXVelocityAPIHelper.steadyTimeMillis();
 			this.instance = instance;
 		}
 		
@@ -42,6 +47,7 @@ public class AuthLoadingCache<K, V> {
 		boolean shouldEvict(K key, V value);
 	}
 
+	private final ReadWriteLock cacheMapLock;
 	private final Map<K, CacheEntry<V>> cacheMap;
 	private final CacheLoader<K, V> provider;
 	private final long cacheTTL;
@@ -49,36 +55,47 @@ public class AuthLoadingCache<K, V> {
 	private long cacheTimer;
 
 	public AuthLoadingCache(CacheLoader<K, V> provider, long cacheTTL) {
-		this.cacheMap = new HashMap();
+		this.cacheMapLock = new ReentrantReadWriteLock();
+		this.cacheMap = new HashMap<>();
 		this.provider = provider;
 		this.cacheTTL = cacheTTL;
 	}
 
 	public V get(K key) {
 		CacheEntry<V> etr;
-		synchronized(cacheMap) {
+		cacheMapLock.readLock().lock();
+		try {
 			etr = cacheMap.get(key);
+		}finally {
+			cacheMapLock.readLock().unlock();
 		}
 		if(etr == null) {
+			cacheMapLock.writeLock().lock();
 			V loaded = provider.load(key);
-			synchronized(cacheMap) {
+			try {
 				cacheMap.put(key, new CacheEntry<>(loaded));
+			}finally {
+				cacheMapLock.writeLock().unlock();
 			}
 			return loaded;
 		}else {
-			etr.lastHit = System.currentTimeMillis();
+			etr.lastHit = EaglerXVelocityAPIHelper.steadyTimeMillis();
 			return etr.instance;
 		}
 	}
 
 	public void evict(K key) {
-		synchronized(cacheMap) {
+		cacheMapLock.writeLock().lock();
+		try {
 			cacheMap.remove(key);
+		}finally {
+			cacheMapLock.writeLock().unlock();
 		}
 	}
 
 	public void evictAll(CacheVisitor<K, V> visitor) {
-		synchronized(cacheMap) {
+		cacheMapLock.writeLock().lock();
+		try {
 			Iterator<Entry<K,CacheEntry<V>>> itr = cacheMap.entrySet().iterator();
 			while(itr.hasNext()) {
 				Entry<K,CacheEntry<V>> etr = itr.next();
@@ -86,14 +103,17 @@ public class AuthLoadingCache<K, V> {
 					itr.remove();
 				}
 			}
+		}finally {
+			cacheMapLock.writeLock().unlock();
 		}
 	}
 
 	public void tick() {
-		long millis = System.currentTimeMillis();
+		long millis = EaglerXVelocityAPIHelper.steadyTimeMillis();
 		if(millis - cacheTimer > (cacheTTL / 2L)) {
 			cacheTimer = millis;
-			synchronized(cacheMap) {
+			cacheMapLock.writeLock().lock();
+			try {
 				Iterator<CacheEntry<V>> mapItr = cacheMap.values().iterator();
 				while(mapItr.hasNext()) {
 					CacheEntry<V> etr = mapItr.next();
@@ -101,13 +121,18 @@ public class AuthLoadingCache<K, V> {
 						mapItr.remove();
 					}
 				}
+			}finally {
+				cacheMapLock.writeLock().unlock();
 			}
 		}
 	}
 
 	public void flush() {
-		synchronized(cacheMap) {
+		cacheMapLock.writeLock().lock();
+		try {
 			cacheMap.clear();
+		}finally {
+			cacheMapLock.writeLock().unlock();
 		}
 	}
 

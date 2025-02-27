@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server;
 
 import java.net.InetAddress;
@@ -13,6 +29,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.haproxy.HAProxyMessage;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
@@ -24,21 +41,6 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListenerConfig;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.query.QueryManager;
 
-/**
- * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public abstract class HttpServerQueryHandler extends ChannelInboundHandlerAdapter {
 
 	public static class UnexpectedDataException extends RuntimeException {
@@ -72,6 +74,7 @@ public abstract class HttpServerQueryHandler extends ChannelInboundHandlerAdapte
 	private boolean acceptBinaryPacket = false;
 	private boolean hasClosed = false;
 	private boolean keepAlive = false;
+	private long maxAge = -1l;
 
 	public void beginHandleQuery(EaglerListenerConfig conf, ChannelHandlerContext context, String accept) {
 		this.conf = conf;
@@ -135,7 +138,9 @@ public abstract class HttpServerQueryHandler extends ChannelInboundHandlerAdapte
 				} else if (msg instanceof CloseWebSocketFrame) {
 					ctx.close();
 				}
-			} else {
+			}else if(msg instanceof HAProxyMessage) {
+				EaglerXVelocity.logger().warn("[{}]: Ignoring HAProxyMessage because the WebSocket connection has already been established", ctx.channel().remoteAddress());
+			}else {
 				EaglerXVelocity.logger().error("Unexpected Packet: {}", msg.getClass().getSimpleName());
 			}
 		} finally {
@@ -188,6 +193,14 @@ public abstract class HttpServerQueryHandler extends ChannelInboundHandlerAdapte
 		return accept;
 	}
 
+	public String getOrigin() {
+		return context.channel().attr(EaglerPipeline.ORIGIN).get();
+	}
+
+	public String getUserAgent() {
+		return context.channel().attr(EaglerPipeline.USER_AGENT).get();
+	}
+
 	public void sendStringResponse(String type, String str) {
 		context.writeAndFlush(new TextWebSocketFrame(QueryManager.createStringResponse(accept, str).toString()));
 	}
@@ -218,6 +231,14 @@ public abstract class HttpServerQueryHandler extends ChannelInboundHandlerAdapte
 
 	public boolean shouldKeepAlive() {
 		return keepAlive;
+	}
+
+	public long getMaxAge() {
+		return maxAge;
+	}
+
+	public void setMaxAge(long millis) {
+		this.maxAge = millis;
 	}
 
 	protected abstract void begin(String queryType);

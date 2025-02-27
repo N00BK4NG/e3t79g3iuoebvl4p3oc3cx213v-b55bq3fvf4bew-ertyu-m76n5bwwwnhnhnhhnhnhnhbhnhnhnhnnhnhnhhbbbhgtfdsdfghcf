@@ -1,22 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.profile;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
-import net.lax1dude.eaglercraft.v1_8.Mouse;
-import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
-import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.ResourceLocation;
-
-import java.io.IOException;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -31,6 +13,26 @@ import java.io.IOException;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.profile;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.Keyboard;
+import net.lax1dude.eaglercraft.v1_8.Mouse;
+import net.lax1dude.eaglercraft.v1_8.PointerInputAbstraction;
+import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
+import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
+import net.minecraft.client.audio.PositionedSoundRecord;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.ResourceLocation;
+
+import java.io.IOException;
+
 public class GuiScreenEditCape extends GuiScreen {
 
 	private final GuiScreenEditProfile parent;
@@ -51,7 +53,6 @@ public class GuiScreenEditCape extends GuiScreen {
 
 	public GuiScreenEditCape(GuiScreenEditProfile parent) {
 		this.parent = parent;
-		updateOptions();
 	}
 
 	public void initGui() {
@@ -61,6 +62,7 @@ public class GuiScreenEditCape extends GuiScreen {
 		buttonList.add(new GuiButton(0, width / 2 - 100, height / 6 + 168, I18n.format("gui.done")));
 		buttonList.add(new GuiButton(1, width / 2 - 21, height / 6 + 80, 71, 20, I18n.format("editCape.addCape")));
 		buttonList.add(new GuiButton(2, width / 2 - 21 + 71, height / 6 + 80, 72, 20, I18n.format("editCape.clearCape")));
+		updateOptions();
 	}
 
 	private void updateOptions() {
@@ -243,7 +245,7 @@ public class GuiScreenEditCape extends GuiScreen {
 		if(EagRuntime.fileChooserHasResult()) {
 			FileChooserResult result = EagRuntime.getFileChooserResult();
 			if(result != null) {
-				ImageData loadedCape = ImageData.loadImageFile(result.fileData);
+				ImageData loadedCape = ImageData.loadImageFile(result.fileData, ImageData.getMimeFromType(result.fileName));
 				if(loadedCape != null) {
 					if((loadedCape.width == 32 || loadedCape.width == 64) && loadedCape.height == 32) {
 						byte[] resized = new byte[1173];
@@ -258,12 +260,12 @@ public class GuiScreenEditCape extends GuiScreen {
 						EagRuntime.showPopup("The selected image '" + result.fileName + "' is not the right size!\nEaglercraft only supports 32x32 or 64x32 capes");
 					}
 				}else {
-					EagRuntime.showPopup("The selected file '" + result.fileName + "' is not a PNG file!");
+					EagRuntime.showPopup("The selected file '" + result.fileName + "' is not a supported format!");
 				}
 			}
 		}
 		if(dropDownOpen) {
-			if(Mouse.isButtonDown(0)) {
+			if(PointerInputAbstraction.getVCursorButtonDown(0)) {
 				int skinX = width / 2 - 20;
 				int skinY = height / 6 + 73;
 				int skinWidth = 140;

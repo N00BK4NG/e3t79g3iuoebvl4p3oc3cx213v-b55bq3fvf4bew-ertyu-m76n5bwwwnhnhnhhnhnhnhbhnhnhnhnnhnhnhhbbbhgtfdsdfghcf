@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -19,7 +19,22 @@
 
 > DELETE  12  @  12 : 13
 
-> CHANGE  381 : 385  @  381 : 383
+> INSERT  99 : 107  @  99
+
++ 		return getNameImpl(false);
++ 	}
++ 
++ 	public String getNameProfanityFilter() {
++ 		return getNameImpl(true);
++ 	}
++ 
++ 	private String getNameImpl(boolean filter) {
+
+> CHANGE  1 : 2  @  1 : 2
+
+~ 			return filter ? this.getCustomNameTagProfanityFilter() : this.getCustomNameTag();
+
+> CHANGE  280 : 284  @  280 : 282
 
 ~ 		List<Entity> lst = this.worldObj.getEntitiesInAABBexcluding(entityIn,
 ~ 				entityIn.getEntityBoundingBox().addCoord(distance, distance, distance), horseBreedingSelector);

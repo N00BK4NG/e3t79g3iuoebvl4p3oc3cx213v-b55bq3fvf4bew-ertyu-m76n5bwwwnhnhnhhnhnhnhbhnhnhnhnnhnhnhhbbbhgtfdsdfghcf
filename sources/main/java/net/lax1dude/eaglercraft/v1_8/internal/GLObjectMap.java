@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,6 +13,9 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
 public class GLObjectMap<T> {
 	private Object[] values;
 	private int size;
@@ -70,5 +71,12 @@ public class GLObjectMap<T> {
 		Object[] oldValues = values;
 		values = new Object[size];
 		System.arraycopy(oldValues, 0, values, 0, oldSize);
+	}
+
+	public void clear() {
+		if(allocatedObjects == 0) return;
+		values = new Object[size];
+		insertIndex = 0;
+		allocatedObjects = 0;
 	}
 }

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -11,7 +11,36 @@
 
 > DELETE  20  @  20 : 24
 
-> CHANGE  18 : 20  @  18 : 20
+> CHANGE  3 : 29  @  3 : 16
+
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.House1.class,
+~ 				StructureVillagePieces.House1::new, "ViBH");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Field1.class,
+~ 				StructureVillagePieces.Field1::new, "ViDF");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Field2.class,
+~ 				StructureVillagePieces.Field2::new, "ViF");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Torch.class,
+~ 				StructureVillagePieces.Torch::new, "ViL");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Hall.class,
+~ 				StructureVillagePieces.Hall::new, "ViPH");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.House4Garden.class,
+~ 				StructureVillagePieces.House4Garden::new, "ViSH");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.WoodHut.class,
+~ 				StructureVillagePieces.WoodHut::new, "ViSmH");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Church.class,
+~ 				StructureVillagePieces.Church::new, "ViST");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.House2.class,
+~ 				StructureVillagePieces.House2::new, "ViS");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Start.class,
+~ 				StructureVillagePieces.Start::new, "ViStart");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Path.class,
+~ 				StructureVillagePieces.Path::new, "ViSR");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.House3.class,
+~ 				StructureVillagePieces.House3::new, "ViTRH");
+~ 		MapGenStructureIO.registerStructureComponent(StructureVillagePieces.Well.class,
+~ 				StructureVillagePieces.Well::new, "ViW");
+
+> CHANGE  2 : 4  @  2 : 4
 
 ~ 	public static List<StructureVillagePieces.PieceWeight> getStructureVillageWeightedPieceList(
 ~ 			EaglercraftRandom random, int parInt1) {
@@ -187,7 +216,11 @@
 
 ~ 				List<StructureComponent> rand, EaglercraftRandom parRandom, int parInt1, int parInt2) {
 
-> CHANGE  138 : 139  @  138 : 139
+> CHANGE  27 : 28  @  27 : 28
+
+~ 			BlockPos blockpos$mutableblockpos = new BlockPos();
+
+> CHANGE  110 : 111  @  110 : 111
 
 ~ 		public Well(StructureVillagePieces.Start start, int parInt1, EaglercraftRandom rand, int parInt2, int parInt3) {
 

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -189,8 +189,11 @@
 + 		 * So sorry for this implementation
 + 		 */
 
-> CHANGE  1 : 8  @  1 : 2
+> CHANGE  1 : 11  @  1 : 2
 
+~ 			if (component == null) {
+~ 				return "null";
+~ 			}
 ~ 			if ((component instanceof ChatComponentText) && component.getChatStyle().isEmpty()
 ~ 					&& component.getSiblings().isEmpty()) {
 ~ 				String escaped = new JSONObject().put("E", component.getUnformattedTextForChat()).toString();

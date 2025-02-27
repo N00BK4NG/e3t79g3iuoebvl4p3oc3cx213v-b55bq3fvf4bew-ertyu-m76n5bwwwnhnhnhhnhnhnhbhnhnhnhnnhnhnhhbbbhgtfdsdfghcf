@@ -1,21 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.profile;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
-import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
-import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
-import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.ResourceLocation;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -30,6 +13,25 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.profile;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
+import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
+import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
+import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
+import net.lax1dude.eaglercraft.v1_8.HString;
+import net.minecraft.client.Minecraft;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
+
 public class EaglerProfile {
 
 	private static String username;
@@ -40,12 +42,34 @@ public class EaglerProfile {
 	public static int presetCapeId;
 	public static int customCapeId;
 
-	public static final List<CustomSkin> customSkins = new ArrayList();
-	public static final List<CustomCape> customCapes = new ArrayList();
+	public static boolean isServerSkinOverride = false;
+	public static int overridePresetSkinId = -1;
+	public static final ResourceLocation overrideCustomSkinTexture = new ResourceLocation("eagler:skins/custom/tex_server_override");
+	public static EaglerSkinTexture overrideCustomSkin = null;
+	public static SkinModel overrideCustomSkinModel = SkinModel.STEVE;
+
+	public static boolean isServerCapeOverride = false;
+	public static int overridePresetCapeId = -1;
+	public static final ResourceLocation overrideCustomCapeTexture = new ResourceLocation("eagler:capes/custom/tex_server_override");
+	public static EaglerSkinTexture overrideCustomCape = null;
+
+	public static final List<CustomSkin> customSkins = new ArrayList<>();
+	public static final List<CustomCape> customCapes = new ArrayList<>();
 	
 	public static final EaglercraftRandom rand;
 	
 	public static ResourceLocation getActiveSkinResourceLocation() {
+		if(isServerSkinOverride) {
+			if(overridePresetSkinId == -1) {
+				return overrideCustomSkinTexture;
+			}else {
+				if(overridePresetSkinId >= 0 && overridePresetSkinId < DefaultSkins.defaultSkinsMap.length) {
+					return DefaultSkins.defaultSkinsMap[overridePresetSkinId].location;
+				}else {
+					return DefaultSkins.defaultSkinsMap[0].location;
+				}
+			}
+		}
 		if(presetSkinId == -1) {
 			if(customSkinId >= 0 && customSkinId < customSkins.size()) {
 				return customSkins.get(customSkinId).getResource();
@@ -65,6 +89,17 @@ public class EaglerProfile {
 	}
 	
 	public static SkinModel getActiveSkinModel() {
+		if(isServerSkinOverride) {
+			if(overridePresetSkinId == -1) {
+				return overrideCustomSkinModel;
+			}else {
+				if(overridePresetSkinId >= 0 && overridePresetSkinId < DefaultSkins.defaultSkinsMap.length) {
+					return DefaultSkins.defaultSkinsMap[overridePresetSkinId].model;
+				}else {
+					return DefaultSkins.defaultSkinsMap[0].model;
+				}
+			}
+		}
 		if(presetSkinId == -1) {
 			if(customSkinId >= 0 && customSkinId < customSkins.size()) {
 				return customSkins.get(customSkinId).model;
@@ -84,6 +119,17 @@ public class EaglerProfile {
 	}
 	
 	public static ResourceLocation getActiveCapeResourceLocation() {
+		if(isServerCapeOverride) {
+			if(overridePresetCapeId == -1) {
+				return overrideCustomCapeTexture;
+			}else {
+				if(overridePresetCapeId >= 0 && overridePresetCapeId < DefaultCapes.defaultCapesMap.length) {
+					return DefaultCapes.defaultCapesMap[overridePresetCapeId].location;
+				}else {
+					return DefaultCapes.defaultCapesMap[0].location;
+				}
+			}
+		}
 		if(presetCapeId == -1) {
 			if(customCapeId >= 0 && customCapeId < customCapes.size()) {
 				return customCapes.get(customCapeId).getResource();
@@ -118,10 +164,15 @@ public class EaglerProfile {
 		}
 	}
 
-	public static byte[] getSkinPacket() {
+	public static byte[] getSkinPacket(int vers) {
 		if(presetSkinId == -1) {
 			if(customSkinId >= 0 && customSkinId < customSkins.size()) {
-				return SkinPackets.writeMySkinCustom(customSkins.get(customSkinId));
+				CustomSkin toSend = customSkins.get(customSkinId);
+				if(vers <= 3) {
+					return SkinPackets.writeMySkinCustomV3(toSend);
+				}else {
+					return SkinPackets.writeMySkinCustomV4(toSend);
+				}
 			}else {
 				customSkinId = -1;
 				presetSkinId = 0;
@@ -154,6 +205,59 @@ public class EaglerProfile {
 				return CapePackets.writeMyCapePreset(0);
 			}
 		}
+	}
+
+	public static void handleForceSkinPreset(int preset) {
+		isServerSkinOverride = true;
+		overridePresetSkinId = preset;
+		ServerSkinCache.needReloadClientSkin = true;
+	}
+
+	public static void handleForceSkinCustom(int modelID, byte[] datav3) {
+		if(datav3.length != 16384) {
+			return;
+		}
+		isServerSkinOverride = true;
+		overridePresetSkinId = -1;
+		overrideCustomSkinModel = SkinModel.getModelFromId(modelID);
+		if(overrideCustomSkinModel.highPoly != null) {
+			overrideCustomSkinModel = SkinModel.STEVE;
+		}
+		if(overrideCustomSkin == null) {
+			overrideCustomSkin = new EaglerSkinTexture(datav3, 64, 64);
+			Minecraft.getMinecraft().getTextureManager().loadTexture(overrideCustomSkinTexture, overrideCustomSkin);
+		}else {
+			overrideCustomSkin.copyPixelsIn(datav3);
+		}
+		ServerSkinCache.needReloadClientSkin = true;
+	}
+
+	public static void handleForceCapePreset(int preset) {
+		isServerCapeOverride = true;
+		overridePresetCapeId = preset;
+		ServerCapeCache.needReloadClientCape = true;
+	}
+
+	public static void handleForceCapeCustom(byte[] custom) {
+		if(custom.length != 1173) {
+			return;
+		}
+		byte[] pixels32x32 = new byte[4096];
+		SkinConverter.convertCape23x17RGBto32x32RGBA(custom, pixels32x32);
+		isServerCapeOverride = true;
+		overridePresetCapeId = -1;
+		if(overrideCustomCape == null) {
+			overrideCustomCape = new EaglerSkinTexture(pixels32x32, 32, 32);
+			Minecraft.getMinecraft().getTextureManager().loadTexture(overrideCustomCapeTexture, overrideCustomCape);
+		}else {
+			overrideCustomCape.copyPixelsIn(pixels32x32);
+		}
+		ServerCapeCache.needReloadClientCape = true;
+	}
+
+	public static void clearServerSkinOverride() {
+		isServerSkinOverride = false;
+		isServerCapeOverride = false;
 	}
 
 	private static boolean doesSkinExist(String name) {
@@ -362,7 +466,7 @@ public class EaglerProfile {
 		rand = new EaglercraftRandom();
 		
 		do {
-			username = defaultNames[rand.nextInt(defaultNames.length)] + defaultNames[rand.nextInt(defaultNames.length)] + (100 + rand.nextInt(900));
+			username = HString.format("%s%s%04d", defaultNames[rand.nextInt(defaultNames.length)], defaultNames[rand.nextInt(defaultNames.length)], rand.nextInt(10000));
 		}while(username.length() > 16);
 		
 		setName(username);
@@ -375,6 +479,10 @@ public class EaglerProfile {
 		presetCapeId = 0;
 		customCapeId = -1;
 		
+	}
+
+	public static boolean isDefaultUsername(String str) {
+		return str.toLowerCase().matches("^(yeeish|yee|yeer|yeeler|eagler|eagl|darver|darvler|vool|vigg|deev|yigg|yeeg){2}\\d{2,4}$");
 	}
 
 }

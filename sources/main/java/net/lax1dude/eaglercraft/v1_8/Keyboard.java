@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import net.lax1dude.eaglercraft.v1_8.internal.KeyboardConstants;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,6 +13,13 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import net.lax1dude.eaglercraft.v1_8.internal.EnumFireKeyboardEvent;
+import net.lax1dude.eaglercraft.v1_8.internal.KeyboardConstants;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
+
 public class Keyboard {
 	
 	public static void enableRepeatEvents(boolean b) {
@@ -58,6 +60,14 @@ public class Keyboard {
 
 	public static boolean isRepeatEvent() {
 		return PlatformInput.keyboardIsRepeatEvent();
+	}
+
+	public static void fireEvent(EnumFireKeyboardEvent eventType, int eagKey, char keyChar) {
+		PlatformInput.keyboardFireEvent(eventType, eagKey, keyChar);
+	}
+
+	public static boolean areKeysLocked() {
+		return PlatformInput.keyboardAreKeysLocked();
 	}
 
 }

@@ -1,11 +1,14 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> DELETE  2  @  2 : 3
+> CHANGE  2 : 4  @  2 : 3
+
+~ import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
+~ 
 
 > CHANGE  3 : 4  @  3 : 4
 
@@ -15,7 +18,7 @@
 
 + import java.util.Arrays;
 
-> CHANGE  2 : 29  @  2 : 4
+> CHANGE  2 : 30  @  2 : 4
 
 ~ 
 ~ import net.lax1dude.eaglercraft.v1_8.EagRuntime;
@@ -32,6 +35,7 @@
 ~ import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
 ~ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 ~ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+~ import net.lax1dude.eaglercraft.v1_8.minecraft.MainMenuSkyboxTexture;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.WorldRenderer;
@@ -49,9 +53,9 @@
 
 ~ import net.minecraft.client.audio.PositionedSoundRecord;
 
-> DELETE  1  @  1 : 2
+> DELETE  1  @  1 : 3
 
-> DELETE  3  @  3 : 5
+> DELETE  2  @  2 : 4
 
 > DELETE  2  @  2 : 3
 
@@ -70,9 +74,10 @@
 + 	private static final byte[] sha1def = new byte[] { -107, 77, 108, 49, 11, -100, -8, -119, -1, -100, -85, -55, 18,
 + 			-69, -107, 113, -93, -101, -79, 32 };
 
-> CHANGE  3 : 4  @  3 : 4
+> CHANGE  3 : 5  @  3 : 4
 
-~ 	private static DynamicTexture viewportTexture = null;
+~ 	private static MainMenuSkyboxTexture viewportTexture = null;
+~ 	private static MainMenuSkyboxTexture viewportTexture2 = null;
 
 > DELETE  1  @  1 : 2
 
@@ -86,9 +91,10 @@
 
 > DELETE  7  @  7 : 9
 
-> CHANGE  6 : 11  @  6 : 8
+> CHANGE  6 : 12  @  6 : 8
 
 ~ 	private static ResourceLocation backgroundTexture = null;
+~ 	private static ResourceLocation backgroundTexture2 = null;
 ~ 	private GuiUpdateCheckerOverlay updateCheckerOverlay;
 ~ 	private GuiButton downloadOfflineButton;
 ~ 	private boolean enableBlur = true;
@@ -182,16 +188,17 @@
 
 ~ 	protected void keyTyped(char parChar1, int parInt1) {
 
-> CHANGE  3 : 9  @  3 : 7
+> CHANGE  3 : 10  @  3 : 6
 
 ~ 		if (viewportTexture == null) {
-~ 			viewportTexture = new DynamicTexture(256, 256);
+~ 			viewportTexture = new MainMenuSkyboxTexture(256, 256);
 ~ 			backgroundTexture = this.mc.getTextureManager().getDynamicTextureLocation("background", viewportTexture);
+~ 			viewportTexture2 = new MainMenuSkyboxTexture(256, 256);
+~ 			backgroundTexture2 = this.mc.getTextureManager().getDynamicTextureLocation("background", viewportTexture2);
 ~ 		}
 ~ 		this.updateCheckerOverlay.setResolution(mc, width, height);
-~ 		Calendar calendar = EagRuntime.getLocaleCalendar();
 
-> DELETE  9  @  9 : 10
+> DELETE  10  @  10 : 11
 
 > INSERT  1 : 8  @  1
 
@@ -319,18 +326,68 @@
 
 > CHANGE  5 : 6  @  5 : 6
 
-~ 		byte b0 = enableBlur ? (byte) 8 : (byte) 1;
+~ 		byte b0 = enableBlur ? (byte) 4 : (byte) 1;
 
-> CHANGE  61 : 65  @  61 : 65
+> CHANGE  61 : 64  @  61 : 65
 
-~ 		this.mc.getTextureManager().bindTexture(backgroundTexture);
 ~ 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 ~ 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-~ 		EaglercraftGPU.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 256, 256);
+~ 		// EaglercraftGPU.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 256, 256);
 
-> DELETE  30  @  30 : 31
+> CHANGE  30 : 31  @  30 : 31
 
-> DELETE  9  @  9 : 10
+~ 		viewportTexture.bindFramebuffer();
+
+> INSERT  1 : 3  @  1
+
++ 		GlStateManager.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
++ 		GlStateManager.clear(16384);
+
+> INSERT  1 : 5  @  1
+
++ 		viewportTexture2.bindFramebuffer();
++ 		GlStateManager.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
++ 		GlStateManager.clear(16384);
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture);
+
+> INSERT  1 : 3  @  1
+
++ 		viewportTexture.bindFramebuffer();
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture2);
+
+> INSERT  1 : 3  @  1
+
++ 		viewportTexture2.bindFramebuffer();
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture);
+
+> INSERT  1 : 3  @  1
+
++ 		viewportTexture.bindFramebuffer();
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture2);
+
+> INSERT  1 : 3  @  1
+
++ 		viewportTexture2.bindFramebuffer();
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture);
+
+> INSERT  1 : 3  @  1
+
++ 		viewportTexture.bindFramebuffer();
++ 		this.mc.getTextureManager().bindTexture(backgroundTexture2);
+
+> CHANGE  1 : 12  @  1 : 3
+
+~ 
+~ 		// Notch fucked up, the last iteration is not necessary, in the vanilla renderer
+~ 		// it is unintentionally discarded and the previous iteration is used
+~ 
+~ 		// viewportTexture2.bindFramebuffer();
+~ 		// this.mc.getTextureManager().bindTexture(backgroundTexture);
+~ 		// this.rotateAndBlurSkybox(parFloat1);
+~ 
+~ 		_wglBindFramebuffer(0x8D40, null);
+~ 
+~ 		this.mc.getTextureManager().bindTexture(backgroundTexture);
 
 > CHANGE  22 : 27  @  22 : 23
 
@@ -342,7 +399,14 @@
 
 > DELETE  1  @  1 : 3
 
-> CHANGE  7 : 12  @  7 : 8
+> CHANGE  3 : 7  @  3 : 5
+
+~ 		if (enableBlur) {
+~ 			this.drawGradientRect(0, 0, this.width, this.height, -2130706433, 16777215);
+~ 			this.drawGradientRect(0, 0, this.width, this.height, 0, Integer.MIN_VALUE);
+~ 		}
+
+> CHANGE  2 : 7  @  2 : 3
 
 ~ 		boolean minc = (double) this.updateCounter < 1.0E-4D;
 ~ 		if (this.isDefault) {

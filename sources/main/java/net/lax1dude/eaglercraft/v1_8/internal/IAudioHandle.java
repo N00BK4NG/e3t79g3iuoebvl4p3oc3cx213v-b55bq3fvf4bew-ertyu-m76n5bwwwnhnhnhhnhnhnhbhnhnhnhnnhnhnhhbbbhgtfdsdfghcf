@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,11 +13,16 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
 public interface IAudioHandle {
 
 	void pause(boolean setPaused);
 	
 	void restart();
+
+	void repeat(boolean en);
 
 	void move(float x, float y, float z);
 	

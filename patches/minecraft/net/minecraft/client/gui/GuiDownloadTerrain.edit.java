@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -11,11 +11,16 @@
 
 ~ 	protected void keyTyped(char parChar1, int parInt1) {
 
-> INSERT  24 : 28  @  24
+> INSERT  24 : 33  @  24
 
 + 
 + 	public boolean shouldHangupIntegratedServer() {
 + 		return false;
 + 	}
++ 
++ 	public boolean canCloseGui() {
++ 		return false;
++ 	}
++ 
 
 > EOF

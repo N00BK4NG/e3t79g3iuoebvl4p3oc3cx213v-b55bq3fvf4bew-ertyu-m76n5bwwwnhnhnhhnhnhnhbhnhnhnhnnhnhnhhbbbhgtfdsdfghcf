@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query;
-
-import java.net.InetAddress;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,6 +13,15 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerList
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query;
+
+import java.net.InetAddress;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
+
 public interface MOTDConnection {
 
 	boolean isClosed();
@@ -31,7 +33,7 @@ public interface MOTDConnection {
 	long getConnectionTimestamp();
 	
 	public default long getConnectionAge() {
-		return System.currentTimeMillis() - getConnectionTimestamp();
+		return EaglerXBungeeAPIHelper.steadyTimeMillis() - getConnectionTimestamp();
 	}
 	
 	void sendToUser();

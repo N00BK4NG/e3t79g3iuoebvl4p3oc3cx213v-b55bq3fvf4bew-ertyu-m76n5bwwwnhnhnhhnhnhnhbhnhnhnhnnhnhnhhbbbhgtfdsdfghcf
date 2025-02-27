@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -36,5 +36,12 @@
 ~ 		this.scatteredFeatureGenerator = new MapGenScatteredFeature(scramble);
 ~ 		this.ravineGenerator = new MapGenRavine(scramble);
 ~ 		this.oceanMonumentGenerator = new StructureOceanMonument(scramble);
+
+> INSERT  421 : 425  @  421
+
++ 
++ 	public Chunk getLoadedChunk(int var1, int var2) {
++ 		return provideChunk(var1, var2);
++ 	}
 
 > EOF

@@ -1,25 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.opengl;
-
-import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.IBufferArrayGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IBufferGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
-import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
-import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionConstants;
-import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.DeferredStateManager;
-import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
-import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
-
-/**
- * Copyright (c) 2022 lax1dude. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -33,12 +13,35 @@ import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl;
+
+import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.IVertexArrayGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IBufferGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.DeferredStateManager;
+import net.lax1dude.eaglercraft.v1_8.vector.Matrix4f;
+import net.lax1dude.eaglercraft.v1_8.vector.Vector4f;
+
 public class InstancedFontRenderer {
 
 	private static final Logger logger = LogManager.getLogger("InstancedFontRenderer");
 
 	public static final String vertexShaderPath = "/assets/eagler/glsl/accel_font.vsh";
+	public static final String vertexShaderPrecision = "precision lowp int;\nprecision highp float;\nprecision mediump sampler2D;\n";
+
 	public static final String fragmentShaderPath = "/assets/eagler/glsl/accel_font.fsh";
+	public static final String fragmentShaderPrecision = "precision lowp int;\nprecision highp float;\nprecision mediump sampler2D;\n";
 
 	private static final int BYTES_PER_CHARACTER = 10;
 	private static final int CHARACTER_LIMIT = 6553;
@@ -51,7 +54,7 @@ public class InstancedFontRenderer {
 	private static IUniformGL u_color4f = null;
 	private static IUniformGL u_colorBias4f = null;
 
-	private static IBufferArrayGL vertexArray = null;
+	private static IVertexArrayGL vertexArray = null;
 	private static IBufferGL vertexBuffer = null;
 
 	private static IBufferGL instancesBuffer = null;
@@ -78,21 +81,13 @@ public class InstancedFontRenderer {
 	private static float charCoordHeightValue = -1.0f;
 	
 	static void initialize() {
-		
-		String vertexSource = EagRuntime.getResourceString(vertexShaderPath);
-		if(vertexSource == null) {
-			throw new RuntimeException("InstancedFontRenderer shader \"" + vertexShaderPath + "\" is missing!");
-		}
-
-		String fragmentSource = EagRuntime.getResourceString(fragmentShaderPath);
-		if(fragmentSource == null) {
-			throw new RuntimeException("InstancedFontRenderer shader \"" + fragmentShaderPath + "\" is missing!");
-		}
+		String vertexSource = EagRuntime.getRequiredResourceString(vertexShaderPath);
+		String fragmentSource = EagRuntime.getRequiredResourceString(fragmentShaderPath);
 
 		IShaderGL vert = _wglCreateShader(GL_VERTEX_SHADER);
 		IShaderGL frag = _wglCreateShader(GL_FRAGMENT_SHADER);
 
-		_wglShaderSource(vert, FixedFunctionConstants.VERSION + "\n" + vertexSource);
+		_wglShaderSource(vert, GLSLHeader.getVertexHeaderCompat(vertexSource, vertexShaderPrecision));
 		_wglCompileShader(vert);
 
 		if(_wglGetShaderi(vert, GL_COMPILE_STATUS) != GL_TRUE) {
@@ -107,7 +102,7 @@ public class InstancedFontRenderer {
 			throw new IllegalStateException("Vertex shader \"" + vertexShaderPath + "\" could not be compiled!");
 		}
 
-		_wglShaderSource(frag, FixedFunctionConstants.VERSION + "\n" + fragmentSource);
+		_wglShaderSource(frag, GLSLHeader.getFragmentHeaderCompat(fragmentSource, fragmentShaderPrecision));
 		_wglCompileShader(frag);
 
 		if(_wglGetShaderi(frag, GL_COMPILE_STATUS) != GL_TRUE) {
@@ -126,6 +121,10 @@ public class InstancedFontRenderer {
 
 		_wglAttachShader(shaderProgram, vert);
 		_wglAttachShader(shaderProgram, frag);
+
+		if(EaglercraftGPU.checkOpenGLESVersion() == 200) {
+			VSHInputLayoutParser.applyLayout(shaderProgram, VSHInputLayoutParser.getShaderInputs(vertexSource));
+		}
 
 		_wglLinkProgram(shaderProgram);
 
@@ -161,60 +160,62 @@ public class InstancedFontRenderer {
 
 		_wglUniform1i(_wglGetUniformLocation(shaderProgram, "u_inputTexture"), 0);
 
-		vertexArray = _wglGenVertexArrays();
+		vertexArray = EaglercraftGPU.createGLVertexArray();
 		vertexBuffer = _wglGenBuffers();
 		instancesBuffer = _wglGenBuffers();
 
 		FloatBuffer verts = EagRuntime.allocateFloatBuffer(108);
+		float paddingA = 0.005f;
+		float paddingB = 1.0f - paddingA;
 		verts.put(new float[] {
 				
 				// (0 - 6 - 12) regular:
 				
-				0.0f, 0.0f, 0.25f,  0.0f, 1.0f, 0.25f,  1.0f, 0.0f, 0.25f,
-				1.0f, 0.0f, 0.25f,  0.0f, 1.0f, 0.25f,  1.0f, 1.0f, 0.25f,
-				0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
-				1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f, 0.0f,
+				paddingA, paddingA, 0.25f,  paddingA, paddingB, 0.25f,  paddingB, paddingA, 0.25f,
+				paddingB, paddingA, 0.25f,  paddingA, paddingB, 0.25f,  paddingB, paddingB, 0.25f,
+				paddingA, paddingA, 0.0f,  paddingA, paddingB, 0.0f,  paddingB, paddingA, 0.0f,
+				paddingB, paddingA, 0.0f,  paddingA, paddingB, 0.0f,  paddingB, paddingB, 0.0f,
 
 				// (12 - 24 - 36) bold shadow:
 
-				0.0f, 0.0f, 0.25f,  0.0f, 1.0f, 0.25f,  1.0f, 0.0f, 0.25f,
-				1.0f, 0.0f, 0.25f,  0.0f, 1.0f, 0.25f,  1.0f, 1.0f, 0.25f,
-				0.0f, 0.0f, 0.75f,  0.0f, 1.0f, 0.75f,  1.0f, 0.0f, 0.75f,
-				1.0f, 0.0f, 0.75f,  0.0f, 1.0f, 0.75f,  1.0f, 1.0f, 0.75f,
+				paddingA, paddingA, 0.25f,  paddingA, paddingB, 0.25f,  paddingB, paddingA, 0.25f,
+				paddingB, paddingA, 0.25f,  paddingA, paddingB, 0.25f,  paddingB, paddingB, 0.25f,
+				paddingA, paddingA, 0.75f,  paddingA, paddingB, 0.75f,  paddingB, paddingA, 0.75f,
+				paddingB, paddingA, 0.75f,  paddingA, paddingB, 0.75f,  paddingB, paddingB, 0.75f,
 
-				0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
-				1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f, 0.0f,
-				0.0f, 0.0f, 0.5f,  0.0f, 1.0f, 0.5f,  1.0f, 0.0f, 0.5f,
-				1.0f, 0.0f, 0.5f,  0.0f, 1.0f, 0.5f,  1.0f, 1.0f, 0.5f
+				paddingA, paddingA, 0.0f,  paddingA, paddingB, 0.0f,  paddingB, paddingA, 0.0f,
+				paddingB, paddingA, 0.0f,  paddingA, paddingB, 0.0f,  paddingB, paddingB, 0.0f,
+				paddingA, paddingA, 0.5f,  paddingA, paddingB, 0.5f,  paddingB, paddingA, 0.5f,
+				paddingB, paddingA, 0.5f,  paddingA, paddingB, 0.5f,  paddingB, paddingB, 0.5f
 
 		});
 		verts.flip();
 
-		EaglercraftGPU.bindGLBufferArray(vertexArray);
+		EaglercraftGPU.bindGLVertexArray(vertexArray);
 
-		EaglercraftGPU.bindGLArrayBuffer(vertexBuffer);
+		EaglercraftGPU.bindVAOGLArrayBufferNow(vertexBuffer);
 		_wglBufferData(GL_ARRAY_BUFFER, verts, GL_STATIC_DRAW);
 
 		EagRuntime.freeFloatBuffer(verts);
 
-		_wglEnableVertexAttribArray(0);
-		_wglVertexAttribPointer(0, 3, GL_FLOAT, false, 12, 0);
-		_wglVertexAttribDivisor(0, 0);
+		EaglercraftGPU.enableVertexAttribArray(0);
+		EaglercraftGPU.vertexAttribPointer(0, 3, GL_FLOAT, false, 12, 0);
+		EaglercraftGPU.vertexAttribDivisor(0, 0);
 
-		EaglercraftGPU.bindGLArrayBuffer(instancesBuffer);
+		EaglercraftGPU.bindVAOGLArrayBufferNow(instancesBuffer);
 		_wglBufferData(GL_ARRAY_BUFFER, fontDataBuffer.remaining(), GL_STREAM_DRAW);
 
-		_wglEnableVertexAttribArray(1);
-		_wglVertexAttribPointer(1, 2, GL_SHORT, false, 10, 0);
-		_wglVertexAttribDivisor(1, 1);
+		EaglercraftGPU.enableVertexAttribArray(1);
+		EaglercraftGPU.vertexAttribPointer(1, 2, GL_SHORT, false, 10, 0);
+		EaglercraftGPU.vertexAttribDivisor(1, 1);
 
-		_wglEnableVertexAttribArray(2);
-		_wglVertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, false, 10, 4);
-		_wglVertexAttribDivisor(2, 1);
+		EaglercraftGPU.enableVertexAttribArray(2);
+		EaglercraftGPU.vertexAttribPointer(2, 2, GL_UNSIGNED_BYTE, false, 10, 4);
+		EaglercraftGPU.vertexAttribDivisor(2, 1);
 
-		_wglEnableVertexAttribArray(3);
-		_wglVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, true, 10, 6);
-		_wglVertexAttribDivisor(3, 1);
+		EaglercraftGPU.enableVertexAttribArray(3);
+		EaglercraftGPU.vertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, true, 10, 6);
+		EaglercraftGPU.vertexAttribDivisor(3, 1);
 		
 	}
 
@@ -369,7 +370,7 @@ public class InstancedFontRenderer {
 		}
 
 		EaglercraftGPU.bindGLArrayBuffer(instancesBuffer);
-		EaglercraftGPU.bindGLBufferArray(vertexArray);
+		EaglercraftGPU.bindGLVertexArray(vertexArray);
 
 		if(charactersDrawn > 0) {
 			int p = fontDataBuffer.position();
@@ -381,7 +382,7 @@ public class InstancedFontRenderer {
 			fontDataBuffer.position(p);
 			fontDataBuffer.limit(l);
 
-			_wglDrawArraysInstanced(GL_TRIANGLES, shadow ? 0 : 6, shadow ? 12 : 6, charactersDrawn);
+			EaglercraftGPU.drawArraysInstanced(GL_TRIANGLES, shadow ? 0 : 6, shadow ? 12 : 6, charactersDrawn);
 		}
 
 		if(boldCharactersDrawn > 0) {
@@ -394,7 +395,7 @@ public class InstancedFontRenderer {
 			fontBoldDataBuffer.position(p);
 			fontBoldDataBuffer.limit(l);
 
-			_wglDrawArraysInstanced(GL_TRIANGLES, shadow ? 12 : 24, shadow ? 24 : 12, boldCharactersDrawn);
+			EaglercraftGPU.drawArraysInstanced(GL_TRIANGLES, shadow ? 12 : 24, shadow ? 24 : 12, boldCharactersDrawn);
 		}
 	}
 
@@ -413,7 +414,7 @@ public class InstancedFontRenderer {
 		buf.putShort((short)y);
 		buf.put((byte)cx);
 		buf.put((byte)cy);
-		color = ((color >> 1) & 0x7F000000) | (color & 0xFFFFFF);
+		color = ((color >>> 1) & 0x7F000000) | (color & 0xFFFFFF);
 		if(italic) {
 			color |= 0x80000000;
 		}
@@ -438,7 +439,7 @@ public class InstancedFontRenderer {
 		buf.putShort((short)y);
 		buf.put((byte)cx);
 		buf.put((byte)cy);
-		color = ((color >> 1) & 0x7F000000) | (color & 0xFFFFFF);
+		color = ((color >>> 1) & 0x7F000000) | (color & 0xFFFFFF);
 		if(italic) {
 			color |= 0x80000000;
 		}
@@ -448,11 +449,47 @@ public class InstancedFontRenderer {
 		}
 	}
 
-	private static final void updateBounds(int x, int y) {
+	private static void updateBounds(int x, int y) {
 		if(x < widthCalcLeast || widthCalcLeast == Integer.MAX_VALUE) widthCalcLeast = x;
 		if(x > widthCalcMost || widthCalcMost == Integer.MAX_VALUE) widthCalcMost = x;
 		if(y < heightCalcLeast || heightCalcLeast == Integer.MAX_VALUE) heightCalcLeast = y;
 		if(y > heightCalcMost || heightCalcMost == Integer.MAX_VALUE) heightCalcMost = y;
+	}
+
+	public static void destroy() {
+		if(fontDataBuffer != null) {
+			EagRuntime.freeByteBuffer(fontDataBuffer);
+			fontDataBuffer = null;
+		}
+		if(fontBoldDataBuffer != null) {
+			EagRuntime.freeByteBuffer(fontBoldDataBuffer);
+			fontBoldDataBuffer = null;
+		}
+		if(shaderProgram != null) {
+			_wglDeleteProgram(shaderProgram);
+			shaderProgram = null;
+		}
+		if(matrixCopyBuffer != null) {
+			EagRuntime.freeFloatBuffer(matrixCopyBuffer);
+			matrixCopyBuffer = null;
+		}
+		u_matrixTransform = null;
+		u_charSize2f = null;
+		u_charCoordSize2f = null;
+		u_color4f = null;
+		u_colorBias4f = null;
+		if(vertexArray != null) {
+			EaglercraftGPU.destroyGLVertexArray(vertexArray);
+			vertexArray = null;
+		}
+		if(vertexBuffer != null) {
+			_wglDeleteBuffers(vertexBuffer);
+			vertexBuffer = null;
+		}
+		if(instancesBuffer != null) {
+			_wglDeleteBuffers(instancesBuffer);
+			instancesBuffer = null;
+		}
 	}
 
 }

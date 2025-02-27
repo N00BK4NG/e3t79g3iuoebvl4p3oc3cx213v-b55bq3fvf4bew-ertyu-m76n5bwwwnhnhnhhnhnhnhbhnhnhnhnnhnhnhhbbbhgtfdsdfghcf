@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config;
 
 import java.io.File;
@@ -16,21 +32,6 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.config.Configuration;
 
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class EaglerListenerConfig extends ListenerInfo {
 
 	static EaglerListenerConfig loadConfig(Configuration config, Map<String, HttpContentType> contentTypes) {
@@ -74,8 +75,17 @@ public class EaglerListenerConfig extends ListenerInfo {
 		for(int i = 0, l = serverMOTD.size(); i < l; ++i) {
 			serverMOTD.set(i, ChatColor.translateAlternateColorCodes('&', serverMOTD.get(i)));
 		}
-		boolean allowMOTD = config.getBoolean("allow_motd", false);
-		boolean allowQuery = config.getBoolean("allow_query", false);
+		boolean allowMOTD = config.getBoolean("allow_motd", true);
+		boolean allowQuery = config.getBoolean("allow_query", true);
+		int minMCProtocol = config.getInt("min_minecraft_protocol", 47);
+		int maxMCProtocol = config.getInt("max_minecraft_protocol", 340);
+		boolean allowV3 = config.getBoolean("allow_protocol_v3", true);
+		boolean allowV4 = config.getBoolean("allow_protocol_v4", true);
+		if(!allowV3 && !allowV4) {
+			throw new IllegalArgumentException("Both v3 and v4 protocol are disabled!");
+		}
+		int defragSendDelay = config.getInt("protocol_v4_defrag_send_delay", 10);
+		boolean haproxyProtocol = config.getBoolean("use_haproxy_protocol", false);
 		
 		int cacheTTL = 7200;
 		boolean cacheAnimation = false;
@@ -102,8 +112,8 @@ public class EaglerListenerConfig extends ListenerInfo {
 				page404 = null;
 			}
 			List<String> defaultIndex = Arrays.asList("index.html", "index.htm");
-			List indexPageRaw = httpServerConf.getList("page_index_name", defaultIndex);
-			List<String> indexPage = new ArrayList(indexPageRaw.size());
+			List<?> indexPageRaw = httpServerConf.getList("page_index_name", defaultIndex);
+			List<String> indexPage = new ArrayList<>(indexPageRaw.size());
 			
 			for(int i = 0, l = indexPageRaw.size(); i < l; ++i) {
 				Object o = indexPageRaw.get(i);
@@ -151,7 +161,8 @@ public class EaglerListenerConfig extends ListenerInfo {
 				cacheTrending, cachePortfolios);
 		return new EaglerListenerConfig(hostv4, hostv6, maxPlayer, tabListType, defaultServer, forceDefaultServer,
 				forwardIp, forwardIpHeader, redirectLegacyClientsTo, serverIcon, serverMOTD, allowMOTD, allowQuery,
-				cacheConfig, httpServer, enableVoiceChat, ratelimitIp, ratelimitLogin, ratelimitMOTD, ratelimitQuery);
+				minMCProtocol, maxMCProtocol, allowV3, allowV4, defragSendDelay, haproxyProtocol, cacheConfig,
+				httpServer, enableVoiceChat, ratelimitIp, ratelimitLogin, ratelimitMOTD, ratelimitQuery);
 	}
 
 	private final InetSocketAddress address;
@@ -167,6 +178,12 @@ public class EaglerListenerConfig extends ListenerInfo {
 	private final List<String> serverMOTD;
 	private final boolean allowMOTD;
 	private final boolean allowQuery;
+	private final int minMCProtocol;
+	private final int maxMCProtocol;
+	private final boolean allowV3;
+	private final boolean allowV4;
+	private final int defragSendDelay;
+	private final boolean haproxyProtocol;
 	private final MOTDCacheConfiguration motdCacheConfig;
 	private final HttpWebServer webServer;
 	private boolean serverIconSet = false;
@@ -180,9 +197,10 @@ public class EaglerListenerConfig extends ListenerInfo {
 	public EaglerListenerConfig(InetSocketAddress address, InetSocketAddress addressV6, int maxPlayer,
 			String tabListType, String defaultServer, boolean forceDefaultServer, boolean forwardIp,
 			String forwardIpHeader, String redirectLegacyClientsTo, String serverIcon, List<String> serverMOTD,
-			boolean allowMOTD, boolean allowQuery, MOTDCacheConfiguration motdCacheConfig, HttpWebServer webServer,
-			boolean enableVoiceChat, EaglerRateLimiter ratelimitIp, EaglerRateLimiter ratelimitLogin,
-			EaglerRateLimiter ratelimitMOTD, EaglerRateLimiter ratelimitQuery) {
+			boolean allowMOTD, boolean allowQuery, int minMCProtocol, int maxMCProtocol, boolean allowV3,
+			boolean allowV4, int defragSendDelay, boolean haproxyProtocol, MOTDCacheConfiguration motdCacheConfig,
+			HttpWebServer webServer, boolean enableVoiceChat, EaglerRateLimiter ratelimitIp,
+			EaglerRateLimiter ratelimitLogin, EaglerRateLimiter ratelimitMOTD, EaglerRateLimiter ratelimitQuery) {
 		super(address, String.join("\n", serverMOTD), maxPlayer, 60, Arrays.asList(defaultServer), forceDefaultServer,
 				Collections.emptyMap(), tabListType, false, false, 0, false, false);
 		this.address = address;
@@ -198,6 +216,12 @@ public class EaglerListenerConfig extends ListenerInfo {
 		this.serverMOTD = serverMOTD;
 		this.allowMOTD = allowMOTD;
 		this.allowQuery = allowQuery;
+		this.minMCProtocol = minMCProtocol;
+		this.maxMCProtocol = maxMCProtocol;
+		this.allowV3 = allowV3;
+		this.allowV4 = allowV4;
+		this.defragSendDelay = defragSendDelay;
+		this.haproxyProtocol = haproxyProtocol;
 		this.motdCacheConfig = motdCacheConfig;
 		this.webServer = webServer;
 		this.enableVoiceChat = enableVoiceChat;
@@ -272,7 +296,31 @@ public class EaglerListenerConfig extends ListenerInfo {
 	public boolean isAllowQuery() {
 		return allowQuery;
 	}
-	
+
+	public int getMinMCProtocol() {
+		return minMCProtocol;
+	}
+
+	public int getMaxMCProtocol() {
+		return maxMCProtocol;
+	}
+
+	public boolean isAllowV3() {
+		return allowV3;
+	}
+
+	public boolean isAllowV4() {
+		return allowV4;
+	}
+
+	public int getDefragSendDelay() {
+		return defragSendDelay;
+	}
+
+	public boolean isHAProxyProtocol() {
+		return haproxyProtocol;
+	}
+
 	public HttpWebServer getWebServer() {
 		return webServer;
 	}

@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.ipc;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.function.Supplier;
-
-/**
+/*
  * Copyright (c) 2023-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,9 +13,20 @@ import java.util.function.Supplier;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.ipc;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.function.Supplier;
+
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.IntObjectMap;
+
 public class IPCPacketManager {
 	
-	public static final HashMap<Integer, Supplier<IPCPacketBase>> mappings = new HashMap();
+	public static final IntObjectMap<Supplier<IPCPacketBase>> mappings = new IntObjectHashMap<>();
 
 	public final IPCInputStream IPC_INPUT_STREAM = new IPCInputStream();
 	public final IPCOutputStream IPC_OUTPUT_STREAM = new IPCOutputStream();
@@ -55,8 +58,9 @@ public class IPCPacketManager {
 		mappings.put(IPCPacket17ConfigureLAN.ID, IPCPacket17ConfigureLAN::new);
 		mappings.put(IPCPacket18ClearPlayers.ID, IPCPacket18ClearPlayers::new);
 		mappings.put(IPCPacket19Autosave.ID, IPCPacket19Autosave::new);
-		mappings.put(IPCPacket20LoggerMessage.ID, IPCPacket20LoggerMessage::new);
-		mappings.put(IPCPacket21EnableLogging.ID, IPCPacket21EnableLogging::new);
+		mappings.put(IPCPacket1ALoggerMessage.ID, IPCPacket1ALoggerMessage::new);
+		mappings.put(IPCPacket1BEnableLogging.ID, IPCPacket1BEnableLogging::new);
+		mappings.put(IPCPacket1CIssueDetected.ID, IPCPacket1CIssueDetected::new);
 		mappings.put(IPCPacketFFProcessKeepAlive.ID, IPCPacketFFProcessKeepAlive::new);
 	}
 	

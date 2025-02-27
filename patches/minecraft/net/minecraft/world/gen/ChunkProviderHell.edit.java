@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -26,5 +26,12 @@
 ~ 		this.hellRNG = new EaglercraftRandom(parLong1, scramble);
 ~ 		this.genNetherBridge = new MapGenNetherBridge(scramble);
 ~ 		this.netherCaveGenerator = new MapGenCavesHell(scramble);
+
+> INSERT  351 : 355  @  351
+
++ 
++ 	public Chunk getLoadedChunk(int var1, int var2) {
++ 		return provideChunk(var1, var2);
++ 	}
 
 > EOF

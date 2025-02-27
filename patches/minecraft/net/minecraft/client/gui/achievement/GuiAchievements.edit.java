@@ -1,15 +1,16 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> CHANGE  2 : 7  @  2 : 4
+> CHANGE  2 : 8  @  2 : 4
 
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 ~ 
 ~ import net.lax1dude.eaglercraft.v1_8.Mouse;
+~ import net.lax1dude.eaglercraft.v1_8.PointerInputAbstraction;
 ~ import net.lax1dude.eaglercraft.v1_8.minecraft.EaglerTextureAtlasSprite;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 
@@ -28,7 +29,11 @@
 ~ 	protected int getCloseKey() {
 ~ 		return this.mc.gameSettings.keyBindInventory.getKeyCode();
 
-> CHANGE  76 : 77  @  76 : 77
+> CHANGE  11 : 12  @  11 : 12
+
+~ 			if (PointerInputAbstraction.getVCursorButtonDown(0)) {
+
+> CHANGE  64 : 65  @  64 : 65
 
 ~ 			GlStateManager.disableLighting();
 

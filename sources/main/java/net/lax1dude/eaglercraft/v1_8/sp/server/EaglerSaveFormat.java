@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2023-2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.sp.server;
 
 import java.util.ArrayList;
@@ -13,29 +29,14 @@ import net.minecraft.world.storage.SaveFormatComparator;
 import net.minecraft.world.storage.SaveFormatOld;
 import net.minecraft.world.storage.WorldInfo;
 
-/**
- * Copyright (c) 2023-2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class EaglerSaveFormat extends SaveFormatOld {
-
-	public static final VFile2 worldsList = new VFile2("worlds_list.txt");
-	public static final VFile2 worldsFolder = new VFile2("worlds");
 
 	public EaglerSaveFormat(VFile2 parFile) {
 		super(parFile);
 	}
+
+	public static final VFile2 worldsList = WorldsDB.newVFile("worlds_list.txt");
+	public static final VFile2 worldsFolder = WorldsDB.newVFile("worlds");
 
 	public String getName() {
 		return "eagler";
@@ -46,7 +47,7 @@ public class EaglerSaveFormat extends SaveFormatOld {
 	}
 
 	public List<SaveFormatComparator> getSaveList() {
-		ArrayList arraylist = Lists.newArrayList();
+		ArrayList<SaveFormatComparator> arraylist = Lists.newArrayList();
 		if(worldsList.exists()) {
 			String[] lines = worldsList.getAllLines();
 			for (int i = 0; i < lines.length; ++i) {
@@ -70,7 +71,7 @@ public class EaglerSaveFormat extends SaveFormatOld {
 	}
 
 	public void clearPlayers(String worldFolder) {
-		VFile2 file1 = new VFile2(this.savesDirectory, worldFolder, "player");
+		VFile2 file1 = WorldsDB.newVFile(this.savesDirectory, worldFolder, "player");
 		deleteFiles(file1.listFiles(true), null);
 	}
 
@@ -80,12 +81,12 @@ public class EaglerSaveFormat extends SaveFormatOld {
 
 	public boolean duplicateWorld(String worldFolder, String displayName) {
 		String newFolderName = displayName.replaceAll("[\\./\"]", "_");
-		VFile2 newFolder = new VFile2(savesDirectory, newFolderName);
-		while((new VFile2(newFolder, "level.dat")).exists() || (new VFile2(newFolder, "level.dat_old")).exists()) {
+		VFile2 newFolder = WorldsDB.newVFile(savesDirectory, newFolderName);
+		while((WorldsDB.newVFile(newFolder, "level.dat")).exists() || (WorldsDB.newVFile(newFolder, "level.dat_old")).exists()) {
 			newFolderName += "_";
-			newFolder = new VFile2(savesDirectory, newFolderName);
+			newFolder = WorldsDB.newVFile(savesDirectory, newFolderName);
 		}
-		VFile2 oldFolder = new VFile2(this.savesDirectory, worldFolder);
+		VFile2 oldFolder = WorldsDB.newVFile(this.savesDirectory, worldFolder);
 		String oldPath = oldFolder.getPath();
 		int totalSize = 0;
 		int lastUpdate = 0;
@@ -94,7 +95,7 @@ public class EaglerSaveFormat extends SaveFormatOld {
 		for(int i = 0, l = vfl.size(); i < l; ++i) {
 			VFile2 vf = vfl.get(i);
 			String fileNameRelative = vf.getPath().substring(oldPath.length() + 1);
-			totalSize += VFile2.copyFile(vf, new VFile2(finalNewFolder, fileNameRelative));
+			totalSize += VFile2.copyFile(vf, WorldsDB.newVFile(finalNewFolder, fileNameRelative));
 			if (totalSize - lastUpdate > 10000) {
 				lastUpdate = totalSize;
 				EaglerIntegratedServerWorker.sendProgress("singleplayer.busy.duplicating", totalSize);

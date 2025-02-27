@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
-
-import net.lax1dude.eaglercraft.v1_8.internal.IFramebufferGL;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.MathHelper;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,12 @@ import net.minecraft.util.MathHelper;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.MathHelper;
+
 public class TextureClockPBRImpl extends EaglerTextureAtlasSpritePBR {
 	private double smoothParam1;
 	private double smoothParam2;
@@ -27,7 +27,7 @@ public class TextureClockPBRImpl extends EaglerTextureAtlasSpritePBR {
 		super(spriteName);
 	}
 
-	public void updateAnimationPBR(IFramebufferGL[] copyColorFramebuffer, IFramebufferGL[] copyMaterialFramebuffer, int materialTexOffset) {
+	public void updateAnimationPBR() {
 		if (!this.frameTextureDataPBR[0].isEmpty()) {
 			Minecraft minecraft = Minecraft.getMinecraft();
 			double d0 = 0.0;
@@ -59,16 +59,32 @@ public class TextureClockPBRImpl extends EaglerTextureAtlasSpritePBR {
 
 			if (i != this.frameCounter) {
 				this.frameCounter = i;
-				animationCachePBR[0].copyFrameLevelsToTex2D(this.frameCounter, this.originX, this.originY, this.width,
-						this.height, copyColorFramebuffer);
-				if (!dontAnimateNormals)
-					animationCachePBR[1].copyFrameLevelsToTex2D(this.frameCounter, this.originX, this.originY,
-							this.width, this.height, copyMaterialFramebuffer);
-				if (!dontAnimateMaterial)
-					animationCachePBR[2].copyFrameLevelsToTex2D(this.frameCounter, this.originX,
-							this.originY + materialTexOffset, this.width, this.height, copyMaterialFramebuffer);
+				currentAnimUpdater = (mapWidth, mapHeight, mapLevel) -> {
+					animationCachePBR[0].copyFrameToTex2D(this.frameCounter, mapLevel, this.originX >> mapLevel,
+							this.originY >> mapLevel, this.width >> mapLevel, this.height >> mapLevel, mapWidth,
+							mapHeight);
+				};
+				if(!dontAnimateNormals || !dontAnimateMaterial) {
+					currentAnimUpdaterPBR = (mapWidth, mapHeight, mapLevel) -> {
+						if (!dontAnimateNormals)
+							animationCachePBR[1].copyFrameToTex2D(this.frameCounter, mapLevel, this.originX,
+									this.originY, this.width, this.height, mapWidth, mapHeight);
+						if (!dontAnimateMaterial)
+							animationCachePBR[2].copyFrameToTex2D(this.frameCounter, mapLevel, this.originX >> mapLevel,
+									(this.originY >> mapLevel) + (mapHeight >> 1), this.width >> mapLevel,
+									this.height >> mapLevel, mapWidth, mapHeight);
+					};
+				}else {
+					currentAnimUpdaterPBR = null;
+				}
+			}else {
+				currentAnimUpdater = null;
+				currentAnimUpdaterPBR = null;
 			}
 
+		}else {
+			currentAnimUpdater = null;
+			currentAnimUpdaterPBR = null;
 		}
 	}
 

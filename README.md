@@ -21,14 +21,14 @@
 
 ## Getting Started:
 
-### To compile the latest version of the client, on Windows:
+### To compile the latest version of the JavaScript client, on Windows:
 
 1. Make sure you have at least Java 11 installed and added to your PATH, it is recommended to use Java 17
 2. Download (clone) this repository to your computer
 3. Double click `CompileLatestClient.bat`, a GUI resembling a classic windows installer should open
 4. Follow the steps shown to you in the new window to finish compiling
 
-### To compile the latest version of the client, on Linux/macOS:
+### To compile the latest version of the JavaScript client, on Linux/macOS:
 
 1. Make sure you have at least Java 11 installed, it is recommended to use Java 17
 2. Download (clone) this repository to your computer
@@ -37,11 +37,25 @@
 5. Type `./CompileLatestClient.sh` and hit enter, a GUI resembling a classic windows installer should open
 6. Follow the steps shown to you in the new window to finish compiling
 
+### To set up the development environment
+
+1. Prepare the required files in the mcp918 folder ([readme](mcp918/readme.txt))
+2. Run the `build_init` script
+3. Run the `build_make_workspace` script
+
+## Browser Compatibility
+
+The JavaScript runtime of EaglercraftX 1.8 is currently known to work on browsers as old as Chrome 38 on Windows XP, the game supports both WebGL 1.0 and WebGL 2.0 however features such as dynamic lighting and PBR shaders require WebGL 2.0. The game also supports mobile browsers that don't have a keyboard or mouse, the game will enter touch screen mode automatically when touch input is detected. The game also includes an embedded OGG codec (JOrbis) for loading audio files on iOS where the browsers don't support loading OGG files in an AudioContext.
+
+## WebAssembly GC Support
+
+EaglercraftX 1.8 also has an experimental WebAssembly GC (WASM-GC) runtime, almost all of the features supported on the JavaScript runtime are also supported on the WebAssembly GC runtime, however it is still incompatible with several major browsers (especially Safari) and will not run in Chrome unless you can access the `chrome://flags` menu or request an origin trial token from Google for your website. Its based on experimental technology and may still crash sometimes due to browser bugs or unresolved issues in the Java to WASM compiler. Hopefully in the coming months the required feature (JSPI, WebAssembly JavaScript Promise Integration) will become enabled by default on the Chrome browser. It performs significantly better than the JavaScript client, around 50% more FPS and TPS in some cases, and will hopefully replace it someday. Just make sure you enable VSync when you play it, otherwise the game will run "too fast" and choke the browser's event loop, causing input lag.
+
+You can compile the WebAssembly GC runtime by creating a development environment (workspace) and reading the README in the "wasm_gc_teavm" folder.
+
 ## Singleplayer
 
-As of January 2024, singleplayer and shared worlds have been added to EaglercraftX 1.8.
-
-Worlds are saved to your browser's local storage and are available even if your device does not have an internet connection. You can also import and export worlds in EaglercraftX as EPK files to copy them between devices and send them to your friends.
+EaglercraftX 1.8 fully supports singleplayer mode through an integrated server. Worlds are saved to your browser's local storage and are available even if your device does not have an internet connection. You can also import and export worlds in EaglercraftX as EPK files to copy them between devices and send them to your friends.
 
 You can also import and export your existing vanilla Minecraft 1.8 worlds into EaglercraftX using ZIP files if you want to try playing all your old 1.8 maps in a modern browser. The glitch that caused some chunks to become corrupt when exporting worlds as vanilla in Eaglercraft 1.5.2 no longer happens in EaglercraftX 1.8, its perfect now. Beware that the inventories of LAN world players are not saved when the world is converted to vanilla, and pets (dogs, cats, horses, etc) might sometimes forget their owners due to the UUID changes.
 
@@ -53,11 +67,11 @@ If you would like to invite other players to join your singleplayer world and pl
 
 Once you press "Start Shared World", EaglercraftX 1.8 will give you a "join code" (usually 5 letters) to share with your friends. On a different device, go the "Multiplayer" screen and press "Direct Connect" and press "Join Shared World", enter the join code given to you when you started the shared world and press "Join World". Given a few seconds, the client should successfully be able to join your shared world from any other device on the internet that also has unrestricted internet access. If it does not work, check the "Network Settings" screen and make sure you and your friends all have the same set of shared world relay URLs configured or your clients will not be able to find each other.
 
-If you would like to host your own relay, the JAR file and instructions can be downloaded from the "Network Settings" screen in the client. EaglercraftX 1.8 uses the same "LAN world" relay server that is used by Eaglercraft 1.5.2, if you would like the relay source code find a random copy of the Eaglercraft 1.5.2 source code and it should be located in the "sp-relay" folder. The relay has not been updated since then, it has only been renamed from "LAN world relay" to "Shared world relay".
+If you would like to host your own relay, the JAR file and instructions can be downloaded from the "Network Settings" screen in the client. EaglercraftX 1.8 uses the same "LAN world" relay server that is used by Eaglercraft 1.5.2, however there have been several bug fixes. The current version is available in the `sp-relay/SharedWorldRelay` folder.
 
 ## PBR Shaders
 
-EaglercraftX 1.8 includes a deferred physically-based renderer modeled after the GTA V rendering engine with many new improvements and a novel raytracing technique for fast realistic reflections. It can be enabled in the "Shaders" menu in the game's options screen. Shader packs in EaglercraftX are just a component of resource packs, so any custom shaders you install will be in the form of a resource pack. EaglercraftX also comes with a very well optimized built-in PBR shader pack and also a built-in PBR material texture pack to give all blocks and items in the game realistic lighting and materials that looks better than most vanilla Minecraft shader packs. The default shader and texture packs were created from scratch by lax1dude, shaders packs made for vanilla Minecraft will not work in EaglercraftX and no shaders in EaglercraftX were taken from vanilla Minecraft shader packs.
+EaglercraftX 1.8 includes a deferred physically-based renderer modeled after the GTA V rendering engine with many new improvements and a novel raytracing technique for fast realistic reflections. It can be enabled in the "Shaders" menu in the game's options screen. Shader packs in EaglercraftX are just a component of resource packs, so any custom shaders you install will be in the form of a resource pack. EaglercraftX also comes with a very well optimized built-in PBR shader pack and also a built-in PBR material texture pack to give all blocks and items in the game realistic lighting and materials that looks better than most vanilla Minecraft shader packs. The default shader and texture packs were created from scratch by lax1dude, shaders packs made for vanilla Minecraft will not work in EaglercraftX and no shaders in EaglercraftX were taken from vanilla Minecraft shader packs. The shaders are not available in WebGL 1.0 mode or if floating point HDR render targets are not fully supported.
 
 ## Voice Chat
 
@@ -74,6 +88,14 @@ If you are creating a resource pack and want to disable the blur filter on the m
 To make a server for EaglercraftX 1.8 the recommended software to use is EaglercraftXBungee ("EaglerXBungee") which is included in this repository in the `gateway/EaglercraftXBungee` folder. This is a plugin designed to be used with BungeeCord to allow Eaglercraft players to join your BungeeCord server. It is assumed that the reader already knows what BungeeCord is and has a working server set up that is joinable via java edition. If you don't know what BungeeCord is, please research the topic yourself first before continuing. Waterfall and FlameCord have also been tested, but EaglerXBungee was natively compiled against BungeeCord.
 
 There is an experimental velocity plugin available in `gateway/EaglercraftXVelocity` but it is still in development and not recommended for public servers, so be sure to check for updates regularly if you use it. Configuration files are basically identical to EaglercraftXBungee so its safe to just directy copy in your old EaglercraftXBungee config files to the `plugins/eaglerxvelocity` folder and they should work with a minimal number of edits if you are migrating your network from BungeeCord to Velocity.
+
+**Warning:** Both EaglerXBungee and EaglerXVelocity perform a lot of reflection that will inevitably break after a while when BungeeCord or Velocity is updated upstream. Both plugins will display the precise build number of BungeeCord and Velocity that has been tested by the developers and known to be compatible with EaglerXBungee and EaglerXVelocity when the proxy first starts up. If you are experiencing issues, try checking the BungeeCord or Velocity website for old versions and find the closest version number to whatever the current compatible version number is that is printed by EaglerXBungee/EaglerXVelocity, it will probably fix whatever missing functions the error messages are complaining about.
+
+### Detailed READMEs
+
+- [**EaglerXBungee README**](README_EAGLERXBUNGEE.md)
+- [**EaglerXVelocity README**](README_EAGLERXVELOCITY.md)
+- [**EaglerXBukkitAPI README**](README_EAGLERXBUKKITAPI.md)
 
 ### Installation
 
@@ -150,6 +172,7 @@ The default eaglercraftXOpts values is this:
 - `demoMode:` whether to launch the game in java edition demo mode
 - `servers:` a list of default servers to display on the Multiplayer screen
 - `relays:` the default list of shared world relays to use for invites
+- `checkGLErrors:` if the game should check for opengl errors
 - `checkShaderGLErrors:` enables more verbose opengl error logging for the shaders
 - `enableDownloadOfflineButton:` whether to show a "Download Offline" button on the title screen
 - `downloadOfflineButtonLink:` overrides the download link for the "Download Offline" button
@@ -163,9 +186,38 @@ The default eaglercraftXOpts values is this:
 - `allowFNAWSkins:` can be used to disable the high poly FNAW skins
 - `localStorageNamespace:` can be used to change the prefix of the local storage keys (Default: `"_eaglercraftX"`)
 - `enableMinceraft:` can be used to disable the "Minceraft" title screen
+- `crashOnUncaughtExceptions:` display crash reports when `window.onerror` is fired
+- `openDebugConsoleOnLaunch:` open debug console automatically at launch
+- `fixDebugConsoleUnloadListener:` close debug console beforeunload instead of unload
+- `forceWebViewSupport:` if the server info webview should be allowed even on browsers without the required safety features
+- `enableWebViewCSP:` if the `csp` attibute should be set on the server info webview for extra security
+- `enableServerCookies:` can be used to disable server cookies
+- `allowServerRedirects:` if servers should be allowed to make the client reconnect to a different address
+- `autoFixLegacyStyleAttr:` if the viewport meta tag and style attributes on old offline downloads and websites should be automatically patched
+- `showBootMenuOnLaunch:` if the client should always show the boot menu on every launch
+- `bootMenuBlocksUnsignedClients:` if the boot menu should only be allowed to launch signed clients
+- `allowBootMenu:` can be used to disable the boot menu entirely
+- `forceProfanityFilter:` if the profanity filter should be forced enabled
+- `forceWebGL1:` if the game should force the browser to only use WebGL 1.0 for the canvas
+- `forceWebGL2:` if the game should force the browser to only use WebGL 2.0 for the canvas
+- `allowExperimentalWebGL1:` if the game should be allowed to create an `experimental-webgl` context
+- `useWebGLExt:` can be used to disable all OpenGL ES extensions to test the game on a pure WebGL 1.0/2.0 context
+- `useDelayOnSwap:` if the game should `setTimeout(..., 0)` every frame instead of using MessageChannel hacks
+- `useJOrbisAudioDecoder:` if OGG vorbis files should be decoded using the JOrbis Java OGG decoder instead of using the browser
+- `useXHRFetch:` if the game should use XMLHttpRequest for downloading resources instead of the fetch API
+- `useVisualViewport:` if the game should resize some GUIs relative to `window.visualViewport` (needed on mobile browsers when the keyboard is open)
+- `deobfStackTraces:` can be used to disable the runtime stack-trace deobfuscation, reduces micro stutters if the game is logging errors
+- `disableBlobURLs:` if the game should use `data:` URLs instead of `blob:` URLs for loading certain resources
+- `eaglerNoDelay:` can be used to disable "Vigg's Algorithm", an algorithm that delays and combines multiple EaglercraftX packets together if they are sent in the same tick (does not affect regular Minecraft 1.8 packets)
+- `ramdiskMode:` if worlds and resource packs should be stored in RAM instead of IndexedDB
+- `singleThreadMode:` if the game should run the client and integrated server in the same context instead of creating a worker object
+- `enableEPKVersionCheck:` if the game should attempt to bypass the browser's cache and retry downloading assets.epk when its outdated
+- `enforceVSync:` (WASM only) if the game should automatically re-enable VSync at launch if its disabled
 - `hooks:` can be used to define JavaScript callbacks for certain events
-    * `localStorageSaved:` JavaScript callback to save local storage keys
-    * `localStorageLoaded:` JavaScript callback to load local storage keys
+    * `localStorageSaved:` JavaScript callback to save local storage keys (key, data)
+    * `localStorageLoaded:` JavaScript callback to load local storage keys (key) returns data
+    * `crashReportShow:` JavaScript callback when a crash report is shown (report, customMessageCB)
+    * `screenChanged:` JavaScript callback when the screen changes/resizes (screenName, scaledWidth, scaledHeight, realWidth, realHeight, scaleFactor)
 
 ### Using Hooks
 
@@ -193,8 +245,19 @@ Be aware that the client will still save the key to the browser's local storage 
 
 On a normal client you will only ever need to handle local storage keys called `p` (profile), `g` (game settings), `s` (server list), `r` (shared world relays), in your hooks functions. Feel free to just ignore any other keys. It is guaranteed that the data the client stores will always be valid base64, so it is best practice to decode it to raw binary first if possible to reduce it's size before saving it to something like a MySQL database in your backend if you are trying to implement some kind of profile syncing system for your website. The keys already have GZIP compression applied to them by default so don't bother trying to compress them yourself a second time because it won't reduce their size.
 
+### Crash Report Hook
+
+The `crashReportShow` hook can be used to capture crash reports and append additional text to them. It takes two parameters, the crash report as a string and a callback function for appending text. Do not use the callback function outside the body of the hook.
+
+    hooks: {
+        crashReportShow: function(report, customMessageCB) {
+            // 'report' is crash report as a string
+            customMessageCB("Hello from crashReportShow hook!");
+        }
+    }
+
 ## Developing a Client
 
 There is currently no system in place to make forks of 1.8 and merge commits made to the patch files in this repository with the patch files or workspace of the fork, you're on your own if you try to keep a fork of this repo for reasons other than to contribute to it
 
-A javascript-based modding API resembling Minecraft Forge may be implemented someday though for adding custom content to the game.
+**Note:** If you are trying to use the desktop runtime on Linux, make sure you add the "desktopRuntime" folder to the `LD_LIBRARY_PATH` environment variable of the Java process. This should be done automatically by the Eclipse project's default run configuration, but it might not work properly on every system, or when the Eclipse project is imported into IntelliJ.

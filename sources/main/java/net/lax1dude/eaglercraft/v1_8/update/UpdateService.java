@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.update;
 
 import java.util.ArrayList;
@@ -14,21 +30,6 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformUpdateSvc;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class UpdateService {
 
 	private static final Logger logger = LogManager.getLogger("UpdateService");
@@ -37,9 +38,9 @@ public class UpdateService {
 	private static boolean isBundleDataValid = false;
 
 	private static UpdateCertificate latestUpdateFound = null;
-	private static final Set<UpdateCertificate> availableUpdates = new HashSet();
-	private static final Set<RawKnownCertHolder> fastUpdateKnownCheckSet = new HashSet();
-	private static final Set<UpdateCertificate> dismissedUpdates = new HashSet();
+	private static final Set<UpdateCertificate> availableUpdates = new HashSet<>();
+	private static final Set<RawKnownCertHolder> fastUpdateKnownCheckSet = new HashSet<>();
+	private static final Set<UpdateCertificate> dismissedUpdates = new HashSet<>();
 
 	private static class RawKnownCertHolder {
 
@@ -50,7 +51,7 @@ public class UpdateService {
 		public RawKnownCertHolder(byte[] data) {
 			this.data = data;
 			this.hashcode = Arrays.hashCode(data);
-			this.age = System.currentTimeMillis();
+			this.age = EagRuntime.steadyTimeMillis();
 		}
 
 		public int hashCode() {
@@ -176,7 +177,7 @@ public class UpdateService {
 
 	private static void freeMemory() {
 		if(fastUpdateKnownCheckSet.size() > 127) {
-			List<RawKnownCertHolder> lst = new ArrayList(fastUpdateKnownCheckSet);
+			List<RawKnownCertHolder> lst = new ArrayList<>(fastUpdateKnownCheckSet);
 			fastUpdateKnownCheckSet.clear();
 			lst.sort((c1, c2) -> { return (int)(c2.age - c1.age); });
 			for(int i = 0; i < 64; ++i) {
@@ -191,6 +192,15 @@ public class UpdateService {
 
 	public static UpdateProgressStruct getUpdatingStatus() {
 		return PlatformUpdateSvc.getUpdatingStatus();
+	}
+
+	public static UpdateResultObj getUpdateResult() {
+		return PlatformUpdateSvc.getUpdateResult();
+	}
+
+	public static void installSignedClient(UpdateCertificate clientCert, byte[] clientPayload, boolean setDefault,
+			boolean setTimeout) {
+		PlatformUpdateSvc.installSignedClient(clientCert, clientPayload, setDefault, setTimeout);
 	}
 
 	public static UpdateCertificate getLatestUpdateFound() {
@@ -219,6 +229,10 @@ public class UpdateService {
 				PlatformUpdateSvc.startClientUpdateFrom(myUpdateCert);
 			}
 		}
+	}
+
+	public static void quine(UpdateCertificate cert, byte[] payload) {
+		PlatformUpdateSvc.quine(cert, payload);
 	}
 
 	public static boolean shouldDisableDownloadButton() {

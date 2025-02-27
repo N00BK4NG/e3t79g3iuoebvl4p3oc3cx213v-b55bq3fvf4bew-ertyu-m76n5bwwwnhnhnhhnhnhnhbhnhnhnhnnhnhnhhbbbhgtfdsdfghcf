@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -43,7 +43,7 @@
 + 		if (itm != null && itm.stackSize > 0) {
 + 			Item item = itm.getItem();
 + 			if (item != null) {
-+ 				float f2 = item.getHeldItemBrightnessEagler() * 0.75f;
++ 				float f2 = item.getHeldItemBrightnessEagler(itm) * 0.75f;
 + 				f = Math.min(f + f2 * 0.5f, 1.0f) + f2 * 0.5f;
 + 			}
 + 		}

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
 
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
@@ -24,21 +40,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.util.MathHelper;
 
-/**
- * Copyright (c) 2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class CloudRenderWorker {
 
 	static PipelineShaderCloudsNoise3D shader_clouds_noise3d = null;
@@ -103,7 +104,7 @@ public class CloudRenderWorker {
 	static void initialize() {
 		destroy();
 
-		cloudStartTimer = System.currentTimeMillis();
+		cloudStartTimer = EagRuntime.steadyTimeMillis();
 		cloudRenderProgress = 0;
 		cloudRenderPeriod = 500;
 		cloudRenderPhase = 0;
@@ -168,7 +169,7 @@ public class CloudRenderWorker {
 		_wglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		_wglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		_wglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		byte[] cloudShapeTexture = EagRuntime.getResourceBytes("/assets/eagler/glsl/deferred/clouds_shapes.bmp");
+		byte[] cloudShapeTexture = EagRuntime.getRequiredResourceBytes("/assets/eagler/glsl/deferred/clouds_shapes.bmp");
 		cloudNoiseDatBuffer = EagRuntime.allocateByteBuffer(cloudShapeTexture.length);
 		cloudNoiseDatBuffer.put(cloudShapeTexture);
 		cloudNoiseDatBuffer.flip();
@@ -207,7 +208,7 @@ public class CloudRenderWorker {
 	}
 
 	static void update() {
-		long millis = System.currentTimeMillis();
+		long millis = EagRuntime.steadyTimeMillis();
 		int cloudProgress = (int)(millis - cloudStartTimer);
 		int totalCloudSteps = 32 + 32 - 1;
 		int currentCloudStep = cloudProgress * totalCloudSteps / cloudRenderPeriod;
@@ -268,7 +269,7 @@ public class CloudRenderWorker {
 			cloudColorB += (currentSunAngle.z - cloudColorB) * 0.1f;
 			_wglUniform3f(shader_clouds_sample.uniforms.u_sunColor3f, cloudColorR, cloudColorG, cloudColorB);
 			
-			float cloudDensityTimer = (float)((System.currentTimeMillis() % 10000000l) * 0.001);
+			float cloudDensityTimer = (float)((EagRuntime.steadyTimeMillis() % 10000000l) * 0.001);
 			cloudDensityTimer += MathHelper.sin(cloudDensityTimer * 1.5f) * 1.5f;
 			float x = cloudDensityTimer * 0.004f;
 			float f1 = MathHelper.sin(x + 0.322f) * 0.544f + MathHelper.sin(x * 4.5f + 1.843f) * 0.69f + MathHelper.sin(x * 3.4f + 0.8f) * 0.6f + MathHelper.sin(x * 6.1f + 1.72f) * 0.7f;
@@ -404,7 +405,7 @@ public class CloudRenderWorker {
 		
 		if(b) {
 			cloudRenderProgress = 0;
-			cloudStartTimer = System.currentTimeMillis();
+			cloudStartTimer = EagRuntime.steadyTimeMillis();
 			cloudProgress = 0;
 			cloudRenderPhase = (cloudRenderPhase + 1) % 3;
 		}else {
@@ -539,7 +540,7 @@ public class CloudRenderWorker {
 	}
 
 	private static void updateShape() {
-		long millis = System.currentTimeMillis();
+		long millis = EagRuntime.steadyTimeMillis();
 		float dt = (float)((millis - shapeUpdateTimer) * 0.001);
 		shapeUpdateTimer = millis;
 		if(millis > nextShapeAppearance) {

@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,9 +13,15 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
+
 public class Display {
 
-	private static long lastSwap = 0l;
+	private static long lastDPIUpdate = -250l;
+	private static float cacheDPI = 1.0f;
 
 	public static int getWidth() {
 		return PlatformInput.getWindowWidth();
@@ -27,6 +29,22 @@ public class Display {
 	
 	public static int getHeight() {
 		return PlatformInput.getWindowHeight();
+	}
+
+	public static int getVisualViewportX() {
+		return PlatformInput.getVisualViewportX();
+	}
+
+	public static int getVisualViewportY() {
+		return PlatformInput.getVisualViewportY();
+	}
+
+	public static int getVisualViewportW() {
+		return PlatformInput.getVisualViewportW();
+	}
+
+	public static int getVisualViewportH() {
+		return PlatformInput.getVisualViewportH();
 	}
 
 	public static boolean isActive() {
@@ -57,26 +75,24 @@ public class Display {
 		PlatformInput.update();
 	}
 
-	public static void sync(int limitFramerate) {
-		boolean limitFPS = limitFramerate > 0 && limitFramerate < 1000;
-		
-		if(limitFPS) {
-			long millis = System.currentTimeMillis();
-			long frameMillis = (1000l / limitFramerate) - (millis - lastSwap);
-			if(frameMillis > 0l) {
-				EagUtils.sleep(frameMillis);
-			}
-		}
-		
-		lastSwap = System.currentTimeMillis();
+	public static void update(int limitFramerate) {
+		PlatformInput.update(limitFramerate);
 	}
 
 	public static boolean contextLost() {
 		return PlatformInput.contextLost();
 	}
-	
+
 	public static boolean wasResized() {
 		return PlatformInput.wasResized();
+	}
+
+	public static boolean wasVisualViewportResized() {
+		return PlatformInput.wasVisualViewportResized();
+	}
+
+	public static boolean supportsFullscreen() {
+		return PlatformInput.supportsFullscreen();
 	}
 
 	public static boolean isFullscreen() {
@@ -85,6 +101,15 @@ public class Display {
 
 	public static void toggleFullscreen() {
 		PlatformInput.toggleFullscreen();
+	}
+
+	public static float getDPI() {
+		long millis = EagRuntime.steadyTimeMillis();
+		if(millis - lastDPIUpdate > 250l) {
+			lastDPIUpdate = millis;
+			cacheDPI = PlatformInput.getDPI();
+		}
+		return cacheDPI;
 	}
 
 }

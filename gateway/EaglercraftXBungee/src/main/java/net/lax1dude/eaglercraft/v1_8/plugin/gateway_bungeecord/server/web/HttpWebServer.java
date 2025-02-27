@@ -1,21 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -30,6 +13,25 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.Sets;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+
 public class HttpWebServer {
 	
 	public final File directory;
@@ -39,27 +41,24 @@ public class HttpWebServer {
 	private final String page404;
 	private static HttpMemoryCache default404Page;
 	private static HttpMemoryCache default404UpgradePage;
-	private static final Object cacheClearLock = new Object();
 	
 	public HttpWebServer(File directory, Map<String,HttpContentType> contentTypes, List<String> index, String page404) {
 		this.directory = directory;
 		this.contentTypes = contentTypes;
-		this.filesCache = new HashMap();
+		this.filesCache = new HashMap<>();
 		this.index = index;
 		this.page404 = page404;
 	}
 	
 	public void flushCache() {
-		long millis = System.currentTimeMillis();
-		synchronized(cacheClearLock) {
-			synchronized(filesCache) {
-				Iterator<HttpMemoryCache> itr = filesCache.values().iterator();
-				while(itr.hasNext()) {
-					HttpMemoryCache i = itr.next();
-					if(i.contentType.fileBrowserCacheTTL != Long.MAX_VALUE && millis - i.lastCacheHit > 900000l) {
-						i.fileData.release();
-						itr.remove();
-					}
+		long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
+		synchronized(filesCache) {
+			Iterator<HttpMemoryCache> itr = filesCache.values().iterator();
+			while(itr.hasNext()) {
+				HttpMemoryCache i = itr.next();
+				if(i.contentType.fileBrowserCacheTTL != Long.MAX_VALUE && millis - i.lastCacheHit > 900000l) {
+					i.fileData.release();
+					itr.remove();
 				}
 			}
 		}
@@ -69,7 +68,7 @@ public class HttpWebServer {
 		try {
 			String[] pathSplit = path.split("(\\\\|\\/)+");
 			
-			List<String> pathList = pathSplit.length == 0 ? null : new ArrayList();
+			List<String> pathList = pathSplit.length == 0 ? null : new ArrayList<>(pathSplit.length);
 			for(int i = 0; i < pathSplit.length; ++i) {
 				pathSplit[i] = pathSplit[i].trim();
 				if(pathSplit[i].length() > 0) {
@@ -93,19 +92,16 @@ public class HttpWebServer {
 			
 			String joinedPath = String.join("/", pathList);
 	
-			synchronized(cacheClearLock) {
-				synchronized(filesCache) {
-					cached = filesCache.get(joinedPath);
-				}
+			//TODO: Rewrite this to cause less lock contention
+			synchronized(filesCache) {
+				cached = filesCache.get(joinedPath);
 				
 				if(cached != null) {
 					cached = validateCache(cached);
 					if(cached != null) {
 						return cached;
 					}else {
-						synchronized(filesCache) {
-							filesCache.remove(joinedPath);
-						}
+						filesCache.remove(joinedPath);
 					}
 				}
 				
@@ -122,19 +118,13 @@ public class HttpWebServer {
 				if(f.isDirectory()) {
 					for(int i = 0, l = index.size(); i < l; ++i) {
 						String p = joinedPath + "/" + index.get(i);
-						synchronized(filesCache) {
-							cached = filesCache.get(p);
-						}
+						cached = filesCache.get(p);
 						if(cached != null) {
 							cached = validateCache(cached);
 							if(cached != null) {
-								synchronized(filesCache) {
-									filesCache.put(joinedPath, cached);
-								}
+								filesCache.put(joinedPath, cached);
 							}else {
-								synchronized(filesCache) {
-									filesCache.remove(p);
-								}
+								filesCache.remove(p);
 								if(page404 == null || path.equals(page404)) {
 									return default404Page;
 								}else {
@@ -150,9 +140,7 @@ public class HttpWebServer {
 						if(ff.isFile()) {
 							HttpMemoryCache memCache = retrieveFile(ff, p);
 							if(memCache != null) {
-								synchronized(filesCache) {
-									filesCache.put(joinedPath, memCache);
-								}
+								filesCache.put(joinedPath, memCache);
 								return memCache;
 							}
 						}
@@ -165,9 +153,7 @@ public class HttpWebServer {
 				}else {
 					HttpMemoryCache memCache = retrieveFile(f, joinedPath);
 					if(memCache != null) {
-						synchronized(filesCache) {
-							filesCache.put(joinedPath, memCache);
-						}
+						filesCache.put(joinedPath, memCache);
 						return memCache;
 					}else {
 						if(page404 == null || path.equals(page404)) {
@@ -197,7 +183,7 @@ public class HttpWebServer {
 			if(ct == null) {
 				ct = HttpContentType.defaultType;
 			}
-			long millis = System.currentTimeMillis();
+			long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
 			return new HttpMemoryCache(path, requestCachePath, file, ct, millis, millis, path.lastModified());
 		}catch(Throwable t) {
 			return null;
@@ -208,7 +194,7 @@ public class HttpWebServer {
 		if(file.fileObject == null) {
 			return file;
 		}
-		long millis = System.currentTimeMillis();
+		long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		file.lastCacheHit = millis;
 		if(millis - file.lastDiskReload > 4000l) {
 			File f = file.fileObject;
@@ -264,8 +250,8 @@ public class HttpWebServer {
 				+ "The requested resource <span id=\"addr\" style=\"font-family:monospace;font-weight:bold;background-color:#EEEEEE;padding:3px 4px;\">"
 				+ "</span> could not be found on this server!</p><p>" + htmlEntities(plugin.getDescription().getName()) + "/"
 				+ htmlEntities(plugin.getDescription().getVersion()) + "</p></body></html>").getBytes(StandardCharsets.UTF_8);
-		HttpContentType htmlContentType = new HttpContentType(new HashSet(Arrays.asList("html")), "text/html", "utf-8", 120000l);
-		long millis = System.currentTimeMillis();
+		HttpContentType htmlContentType = new HttpContentType(Sets.newHashSet("html"), "text/html", "utf-8", 120000l);
+		long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		return new HttpMemoryCache(null, "~404", Unpooled.wrappedBuffer(src), htmlContentType, millis, millis, millis);
 	}
 	
@@ -280,8 +266,8 @@ public class HttpWebServer {
 				+ "404 'Websocket Upgrade Failure' (rip)</h1><h3>The URL you have requested is the physical WebSocket address of '" + name + "'</h3><p style=\"font-size:1.2em;"
 				+ "line-height:1.3em;\">To correctly join this server, load the latest EaglercraftX 1.8 client, click the 'Direct Connect' button<br />on the 'Multiplayer' screen, "
 				+ "and enter <span id=\"wsUri\">this URL</span> as the server address</p></body></html>").getBytes(StandardCharsets.UTF_8);
-		HttpContentType htmlContentType = new HttpContentType(new HashSet(Arrays.asList("html")), "text/html", "utf-8", 14400000l);
-		long millis = System.currentTimeMillis();
+		HttpContentType htmlContentType = new HttpContentType(Sets.newHashSet("html"), "text/html", "utf-8", 14400000l);
+		long millis = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		return new HttpMemoryCache(null, "~404", Unpooled.wrappedBuffer(src), htmlContentType, millis, millis, millis);
 	}
 	

@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
-import net.lax1dude.eaglercraft.v1_8.voice.EnumVoiceChannelPeerState;
-import net.lax1dude.eaglercraft.v1_8.voice.EnumVoiceChannelReadyState;
-
-/**
+/*
  * Copyright (c) 2022-2024 ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,12 @@ import net.lax1dude.eaglercraft.v1_8.voice.EnumVoiceChannelReadyState;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
+import net.lax1dude.eaglercraft.v1_8.voice.EnumVoiceChannelReadyState;
+
 public class PlatformVoiceClient {
 
 	public static void initialize() {
@@ -89,28 +89,8 @@ public class PlatformVoiceClient {
 		
 	}
 
-	public static EnumVoiceChannelPeerState getPeerState() {
-		return EnumVoiceChannelPeerState.LOADING;
-	}
-
 	public static EnumVoiceChannelReadyState getReadyState() {
 		return EnumVoiceChannelReadyState.NONE;
-	}
-
-	public static EnumVoiceChannelPeerState getPeerStateConnect() {
-		return EnumVoiceChannelPeerState.LOADING;
-	}
-
-	public static EnumVoiceChannelPeerState getPeerStateInitial() {
-		return EnumVoiceChannelPeerState.LOADING;
-	}
-
-	public static EnumVoiceChannelPeerState getPeerStateDesc() {
-		return EnumVoiceChannelPeerState.LOADING;
-	}
-
-	public static EnumVoiceChannelPeerState getPeerStateIce() {
-		return EnumVoiceChannelPeerState.LOADING;
 	}
 
 }

@@ -1,13 +1,18 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> DELETE  4  @  4 : 10
+> INSERT  2 : 4  @  2
 
-> DELETE  10  @  10 : 15
++ import com.carrotsearch.hppc.ObjectIntHashMap;
++ import com.carrotsearch.hppc.ObjectIntMap;
+
+> DELETE  2  @  2 : 9
+
+> DELETE  9  @  9 : 14
 
 > CHANGE  3 : 5  @  3 : 6
 
@@ -67,11 +72,12 @@
 ~ 						if (value != null && (value instanceof Integer)) {
 ~ 							tupleintjsonserializable.setIntegerValue(jsonobject1.getInt("value"));
 
-> CHANGE  4 : 5  @  4 : 5
+> CHANGE  4 : 6  @  4 : 7
 
-~ 								Constructor constructor = statbase.func_150954_l().getConstructor();
+~ 								IJsonSerializable ijsonserializable = (IJsonSerializable) statbase.func_150954_l_ctor()
+~ 										.get();
 
-> CHANGE  22 : 23  @  22 : 23
+> CHANGE  20 : 21  @  20 : 21
 
 ~ 		JSONObject jsonobject = new JSONObject();
 
@@ -92,9 +98,25 @@
 
 ~ 				jsonobject.put(((StatBase) entry.getKey()).statId,
 
-> CHANGE  31 : 33  @  31 : 32
+> CHANGE  16 : 17  @  16 : 17
+
+~ 		ObjectIntMap<StatBase> hashmap = new ObjectIntHashMap<>();
+
+> CHANGE  4 : 5  @  4 : 5
+
+~ 				hashmap.put(statbase, this.readStat(statbase));
+
+> CHANGE  7 : 8  @  7 : 8
+
+~ 		ObjectIntMap<StatBase> hashmap = new ObjectIntHashMap<>();
+
+> CHANGE  1 : 3  @  1 : 2
 
 ~ 		for (int i = 0, l = AchievementList.achievementList.size(); i < l; ++i) {
 ~ 			Achievement achievement = AchievementList.achievementList.get(i);
+
+> CHANGE  1 : 2  @  1 : 2
+
+~ 				hashmap.put(achievement, this.readStat(achievement));
 
 > EOF

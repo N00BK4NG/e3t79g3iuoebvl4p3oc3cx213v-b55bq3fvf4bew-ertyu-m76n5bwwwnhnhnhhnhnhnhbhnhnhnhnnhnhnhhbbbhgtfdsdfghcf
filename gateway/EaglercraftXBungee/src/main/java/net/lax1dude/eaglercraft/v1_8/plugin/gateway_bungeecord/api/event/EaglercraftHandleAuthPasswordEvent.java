@@ -1,13 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event;
-
-import java.net.InetAddress;
-import java.util.UUID;
-import java.util.function.Consumer;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
-import net.md_5.bungee.api.plugin.Event;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -22,6 +13,17 @@ import net.md_5.bungee.api.plugin.Event;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event;
+
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
+import net.md_5.bungee.api.plugin.Event;
+
 public class EaglercraftHandleAuthPasswordEvent extends Event {
 
 	public static enum AuthResponse {
@@ -29,17 +31,19 @@ public class EaglercraftHandleAuthPasswordEvent extends Event {
 	}
 
 	private final EaglerListenerConfig listener;
-	private final InetAddress authRemoteAddress; 
-	private final String authOrigin; 
+	private final InetAddress authRemoteAddress;
+	private final String authOrigin;
 	private final byte[] authUsername;
 	private final byte[] authSaltingData;
 	private final byte[] authPasswordData;
+	private final boolean enableCookies;
+	private final byte[] cookieData;
 	private final EaglercraftIsAuthRequiredEvent.AuthMethod eventAuthMethod;
 	private final String eventAuthMessage;
 	private final Object authAttachment;
 
 	private AuthResponse eventResponse;
-	private CharSequence authProfileUsername;
+	private String authProfileUsername;
 	private UUID authProfileUUID;
 	private String authRequestedServerRespose;
 	private String authDeniedMessage = "Password Incorrect!";
@@ -51,10 +55,10 @@ public class EaglercraftHandleAuthPasswordEvent extends Event {
 	private volatile boolean hasContinue = false;
 
 	public EaglercraftHandleAuthPasswordEvent(EaglerListenerConfig listener, InetAddress authRemoteAddress,
-			String authOrigin, byte[] authUsername, byte[] authSaltingData, CharSequence authProfileUsername,
-			UUID authProfileUUID, byte[] authPasswordData, EaglercraftIsAuthRequiredEvent.AuthMethod eventAuthMethod,
-			String eventAuthMessage, Object authAttachment, String authRequestedServerRespose,
-			Consumer<EaglercraftHandleAuthPasswordEvent> continueThread) {
+			String authOrigin, byte[] authUsername, byte[] authSaltingData, String authProfileUsername,
+			UUID authProfileUUID, byte[] authPasswordData, boolean enableCookies, byte[] cookieData,
+			EaglercraftIsAuthRequiredEvent.AuthMethod eventAuthMethod, String eventAuthMessage, Object authAttachment,
+			String authRequestedServerRespose, Consumer<EaglercraftHandleAuthPasswordEvent> continueThread) {
 		this.listener = listener;
 		this.authRemoteAddress = authRemoteAddress;
 		this.authOrigin = authOrigin;
@@ -63,6 +67,8 @@ public class EaglercraftHandleAuthPasswordEvent extends Event {
 		this.authProfileUsername = authProfileUsername;
 		this.authProfileUUID = authProfileUUID;
 		this.authPasswordData = authPasswordData;
+		this.enableCookies = enableCookies;
+		this.cookieData = cookieData;
 		this.eventAuthMethod = eventAuthMethod;
 		this.eventAuthMessage = eventAuthMessage;
 		this.authAttachment = authAttachment;
@@ -90,11 +96,23 @@ public class EaglercraftHandleAuthPasswordEvent extends Event {
 		return authSaltingData;
 	}
 
-	public CharSequence getProfileUsername() {
+	public boolean getCookiesEnabled() {
+		return enableCookies;
+	}
+
+	public byte[] getCookieData() {
+		return cookieData;
+	}
+
+	public String getCookieDataString() {
+		return cookieData != null ? new String(cookieData, StandardCharsets.UTF_8) : null;
+	}
+
+	public String getProfileUsername() {
 		return authProfileUsername;
 	}
 
-	public void setProfileUsername(CharSequence username) {
+	public void setProfileUsername(String username) {
 		this.authProfileUsername = username;
 	}
 

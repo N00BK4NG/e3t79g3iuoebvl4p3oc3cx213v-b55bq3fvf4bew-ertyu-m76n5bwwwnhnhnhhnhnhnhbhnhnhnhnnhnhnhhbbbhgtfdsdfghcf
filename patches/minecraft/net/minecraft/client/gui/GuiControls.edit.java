@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -11,8 +11,18 @@
 
 > DELETE  1  @  1 : 6
 
-> CHANGE  49 : 50  @  49 : 50
+> CHANGE  6 : 8  @  6 : 7
 
+~ 			GameSettings.Options.INVERT_MOUSE, GameSettings.Options.SENSITIVITY,
+~ 			GameSettings.Options.EAGLER_TOUCH_CONTROL_OPACITY };
+
+> CHANGE  42 : 48  @  42 : 43
+
+~ 	public void handleTouchInput() throws IOException {
+~ 		super.handleTouchInput();
+~ 		this.keyBindingList.handleTouchInput();
+~ 	}
+~ 
 ~ 	protected void actionPerformed(GuiButton parGuiButton) {
 
 > CHANGE  3 : 6  @  3 : 5

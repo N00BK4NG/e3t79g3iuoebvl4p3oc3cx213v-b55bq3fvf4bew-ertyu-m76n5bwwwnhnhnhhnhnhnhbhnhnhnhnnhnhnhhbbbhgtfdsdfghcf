@@ -1,46 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.auth.DefaultAuthSystem;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandConfirmCode;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandDomain;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandEaglerPurge;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandEaglerRegister;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandRatelimit;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerAuthConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerBungeeConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.handlers.EaglerPacketEventListener;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.handlers.EaglerPluginEventListener;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.EaglerPipeline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpWebServer;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.shit.CompatWarning;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.BinaryHttpClient;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.CapeServiceOffline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.ISkinService;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.SkinService;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.SkinServiceOffline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.voice.VoiceService;
-import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.api.plugin.PluginManager;
-import net.md_5.bungee.netty.PipelineUtils;
-import net.md_5.bungee.BungeeCord;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -55,10 +13,63 @@ import net.md_5.bungee.BungeeCord;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import net.lax1dude.eaglercraft.v1_8.plugin.backend_rpc_protocol.EaglerBackendRPCProtocol;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.auth.DefaultAuthSystem;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandClientBrand;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandConfirmCode;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandDomain;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandEaglerPurge;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandEaglerRegister;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.command.CommandRatelimit;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerAuthConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerBungeeConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.handlers.EaglerPacketEventListener;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.handlers.EaglerPluginEventListener;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.EaglerPipeline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.EaglerUpdateSvc;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpWebServer;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.shit.CompatWarning;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.BinaryHttpClient;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.CapeServiceOffline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.ISkinService;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.SkinService;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins.SkinServiceOffline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.voice.VoiceService;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePluginMessageProtocol;
+import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.api.plugin.PluginDescription;
+import net.md_5.bungee.api.plugin.PluginManager;
+import net.md_5.bungee.netty.PipelineUtils;
+import net.md_5.bungee.BungeeCord;
+
 public class EaglerXBungee extends Plugin {
 
-	public static final String NATIVE_BUNGEECORD_BUILD = "1.21-R0.1-SNAPSHOT:8a88ce4:1849";
-	public static final String NATIVE_WATERFALL_BUILD = "1.21-R0.1-SNAPSHOT:de8345a:579";
+	public static final String NATIVE_BUNGEECORD_BUILD = "1.21-R0.1-SNAPSHOT:0aa2871:1893";
+	public static final String NATIVE_BUNGEECORD_BUILD_DL = "https://ci.md-5.net/job/BungeeCord/1893/artifact/bootstrap/target/BungeeCord.jar";
+	
+	public static final String NATIVE_WATERFALL_BUILD = "1.21-R0.1-SNAPSHOT:9ab9e2b:582";
+	public static final String NATIVE_WATERFALL_BUILD_DL = "https://api.papermc.io/v2/projects/waterfall/versions/1.21/builds/582/downloads/waterfall-1.21-582.jar";
 	
 	static {
 		CompatWarning.displayCompatWarning();
@@ -72,6 +83,7 @@ public class EaglerXBungee extends Plugin {
 	private Timer closeInactiveConnections = null;
 	private Timer skinServiceTasks = null;
 	private Timer authServiceTasks = null;
+	private Timer updateServiceTasks = null;
 	private final ChannelFutureListener newChannelListener;
 	private ISkinService skinService;
 	private CapeServiceOffline capeService;
@@ -80,7 +92,7 @@ public class EaglerXBungee extends Plugin {
 	
 	public EaglerXBungee() {
 		instance = this;
-		openChannels = new LinkedList();
+		openChannels = new LinkedList<>();
 		newChannelListener = new ChannelFutureListener() {
 			@Override
 			public void operationComplete(ChannelFuture ch) throws Exception {
@@ -99,6 +111,12 @@ public class EaglerXBungee extends Plugin {
 	
 	@Override
 	public void onLoad() {
+		Map<String, String> templateGlobals = EaglerXBungeeAPIHelper.getTemplateGlobals();
+		PluginDescription desc = this.getDescription();
+		templateGlobals.put("plugin_name", desc.getName());
+		templateGlobals.put("plugin_version", desc.getVersion());
+		templateGlobals.put("plugin_authors", desc.getAuthor());
+		templateGlobals.put("plugin_description", desc.getDescription());
 		try {
 			eventLoopGroup = ((BungeeCord) getProxy()).eventLoops;
 		} catch (NoSuchFieldError e) {
@@ -120,6 +138,7 @@ public class EaglerXBungee extends Plugin {
 		mgr.registerCommand(this, new CommandRatelimit());
 		mgr.registerCommand(this, new CommandConfirmCode());
 		mgr.registerCommand(this, new CommandDomain());
+		mgr.registerCommand(this, new CommandClientBrand());
 		EaglerAuthConfig authConf = conf.getAuthConfig();
 		conf.setCracked(!BungeeCord.getInstance().getConfig().isOnlineMode() || !authConf.isEnableAuthentication());
 		if(authConf.isEnableAuthentication() && authConf.isUseBuiltInAuthentication()) {
@@ -131,11 +150,13 @@ public class EaglerXBungee extends Plugin {
 				mgr.registerCommand(this, new CommandEaglerPurge(authConf.getEaglerCommandName()));
 			}
 		}
-		getProxy().registerChannel(SkinService.CHANNEL);
-		getProxy().registerChannel(CapeServiceOffline.CHANNEL);
-		getProxy().registerChannel(EaglerPipeline.UPDATE_CERT_CHANNEL);
-		getProxy().registerChannel(VoiceService.CHANNEL);
-		getProxy().registerChannel(EaglerPacketEventListener.FNAW_SKIN_ENABLE_CHANNEL);
+		for(String str : GamePluginMessageProtocol.getAllChannels()) {
+			getProxy().registerChannel(str);
+		}
+		getProxy().registerChannel(EaglerBackendRPCProtocol.CHANNEL_NAME);
+		getProxy().registerChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_READY);
+		getProxy().registerChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_MODERN);
+		getProxy().registerChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_READY_MODERN);
 		getProxy().registerChannel(EaglerPacketEventListener.GET_DOMAIN_CHANNEL);
 		startListeners();
 		if(closeInactiveConnections != null) {
@@ -206,19 +227,39 @@ public class EaglerXBungee extends Plugin {
 		}else {
 			logger().info("Voice chat disabled, add \"allow_voice: true\" to your listeners to enable");
 		}
+		if(updateServiceTasks != null) {
+			updateServiceTasks.cancel();
+			updateServiceTasks = null;
+		}
+		if(!conf.getUpdateConfig().isBlockAllClientUpdates()) {
+			updateServiceTasks = new Timer("EaglerXBungee: Update Service Tasks");
+			updateServiceTasks.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					try {
+						EaglerUpdateSvc.updateTick();
+					}catch(Throwable t) {
+						logger().log(Level.SEVERE, "Error ticking update service!", t);
+					}
+				}
+			}, 0l, 5000l);
+		}
 	}
 
 	@Override
 	public void onDisable() {
+		stopListeners();
 		PluginManager mgr = getProxy().getPluginManager();
 		mgr.unregisterListeners(this);
 		mgr.unregisterCommands(this);
-		getProxy().unregisterChannel(SkinService.CHANNEL);
-		getProxy().unregisterChannel(CapeServiceOffline.CHANNEL);
-		getProxy().unregisterChannel(EaglerPipeline.UPDATE_CERT_CHANNEL);
-		getProxy().unregisterChannel(VoiceService.CHANNEL);
-		getProxy().unregisterChannel(EaglerPacketEventListener.FNAW_SKIN_ENABLE_CHANNEL);
-		stopListeners();
+		for(String str : GamePluginMessageProtocol.getAllChannels()) {
+			getProxy().unregisterChannel(str);
+		}
+		getProxy().unregisterChannel(EaglerBackendRPCProtocol.CHANNEL_NAME);
+		getProxy().unregisterChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_READY);
+		getProxy().unregisterChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_MODERN);
+		getProxy().unregisterChannel(EaglerBackendRPCProtocol.CHANNEL_NAME_READY_MODERN);
+		getProxy().unregisterChannel(EaglerPacketEventListener.GET_DOMAIN_CHANNEL);
 		if(closeInactiveConnections != null) {
 			closeInactiveConnections.cancel();
 			closeInactiveConnections = null;
@@ -227,10 +268,18 @@ public class EaglerXBungee extends Plugin {
 			skinServiceTasks.cancel();
 			skinServiceTasks = null;
 		}
-		skinService.shutdown();
-		skinService = null;
-		capeService.shutdown();
-		capeService = null;
+		if(updateServiceTasks != null) {
+			updateServiceTasks.cancel();
+			updateServiceTasks = null;
+		}
+		if(skinService != null) {
+			skinService.shutdown();
+			skinService = null;
+		}
+		if(capeService != null) {
+			capeService.shutdown();
+			capeService = null;
+		}
 		if(defaultAuthSystem != null) {
 			defaultAuthSystem.destroy();
 			defaultAuthSystem = null;

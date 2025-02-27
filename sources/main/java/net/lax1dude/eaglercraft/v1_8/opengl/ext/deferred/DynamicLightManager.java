@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,10 +13,21 @@ import java.util.Map;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+
 public class DynamicLightManager {
 
-	static final Map<String, DynamicLightInstance> lightRenderers = new HashMap();
-	static final List<DynamicLightInstance> lightRenderList = new LinkedList();
+	static final Map<String, DynamicLightInstance> lightRenderers = new HashMap<>();
+	static final List<DynamicLightInstance> lightRenderList = new LinkedList<>();
 	static long renderTimeout = 5000l;
 	static boolean isRenderLightsPass = false;
 
@@ -51,7 +54,7 @@ public class DynamicLightManager {
 	}
 
 	static void updateTimers() {
-		long millis = System.currentTimeMillis();
+		long millis = EagRuntime.steadyTimeMillis();
 		if(millis - lastTick > 1000l) {
 			lastTick = millis;
 			Iterator<DynamicLightInstance> itr = lightRenderers.values().iterator();

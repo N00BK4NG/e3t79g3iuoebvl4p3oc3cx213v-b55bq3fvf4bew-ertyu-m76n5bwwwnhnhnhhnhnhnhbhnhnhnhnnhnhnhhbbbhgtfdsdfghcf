@@ -1,19 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
-
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EagUtils;
-import net.lax1dude.eaglercraft.v1_8.internal.EnumPlatformANGLE;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
-import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.ShaderSource;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.minecraft.client.main.Main;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -28,6 +13,21 @@ import net.minecraft.client.main.Main;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
+
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EagUtils;
+import net.lax1dude.eaglercraft.v1_8.internal.EnumPlatformANGLE;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program.ShaderSource;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
+import net.minecraft.client.main.Main;
+
 public class LWJGLEntryPoint {
 
 	public static Thread mainThread = null;
@@ -55,7 +55,7 @@ public class LWJGLEntryPoint {
 			lr.setVisible(true);
 			
 			while(lr.isVisible()) {
-				EagUtils.sleep(100l);
+				EagUtils.sleep(100);
 			}
 			
 			lr.dispose();
@@ -72,7 +72,7 @@ public class LWJGLEntryPoint {
 		
 		EagRuntime.create();
 		
-		Main.appMain(new String[0]);
+		Main.appMain();
 		
 	}
 	
@@ -82,11 +82,14 @@ public class LWJGLEntryPoint {
 				PlatformInput.setStartupFullscreen(true);
 			}else if(args[i].equalsIgnoreCase("highp")) {
 				ShaderSource.setHighP(true);
-			}else if(args[i].startsWith("jdbc:")) {
-				if(i < args.length - 1) {
-					PlatformFilesystem.setUseJDBC(args[i]);
-					PlatformFilesystem.setJDBCDriverClass(args[++i]);
-				}
+			}else if(args[i].equalsIgnoreCase("gles=200")) {
+				PlatformRuntime.requestGL(200);
+			}else if(args[i].equalsIgnoreCase("gles=300")) {
+				PlatformRuntime.requestGL(300);
+			}else if(args[i].equalsIgnoreCase("gles=310")) {
+				PlatformRuntime.requestGL(310);
+			}else if(args[i].equalsIgnoreCase("disableKHRDebug")) {
+				PlatformRuntime.requestDisableKHRDebug(true);
 			}else {
 				EnumPlatformANGLE angle = EnumPlatformANGLE.fromId(args[i]);
 				if(angle != EnumPlatformANGLE.DEFAULT) {

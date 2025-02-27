@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -24,7 +24,19 @@
 
 ~ public abstract class EntityPlayer extends EntityLivingBase implements ICommandSender {
 
-> CHANGE  458 : 459  @  458 : 459
+> INSERT  77 : 86  @  77
+
++ 	public boolean getItemShouldUseOnTouchEagler() {
++ 		if (itemInUse != null) {
++ 			return itemInUse.getItem().shouldUseOnTouchEagler(itemInUse);
++ 		} else {
++ 			ItemStack st = getHeldItem();
++ 			return st != null && st.getItem().shouldUseOnTouchEagler(st);
++ 		}
++ 	}
++ 
+
+> CHANGE  381 : 382  @  381 : 382
 
 ~ 		Collection<ScoreObjective> collection = this.getWorldScoreboard()
 
@@ -48,7 +60,11 @@
 + 						return true;
 + 					}
 
-> CHANGE  757 : 759  @  757 : 759
+> CHANGE  502 : 503  @  502 : 503
+
+~ 				.get(EntityList.getEntityID(entitylivingbase));
+
+> CHANGE  254 : 256  @  254 : 256
 
 ~ 	public static EaglercraftUUID getUUID(GameProfile profile) {
 ~ 		EaglercraftUUID uuid = profile.getId();

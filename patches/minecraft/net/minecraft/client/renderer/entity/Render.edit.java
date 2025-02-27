@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -35,7 +35,11 @@
 + 			return true;
 + 		}
 
-> INSERT  21 : 25  @  21
+> CHANGE  17 : 18  @  17 : 18
+
+~ 			this.renderLivingLabel(entity, entity.getDisplayNameProfanityFilter().getFormattedText(), x, y, z, 64);
+
+> INSERT  3 : 7  @  3
 
 + 	public static void renderNameAdapter(Render r, Entity e, double x, double y, double z) {
 + 		r.renderName(e, x, y, z);

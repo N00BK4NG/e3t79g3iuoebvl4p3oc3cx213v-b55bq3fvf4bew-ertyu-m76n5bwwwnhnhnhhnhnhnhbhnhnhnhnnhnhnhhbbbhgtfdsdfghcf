@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -19,7 +19,11 @@
 
 ~ 	public abstract boolean addComponentParts(World var1, EaglercraftRandom var2, StructureBoundingBox var3);
 
-> CHANGE  408 : 409  @  408 : 409
+> CHANGE  32 : 33  @  32 : 33
+
+~ 		BlockPos blockpos$mutableblockpos = new BlockPos();
+
+> CHANGE  375 : 376  @  375 : 376
 
 ~ 			int minZ, int maxX, int maxY, int maxZ, boolean alwaysReplace, EaglercraftRandom rand,
 

@@ -1,16 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import static org.lwjgl.glfw.GLFW.*;
-
-import java.util.LinkedList;
-import java.util.List;
-
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.system.MemoryStack;
-
-/**
- * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -24,6 +13,23 @@ import org.lwjgl.system.MemoryStack;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import static org.lwjgl.glfw.GLFW.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWGamepadState;
+import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.system.MemoryStack;
+
 public class PlatformInput {
 	
 	private static long win = 0l;
@@ -34,6 +40,7 @@ public class PlatformInput {
 	
 	private static boolean windowFocused = true;
 	private static boolean windowResized = true;
+	private static boolean windowResized2 = true;
 	
 	private static boolean windowCursorEntered = true;
 	private static boolean windowMouseGrabbed = false;
@@ -46,7 +53,7 @@ public class PlatformInput {
 	private static int windowWidth = 640;
 	private static int windowHeight = 480;
 	
-	private static final List<KeyboardEvent> keyboardEventList = new LinkedList();
+	private static final List<KeyboardEvent> keyboardEventList = new LinkedList<>();
 	private static KeyboardEvent currentKeyboardEvent = null;
 	
 	private static final char[] keyboardReleaseEventChars = new char[256];
@@ -54,9 +61,8 @@ public class PlatformInput {
 	private static boolean enableRepeatEvents = false;
 	private static int functionKeyModifier = GLFW_KEY_F;
 
-	public static boolean lockKeys = false;
 
-	private static final List<Character> keyboardCharList = new LinkedList();
+	private static final List<Character> keyboardCharList = new LinkedList<>();
 
 	private static boolean vsync = true;
 	private static boolean glfwVSyncState = false;
@@ -75,8 +81,8 @@ public class PlatformInput {
 		}
 		
 	}
-	
-	private static final List<MouseEvent> mouseEventList = new LinkedList();
+
+	private static final List<MouseEvent> mouseEventList = new LinkedList<>();
 	private static MouseEvent currentMouseEvent = null;
 	
 	private static class MouseEvent {
@@ -95,6 +101,44 @@ public class PlatformInput {
 			this.wheel = wheel;
 		}
 		
+	}
+
+	private static final List<Gamepad> gamepadList = new ArrayList<>();
+	private static int selectedGamepad = -1;
+	private static String selectedGamepadName = null;
+	private static String selectedGamepadUUID = null;
+	private static final boolean[] gamepadButtonStates = new boolean[24];
+	private static final float[] gamepadAxisStates = new float[4];
+	
+	private static class Gamepad {
+		
+		protected final int gamepadId;
+		protected final String gamepadName;
+		protected final String gamepadUUID;
+		
+		protected Gamepad(int gamepadId, String gamepadName, String gamepadUUID) {
+			this.gamepadId = gamepadId;
+			this.gamepadName = gamepadName;
+			this.gamepadUUID = gamepadUUID;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(gamepadId, gamepadName, gamepadUUID);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Gamepad other = (Gamepad) obj;
+			return gamepadId == other.gamepadId && Objects.equals(gamepadName, other.gamepadName)
+					&& Objects.equals(gamepadUUID, other.gamepadUUID);
+		}
 	}
 
 	static void initHooks(long glfwWindow) {
@@ -121,12 +165,19 @@ public class PlatformInput {
 		
 		windowWidth = v1[0];
 		windowHeight = v2[0];
+		windowResized = true;
+		windowResized2 = true;
 		
 		glfwSetFramebufferSizeCallback(glfwWindow, (window, width, height) -> {
-			windowWidth = width;
-			windowHeight = height;
-			windowResized = true;
+			if(windowWidth != width || windowHeight != height) {
+				windowWidth = width;
+				windowHeight = height;
+				windowResized = true;
+				windowResized2 = true;
+			}
 		});
+		
+		windowFocused = true;
 		
 		glfwSetWindowFocusCallback(glfwWindow, (window, focused) -> {
 			windowFocused = focused;
@@ -199,6 +250,15 @@ public class PlatformInput {
 		if(!fullscreen && startupFullscreen) {
 			toggleFullscreen();
 		}
+		
+		gamepadEnumerateDevices();
+		
+		glfwSetJoystickCallback((jid, event) -> {
+			if(event == GLFW_DISCONNECTED && jid == selectedGamepad) {
+				selectedGamepad = -1;
+			}
+			gamepadEnumerateDevices();
+		});
 	}
 	
 	public static int getWindowWidth() {
@@ -206,6 +266,22 @@ public class PlatformInput {
 	}
 	
 	public static int getWindowHeight() {
+		return windowHeight;
+	}
+
+	public static int getVisualViewportX() {
+		return 0;
+	}
+
+	public static int getVisualViewportY() {
+		return 0;
+	}
+
+	public static int getVisualViewportW() {
+		return windowWidth;
+	}
+
+	public static int getVisualViewportH() {
 		return windowHeight;
 	}
 
@@ -222,12 +298,36 @@ public class PlatformInput {
 	}
 
 	public static void update() {
+		update(0);
+	}
+
+	private static long syncTimer = 0l;
+
+	public static void update(int limitFps) {
 		glfwPollEvents();
 		if(vsync != glfwVSyncState) {
 			glfwSwapInterval(vsync ? 1 : 0);
 			glfwVSyncState = vsync;
 		}
 		glfwSwapBuffers(win);
+		if(!vsync && limitFps > 0 && limitFps <= 1000) {
+			long frameNanos = (1000000000l / limitFps);
+			if(syncTimer == 0l) {
+				syncTimer = System.nanoTime() + frameNanos;
+			}else {
+				long nanos = System.nanoTime();
+				int remaining = (int)((syncTimer - nanos) / 1000000l);
+				if(remaining > 0) {
+					PlatformRuntime.sleep(remaining);
+					nanos = System.nanoTime();
+				}
+				if((syncTimer += frameNanos) < nanos) {
+					syncTimer = nanos;
+				}
+			}
+		}else {
+			syncTimer = 0l;
+		}
 	}
 
 	public static boolean isVSyncSupported() {
@@ -237,6 +337,12 @@ public class PlatformInput {
 	public static boolean wasResized() {
 		boolean b = windowResized;
 		windowResized = false;
+		return b;
+	}
+
+	public static boolean wasVisualViewportResized() {
+		boolean b = windowResized2;
+		windowResized2 = false;
 		return b;
 	}
 
@@ -274,6 +380,33 @@ public class PlatformInput {
 		}
 	}
 
+	public static void keyboardFireEvent(EnumFireKeyboardEvent eventType, int eagKey, char keyChar) {
+		switch(eventType) {
+		case KEY_DOWN:
+			keyboardCharList.add(keyChar);
+			keyboardEventList.add(new KeyboardEvent(eagKey, true, false));
+			break;
+		case KEY_UP:
+			if(eagKey >= 0 && eagKey < keyboardReleaseEventChars.length) {
+				keyboardReleaseEventChars[eagKey] = keyChar;
+			}
+			keyboardEventList.add(new KeyboardEvent(eagKey, false, false));
+			break;
+		case KEY_REPEAT:
+			keyboardCharList.add(keyChar);
+			keyboardEventList.add(new KeyboardEvent(eagKey, true, true));
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+		if(keyboardEventList.size() > 64) {
+			keyboardEventList.remove(0);
+		}
+		if(keyboardCharList.size() > 64) {
+			keyboardCharList.remove(0);
+		}
+	}
+
 	public static boolean keyboardGetEventKeyState() {
 		return currentKeyboardEvent.pressed;
 	}
@@ -306,12 +439,54 @@ public class PlatformInput {
 		enableRepeatEvents = b;
 	}
 
+	public static boolean keyboardAreKeysLocked() {
+		return false;
+	}
+
 	public static boolean mouseNext() {
 		if(mouseEventList.size() > 0) {
 			currentMouseEvent = mouseEventList.remove(0);
 			return true;
 		}else {
 			return false;
+		}
+	}
+
+	public static void mouseFireMoveEvent(EnumFireMouseEvent eventType, int posX, int posY) {
+		if(eventType == EnumFireMouseEvent.MOUSE_MOVE) {
+			mouseEventList.add(new MouseEvent(-1, false, posX, posY, 0.0f));
+			if(mouseEventList.size() > 64) {
+				mouseEventList.remove(0);
+			}
+		}else {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public static void mouseFireButtonEvent(EnumFireMouseEvent eventType, int posX, int posY, int button) {
+		switch(eventType) {
+		case MOUSE_DOWN:
+			mouseEventList.add(new MouseEvent(button, true, posX, posY, 0.0f));
+			break;
+		case MOUSE_UP:
+			mouseEventList.add(new MouseEvent(button, false, posX, posY, 0.0f));
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+		if(mouseEventList.size() > 64) {
+			mouseEventList.remove(0);
+		}
+	}
+
+	public static void mouseFireWheelEvent(EnumFireMouseEvent eventType, int posX, int posY, float wheel) {
+		if(eventType == EnumFireMouseEvent.MOUSE_WHEEL) {
+			mouseEventList.add(new MouseEvent(-1, false, posX, posY, wheel));
+			if(mouseEventList.size() > 64) {
+				mouseEventList.remove(0);
+			}
+		}else {
+			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -332,7 +507,11 @@ public class PlatformInput {
 	}
 
 	public static int mouseGetEventDWheel() {
-		return (int)currentMouseEvent.wheel;
+		return fixWheel(currentMouseEvent.wheel);
+	}
+
+	private static int fixWheel(float val) {
+		return (val > 0.0f ? 1 : (val < 0.0f ? -1 : 0));
 	}
 
 	public static int mouseGetX() {
@@ -364,6 +543,10 @@ public class PlatformInput {
 			glfwSetInputMode(win, GLFW_CURSOR, grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 			glfwSetInputMode(win, GLFW_RAW_MOUSE_MOTION, grab ? GLFW_TRUE : GLFW_FALSE);
 		}
+	}
+
+	public static boolean mouseGrabSupported() {
+		return true;
 	}
 
 	public static boolean isPointerLocked() {
@@ -402,6 +585,10 @@ public class PlatformInput {
 
 	public static void setFunctionKeyModifier(int key) {
 		functionKeyModifier = KeyboardConstants.getGLFWKeyFromEagler(key);
+	}
+
+	public static boolean supportsFullscreen() {
+		return true;
 	}
 
 	private static boolean fullscreen = false;
@@ -483,4 +670,231 @@ public class PlatformInput {
 			break;
 		}
 	}
+
+	public static boolean touchNext() {
+		return false;
+	}
+
+	public static EnumTouchEvent touchGetEventType() {
+		return null;
+	}
+
+	public static int touchGetEventTouchPointCount() {
+		return 0;
+	}
+
+	public static int touchGetEventTouchX(int pointId) {
+		return 0;
+	}
+
+	public static int touchGetEventTouchY(int pointId) {
+		return 0;
+	}
+
+	public static float touchGetEventTouchRadiusMixed(int pointId) {
+		return 0.0f;
+	}
+
+	public static float touchGetEventTouchForce(int pointId) {
+		return 0.0f;
+	}
+
+	public static int touchGetEventTouchPointUID(int pointId) {
+		return 0;
+	}
+
+	public static int touchPointCount() {
+		return 0;
+	}
+
+	public static int touchPointX(int pointId) {
+		return 0;
+	}
+
+	public static int touchPointY(int pointId) {
+		return 0;
+	}
+
+	public static float touchRadiusMixed(int pointId) {
+		return 0.0f;
+	}
+
+	public static float touchForce(int pointId) {
+		return 0.0f;
+	}
+
+	public static int touchPointUID(int pointId) {
+		return 0;
+	}
+
+	public static void touchSetOpenKeyboardZone(int x, int y, int w, int h) {
+		
+	}
+
+	public static void touchCloseDeviceKeyboard() {
+		
+	}
+
+	public static boolean touchIsDeviceKeyboardOpenMAYBE() {
+		return false;
+	}
+
+	public static String touchGetPastedString() {
+		return null;
+	}
+
+	private static void gamepadEnumerateDevices() {
+		if(selectedGamepad != -1 && !glfwJoystickIsGamepad(selectedGamepad)) {
+			selectedGamepad = -1;
+		}
+		List<Gamepad> oldList = null;
+		if(!gamepadList.isEmpty()) {
+			oldList = new ArrayList<>(gamepadList);
+			gamepadList.clear();
+		}
+		for(int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_16; ++i) {
+			if(glfwJoystickIsGamepad(i)) {
+				gamepadList.add(new Gamepad(i, gamepadMakeName(i), glfwGetJoystickGUID(i)));
+			}
+		}
+		vigg: if(selectedGamepad != -1) {
+			for(int i = 0, l = gamepadList.size(); i < l; ++i) {
+				Gamepad gp = gamepadList.get(i);
+				if(gp.gamepadId == selectedGamepad && gp.gamepadUUID.equals(selectedGamepadUUID)) {
+					break vigg;
+				}
+			}
+			selectedGamepad = -1;
+		}
+		if(oldList == null) {
+			if(!gamepadList.isEmpty()) {
+				for(int i = 0, l = gamepadList.size(); i < l; ++i) {
+					PlatformRuntime.logger.info("Found controller: {}", gamepadList.get(i).gamepadName);
+				}
+			}
+		}else {
+			if(gamepadList.isEmpty()) {
+				for(int i = 0, l = oldList.size(); i < l; ++i) {
+					PlatformRuntime.logger.info("Lost controller: {}", oldList.get(i).gamepadName);
+				}
+			}else {
+				Set<String> oldGamepadUUIDs = new HashSet<>();
+				for(int i = 0, l = oldList.size(); i < l; ++i) {
+					oldGamepadUUIDs.add(oldList.get(i).gamepadUUID);
+				}
+				Set<String> newGamepadUUIDs = new HashSet<>();
+				for(int i = 0, l = gamepadList.size(); i < l; ++i) {
+					newGamepadUUIDs.add(gamepadList.get(i).gamepadUUID);
+				}
+				for(int i = 0, l = oldList.size(); i < l; ++i) {
+					Gamepad g = oldList.get(i);
+					if(!newGamepadUUIDs.contains(g.gamepadUUID)) {
+						PlatformRuntime.logger.info("Lost controller: {}", g.gamepadName);
+					}
+				}
+				for(int i = 0, l = gamepadList.size(); i < l; ++i) {
+					Gamepad g = gamepadList.get(i);
+					if(!oldGamepadUUIDs.contains(g.gamepadUUID)) {
+						PlatformRuntime.logger.info("Found controller: {}", g.gamepadName);
+					}
+				}
+			}
+		}
+		
+	}
+
+	private static String gamepadMakeName(int glfwId) {
+		String s = glfwGetGamepadName(glfwId);
+		if(s.endsWith(" (GLFW)")) {
+			s = s.substring(0, s.length() - 7);
+		}
+		return glfwGetJoystickName(glfwId) + " (" + s + ")";
+	}
+
+	public static int gamepadGetValidDeviceCount() {
+		return gamepadList.size();
+	}
+
+	public static String gamepadGetDeviceName(int deviceId) {
+		if(deviceId >= 0 && deviceId < gamepadList.size()) {
+			return gamepadList.get(deviceId).gamepadName;
+		}else {
+			return "Unknown";
+		}
+	}
+
+	public static void gamepadSetSelectedDevice(int deviceId) {
+		gamepadReset();
+		if(deviceId >= 0 && deviceId < gamepadList.size()) {
+			selectedGamepad = gamepadList.get(deviceId).gamepadId;
+			if(!glfwJoystickIsGamepad(selectedGamepad)) {
+				selectedGamepad = -1;
+			}
+		}else {
+			selectedGamepad = -1;
+		}
+	}
+
+	private static void gamepadReset() {
+		for(int i = 0; i < gamepadButtonStates.length; ++i) {
+			gamepadButtonStates[i] = false;
+		}
+		for(int i = 0; i < gamepadAxisStates.length; ++i) {
+			gamepadAxisStates[i] = 0.0f;
+		}
+	}
+
+	public static void gamepadUpdate() {
+		gamepadReset();
+		if(selectedGamepad != -1) {
+			if(!glfwJoystickIsGamepad(selectedGamepad)) {
+				selectedGamepad = -1;
+				return;
+			}
+			try(MemoryStack ms = MemoryStack.stackPush()) {
+				GLFWGamepadState state = GLFWGamepadState.calloc(ms);
+				glfwGetGamepadState(selectedGamepad, state);
+				java.nio.FloatBuffer axes = state.axes();
+				axes.get(gamepadAxisStates);
+				java.nio.ByteBuffer buttons = state.buttons();
+				for(int i = 0, l = buttons.remaining(); i < l && i < gamepadButtonStates.length; ++i) {
+					boolean v = buttons.get() != (byte)0;
+					int j = GamepadConstants.getEaglerButtonFromGLFW(i);
+					if(j != -1) {
+						gamepadButtonStates[j] = v;
+					}
+				}
+				gamepadButtonStates[GamepadConstants.GAMEPAD_LEFT_TRIGGER] = axes.get() > 0.4f;
+				gamepadButtonStates[GamepadConstants.GAMEPAD_RIGHT_TRIGGER] = axes.get() > 0.4f;
+			}
+		}
+	}
+
+	public static boolean gamepadIsValid() {
+		return selectedGamepad != -1;
+	}
+
+	public static String gamepadGetName() {
+		return selectedGamepad != -1 ? selectedGamepadName : "Unknown";
+	}
+
+	public static boolean gamepadGetButtonState(int button) {
+		return selectedGamepad != -1 && button >= 0 && button < gamepadButtonStates.length ? gamepadButtonStates[button] : false;
+	}
+
+	public static float gamepadGetAxis(int axis) {
+		return selectedGamepad != -1 && axis >= 0 && axis < gamepadAxisStates.length ? gamepadAxisStates[axis] : 0.0f;
+	}
+
+	public static float getDPI() {
+		float[] dpiX = new float[1];
+		float[] dpiY = new float[1];
+		glfwGetWindowContentScale(win, dpiX, dpiY);
+		float ret = dpiX[0] * 0.5f + dpiY[0] * 0.5f;
+		if(ret <= 0.0f) {
+			ret = 1.0f;
+		}
+		return ret;
+	}
+
 }

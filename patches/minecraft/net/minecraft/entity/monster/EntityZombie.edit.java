@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -15,5 +15,9 @@
 
 ~ 	private static final EaglercraftUUID babySpeedBoostUUID = EaglercraftUUID
 ~ 			.fromString("B9766B59-9566-4402-BC1F-2EE2A276D836");
+
+> CHANGE  489 : 490  @  489 : 490
+
+~ 			BlockPos blockpos$mutableblockpos = new BlockPos();
 
 > EOF

@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
-
-import io.netty.channel.ChannelHandlerContext;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.bungeeprotocol.EaglerBungeeProtocol;
-import net.md_5.bungee.netty.ChannelWrapper;
-import net.md_5.bungee.protocol.Protocol;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,17 +13,24 @@ import net.md_5.bungee.protocol.Protocol;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
+
+import io.netty.channel.ChannelHandlerContext;
+import net.md_5.bungee.netty.ChannelWrapper;
+import net.md_5.bungee.protocol.Protocol;
+
 public class EaglerChannelWrapper extends ChannelWrapper {
 
 	public EaglerChannelWrapper(ChannelHandlerContext ctx) {
 		super(ctx);
 	}
 
-	public void setProtocol(EaglerBungeeProtocol protocol) {
+	public void setProtocol(Protocol protocol) {
 		getHandle().pipeline().get(EaglerMinecraftEncoder.class).setProtocol(protocol);
 		getHandle().pipeline().get(EaglerMinecraftDecoder.class).setProtocol(protocol);
 	}
-	
+
 	public void setVersion(int protocol) {
 		getHandle().pipeline().get(EaglerMinecraftEncoder.class).setProtocolVersion(protocol);
 		getHandle().pipeline().get(EaglerMinecraftDecoder.class).setProtocolVersion(protocol);
@@ -41,24 +41,12 @@ public class EaglerChannelWrapper extends ChannelWrapper {
 	public Protocol getEncodeProtocol() {
 		EaglerMinecraftEncoder enc;
 		if (this.getHandle() == null || (enc = this.getHandle().pipeline().get(EaglerMinecraftEncoder.class)) == null) return lastProtocol;
-		EaglerBungeeProtocol eaglerProtocol = enc.getProtocol();
-		switch(eaglerProtocol) {
-			case GAME:
-				return (lastProtocol = Protocol.GAME);
-			case HANDSHAKE:
-				return (lastProtocol = Protocol.HANDSHAKE);
-			case LOGIN:
-				return (lastProtocol = Protocol.LOGIN);
-			case STATUS:
-				return (lastProtocol = Protocol.STATUS);
-			default:
-				return lastProtocol;
-		}
+		return (lastProtocol = enc.getProtocol());
 	}
-	
+
 	public void close(Object o) {
 		super.close(o);
 		EaglerPipeline.closeChannel(getHandle());
 	}
-	
+
 }

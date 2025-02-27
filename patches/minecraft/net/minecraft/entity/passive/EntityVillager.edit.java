@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -12,7 +12,9 @@
 ~ 
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 
-> CHANGE  77 : 78  @  77 : 229
+> DELETE  53  @  53 : 54
+
+> CHANGE  23 : 24  @  23 : 175
 
 ~ 	private static List<List<List<List<EntityVillager.ITradeList>>>> DEFAULT_TRADE_LIST_MAP = null;
 
@@ -257,7 +259,23 @@
 ~ 			for (int k = 0, l = aentityvillager$itradelist2.size(); k < l; ++k) {
 ~ 				aentityvillager$itradelist2.get(k).modifyMerchantRecipeList(this.buyingList, this.rand);
 
-> CHANGE  236 : 237  @  236 : 237
+> CHANGE  9 : 18  @  9 : 10
+
+~ 		return getDisplayNameImpl(false);
+~ 	}
+~ 
+~ 	public IChatComponent getDisplayNameProfanityFilter() {
+~ 		return getDisplayNameImpl(true);
+~ 	}
+~ 
+~ 	private IChatComponent getDisplayNameImpl(boolean filter) {
+~ 		String s = filter ? this.getCustomNameTagProfanityFilter() : this.getCustomNameTag();
+
+> CHANGE  53 : 54  @  53 : 54
+
+~ 				return filter ? super.getDisplayNameProfanityFilter() : super.getDisplayName();
+
+> CHANGE  172 : 173  @  172 : 173
 
 ~ 		public void modifyMerchantRecipeList(MerchantRecipeList recipeList, EaglercraftRandom random) {
 
@@ -281,8 +299,32 @@
 
 ~ 		public void modifyMerchantRecipeList(MerchantRecipeList merchantrecipelist, EaglercraftRandom random) {
 
-> CHANGE  24 : 25  @  24 : 25
+> CHANGE  19 : 23  @  19 : 20
 
-~ 		public int getPrice(EaglercraftRandom rand) {
+~ 	static class PriceInfo {
+~ 		private int a;
+~ 		private int b;
+~ 
+
+> CHANGE  1 : 3  @  1 : 2
+
+~ 			this.a = parInt1;
+~ 			this.b = parInt2;
+
+> CHANGE  2 : 4  @  2 : 7
+
+~ 		public int getFirst() {
+~ 			return this.a;
+
+> INSERT  1 : 9  @  1
+
++ 
++ 		public int getSecond() {
++ 			return this.b;
++ 		}
++ 
++ 		public int getPrice(EaglercraftRandom rand) {
++ 			return (a >= b) ? a : a + rand.nextInt(b - a + 1);
++ 		}
 
 > EOF

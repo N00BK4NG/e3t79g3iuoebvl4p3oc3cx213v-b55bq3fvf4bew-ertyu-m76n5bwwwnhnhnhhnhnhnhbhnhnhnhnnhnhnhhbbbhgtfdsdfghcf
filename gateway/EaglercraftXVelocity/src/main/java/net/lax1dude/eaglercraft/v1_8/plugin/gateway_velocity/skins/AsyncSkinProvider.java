@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins;
 
 import java.awt.Graphics2D;
@@ -21,21 +37,6 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.BinaryHttpCli
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.ICacheProvider.CacheLoadedProfile;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.ICacheProvider.CacheLoadedSkin;
 
-/**
- * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class AsyncSkinProvider {
 
 	private static class SkinConsumerImpl implements Consumer<Response> {
@@ -105,7 +106,7 @@ public class AsyncSkinProvider {
 						byte[] loadedPixels = new byte[16384];
 						image.getRGB(0, 0, 64, 64, tmp, 0, 64);
 						SkinRescaler.convertToBytes(tmp, loadedPixels);
-						SkinPackets.setAlphaForChest(loadedPixels, (byte)255, 0);
+						SkinPackets.setAlphaForChestV3(loadedPixels);
 						doAccept(loadedPixels);
 						return;
 					}else if(srcWidth == 64 && srcHeight == 32) {
@@ -113,7 +114,7 @@ public class AsyncSkinProvider {
 						byte[] loadedPixels = new byte[16384];
 						image.getRGB(0, 0, 64, 32, tmp1, 0, 64);
 						SkinRescaler.convert64x32To64x64(tmp1, loadedPixels);
-						SkinPackets.setAlphaForChest(loadedPixels, (byte)255, 0);
+						SkinPackets.setAlphaForChestV3(loadedPixels);
 						doAccept(loadedPixels);
 						return;
 					}else {

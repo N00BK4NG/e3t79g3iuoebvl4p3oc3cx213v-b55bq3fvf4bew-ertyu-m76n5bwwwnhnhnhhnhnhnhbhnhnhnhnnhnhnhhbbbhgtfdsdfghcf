@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import org.json.JSONObject;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,6 +13,11 @@ import org.json.JSONObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import org.json.JSONObject;
+
 public class EaglerXBungeeVersion {
 
 	public static final String pluginFileEPK = "plugin_download.zip";
@@ -28,10 +29,7 @@ public class EaglerXBungeeVersion {
 	private static String pluginFilename = null;
 
 	public static void initialize() {
-		String pluginVersionJson = EagRuntime.getResourceString("plugin_version.json");
-		if(pluginVersionJson == null) {
-			throw new RuntimeException("File \"plugin_version.json\" is missing in the epk!");
-		}
+		String pluginVersionJson = EagRuntime.getRequiredResourceString("plugin_version.json");
 		JSONObject json = new JSONObject(pluginVersionJson);
 		pluginName = json.getString("pluginName");
 		pluginVersion = json.getString("pluginVersion");
@@ -76,11 +74,7 @@ public class EaglerXBungeeVersion {
 	}
 
 	public static byte[] getPluginDownload() {
-		byte[] ret = EagRuntime.getResourceBytes(pluginFileEPK);
-		if(ret == null) {
-			throw new RuntimeException("File \"" + pluginFileEPK + "\" is missing in the epk!");
-		}
-		return ret;
+		return EagRuntime.getRequiredResourceBytes(pluginFileEPK);
 	}
 
 	public static void startPluginDownload() {

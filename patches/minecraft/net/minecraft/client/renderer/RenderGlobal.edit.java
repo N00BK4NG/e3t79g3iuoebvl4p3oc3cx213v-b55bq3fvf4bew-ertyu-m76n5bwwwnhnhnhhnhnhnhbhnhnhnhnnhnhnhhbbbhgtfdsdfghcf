@@ -1,30 +1,34 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
 > DELETE  2  @  2 : 7
 
-> CHANGE  6 : 10  @  6 : 7
+> CHANGE  6 : 12  @  6 : 7
 
+~ 
+~ import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 ~ import net.lax1dude.eaglercraft.v1_8.HString;
 ~ import net.lax1dude.eaglercraft.v1_8.Keyboard;
 ~ 
 
-> INSERT  2 : 23  @  2
+> INSERT  2 : 25  @  2
 
 + 
 + import com.google.common.collect.Lists;
 + import com.google.common.collect.Maps;
 + import com.google.common.collect.Sets;
 + 
++ import dev.redstudio.alfheim.utils.DeduplicatedLongQueue;
 + import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 + import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 + import net.lax1dude.eaglercraft.v1_8.minecraft.ChunkUpdateManager;
 + import net.lax1dude.eaglercraft.v1_8.minecraft.EaglerTextureAtlasSprite;
++ import net.lax1dude.eaglercraft.v1_8.minecraft.EaglerCloudRenderer;
 + import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
 + import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 + import net.lax1dude.eaglercraft.v1_8.opengl.VertexFormat;
@@ -57,9 +61,18 @@
 
 + import net.minecraft.util.EnumChatFormatting;
 
-> DELETE  13  @  13 : 18
+> CHANGE  13 : 14  @  13 : 18
 
-> DELETE  20  @  20 : 24
+~ import net.optifine.CustomSky;
+
+> INSERT  17 : 21  @  17
+
++ 	private int glSunList = -1;
++ 	private int moonPhase = -1;
++ 	private int glMoonList = -1;
++ 	private int glHorizonList = -1;
+
+> DELETE  3  @  3 : 7
 
 > CHANGE  3 : 4  @  3 : 6
 
@@ -70,30 +83,138 @@
 ~ 	private float lastViewProjMatrixFOV = Float.MIN_VALUE;
 ~ 	private final ChunkUpdateManager renderDispatcher = new ChunkUpdateManager();
 
-> CHANGE  22 : 24  @  22 : 24
+> INSERT  16 : 18  @  16
+
++ 	private final DeduplicatedLongQueue alfheim$lightUpdatesQueue = new DeduplicatedLongQueue(8192);
++ 	public final EaglerCloudRenderer cloudRenderer;
+
+> CHANGE  6 : 8  @  6 : 8
 
 ~ 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 ~ 		EaglercraftGPU.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-> CHANGE  2 : 5  @  2 : 14
+> CHANGE  2 : 8  @  2 : 14
 
 ~ 		this.vboEnabled = false;
 ~ 		this.renderContainer = new RenderList();
 ~ 		this.renderChunkFactory = new ListChunkFactory();
+~ 		this.cloudRenderer = new EaglerCloudRenderer(mcIn);
+~ 		this.generateSun();
+~ 		this.generateHorizon();
 
 > DELETE  19  @  19 : 23
 
-> DELETE  1  @  1 : 22
+> CHANGE  1 : 2  @  1 : 2
 
-> DELETE  3  @  3 : 9
+~ 	}
 
-> CHANGE  4 : 5  @  4 : 6
+> CHANGE  1 : 2  @  1 : 19
 
+~ 	public void renderEntityOutlineFramebuffer() {
+
+> CHANGE  3 : 14  @  3 : 9
+
+~ 	protected boolean isRenderEntityOutlines() {
 ~ 		return false;
+~ 	}
+~ 
+~ 	private void generateSun() {
+~ 		Tessellator tessellator = Tessellator.getInstance();
+~ 		WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+~ 
+~ 		if (this.glSunList >= 0) {
+~ 			GLAllocation.deleteDisplayLists(this.glSunList);
+~ 			this.glSunList = -1;
 
-> DELETE  5  @  5 : 8
+> INSERT  2 : 12  @  2
 
-> CHANGE  6 : 11  @  6 : 19
++ 		this.glSunList = GLAllocation.generateDisplayLists();
++ 		EaglercraftGPU.glNewList(this.glSunList, GL_COMPILE);
++ 		float f17 = 30.0F;
++ 		worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
++ 		worldrenderer.pos((double) (-f17), 100.0D, (double) (-f17)).tex(0.0D, 0.0D).endVertex();
++ 		worldrenderer.pos((double) f17, 100.0D, (double) (-f17)).tex(1.0D, 0.0D).endVertex();
++ 		worldrenderer.pos((double) f17, 100.0D, (double) f17).tex(1.0D, 1.0D).endVertex();
++ 		worldrenderer.pos((double) (-f17), 100.0D, (double) f17).tex(0.0D, 1.0D).endVertex();
++ 		tessellator.draw();
++ 		EaglercraftGPU.glEndList();
+
+> CHANGE  2 : 29  @  2 : 5
+
+~ 	private int getMoonList(int phase) {
+~ 		if (phase != moonPhase) {
+~ 			Tessellator tessellator = Tessellator.getInstance();
+~ 			WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+~ 
+~ 			if (glMoonList == -1) {
+~ 				glMoonList = GLAllocation.generateDisplayLists();
+~ 			}
+~ 
+~ 			EaglercraftGPU.glNewList(this.glMoonList, GL_COMPILE);
+~ 			float f17 = 20.0F;
+~ 			int j = phase % 4;
+~ 			int l = phase / 4 % 2;
+~ 			float f22 = (float) (j + 0) / 4.0F;
+~ 			float f23 = (float) (l + 0) / 2.0F;
+~ 			float f24 = (float) (j + 1) / 4.0F;
+~ 			float f14 = (float) (l + 1) / 2.0F;
+~ 			worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
+~ 			worldrenderer.pos((double) (-f17), -100.0D, (double) f17).tex((double) f24, (double) f14).endVertex();
+~ 			worldrenderer.pos((double) f17, -100.0D, (double) f17).tex((double) f22, (double) f14).endVertex();
+~ 			worldrenderer.pos((double) f17, -100.0D, (double) (-f17)).tex((double) f22, (double) f23).endVertex();
+~ 			worldrenderer.pos((double) (-f17), -100.0D, (double) (-f17)).tex((double) f24, (double) f23).endVertex();
+~ 			tessellator.draw();
+~ 			EaglercraftGPU.glEndList();
+~ 			moonPhase = phase;
+~ 		}
+~ 		return glMoonList;
+
+> CHANGE  2 : 3  @  2 : 3
+
+~ 	private void generateHorizon() {
+
+> CHANGE  2 : 6  @  2 : 4
+
+~ 
+~ 		if (this.glHorizonList >= 0) {
+~ 			GLAllocation.deleteDisplayLists(this.glHorizonList);
+~ 			this.glHorizonList = -1;
+
+> INSERT  2 : 33  @  2
+
++ 		this.glHorizonList = GLAllocation.generateDisplayLists();
++ 		EaglercraftGPU.glNewList(this.glHorizonList, GL_COMPILE);
++ 		worldrenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
++ 		worldrenderer.pos(-1.0D, 0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, 0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, 0.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, 0.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, 0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, 0.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, 0.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, 0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
++ 		worldrenderer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
++ 		tessellator.draw();
++ 		EaglercraftGPU.glEndList();
++ 	}
++ 
++ 	private void generateSky2() {
++ 		Tessellator tessellator = Tessellator.getInstance();
++ 		WorldRenderer worldrenderer = tessellator.getWorldRenderer();
++ 
+
+> CHANGE  5 : 10  @  5 : 18
 
 ~ 		this.glSkyList2 = GLAllocation.generateDisplayLists();
 ~ 		EaglercraftGPU.glNewList(this.glSkyList2, GL_COMPILE);
@@ -111,7 +232,16 @@
 ~ 		tessellator.draw();
 ~ 		EaglercraftGPU.glEndList();
 
-> DELETE  29  @  29 : 32
+> DELETE  4  @  4 : 6
+
+> CHANGE  1 : 5  @  1 : 18
+
+~ 		worldRendererIn.pos(-384, parFloat1, -384).endVertex();
+~ 		worldRendererIn.pos(-384, parFloat1, 384).endVertex();
+~ 		worldRendererIn.pos(384, parFloat1, 384).endVertex();
+~ 		worldRendererIn.pos(384, parFloat1, -384).endVertex();
+
+> DELETE  5  @  5 : 8
 
 > CHANGE  6 : 13  @  6 : 21
 
@@ -143,7 +273,7 @@
 + 			this.renderDistanceChunks = this.mc.gameSettings.renderDistanceChunks;
 + 
 
-> INSERT  19 : 85  @  19
+> INSERT  19 : 88  @  19
 
 + 
 + 			if (mc.gameSettings.shaders) {
@@ -152,6 +282,7 @@
 + 				if (theWorld.provider.getHasNoSky()) {
 + 					dfc.is_rendering_shadowsSun_clamped = 0;
 + 					dfc.is_rendering_lightShafts = false;
++ 					dfc.is_rendering_subsurfaceScattering = false;
 + 				} else {
 + 					int maxDist = renderDistanceChunks << 4;
 + 					int ss = dfc.is_rendering_shadowsSun;
@@ -159,7 +290,9 @@
 + 						--ss;
 + 					}
 + 					dfc.is_rendering_shadowsSun_clamped = ss;
-+ 					dfc.is_rendering_lightShafts = dfc.lightShafts;
++ 					dfc.is_rendering_lightShafts = ss > 0 && dfc.lightShafts && dfc.shaderPackInfo.LIGHT_SHAFTS;
++ 					dfc.is_rendering_subsurfaceScattering = ss > 0 && dfc.subsurfaceScattering
++ 							&& dfc.shaderPackInfo.SUBSURFACE_SCATTERING;
 + 				}
 + 				boolean flag = false;
 + 				if (EaglerDeferredPipeline.instance == null) {
@@ -220,7 +353,11 @@
 
 + 			boolean light = DynamicLightManager.isRenderingLights();
 
-> CHANGE  27 : 36  @  27 : 54
+> DELETE  6  @  6 : 7
+
+> DELETE  16  @  16 : 17
+
+> CHANGE  3 : 12  @  3 : 30
 
 ~ 			if (!DeferredStateManager.isDeferredRenderer()) {
 ~ 				for (int i = 0; i < this.theWorld.weatherEffects.size(); ++i) {
@@ -234,7 +371,7 @@
 
 > DELETE  2  @  2 : 16
 
-> CHANGE  4 : 7  @  4 : 5
+> CHANGE  2 : 5  @  2 : 5
 
 ~ 			label738: for (int ii = 0, ll = this.renderInfos.size(); ii < ll; ++ii) {
 ~ 				RenderGlobal.ContainerLocalRenderInformation renderglobal$containerlocalrenderinformation = this.renderInfos
@@ -246,7 +383,9 @@
 + 								entity2.renderDynamicLightsEagler(partialTicks, flag2);
 + 							}
 
-> CHANGE  27 : 30  @  27 : 28
+> DELETE  24  @  24 : 25
+
+> CHANGE  2 : 5  @  2 : 3
 
 ~ 			for (int ii = 0, ll = this.renderInfos.size(); ii < ll; ++ii) {
 ~ 				RenderGlobal.ContainerLocalRenderInformation renderglobal$containerlocalrenderinformation1 = this.renderInfos
@@ -258,7 +397,9 @@
 ~ 						TileEntityRendererDispatcher.instance.renderTileEntity((TileEntity) list1.get(m), partialTicks,
 ~ 								-1);
 
-> INSERT  40 : 199  @  40
+> DELETE  36  @  36 : 37
+
+> INSERT  3 : 154  @  3
 
 + 	public static interface EntityChunkCullAdapter {
 + 		boolean shouldCull(RenderChunk renderChunk);
@@ -271,8 +412,6 @@
 + 	public void renderShadowLODEntities(Entity renderViewEntity, float partialTicks,
 + 			EntityChunkCullAdapter entityChunkCull, EntityObjectCullAdapter entityObjectCull) { // TODO
 + 		if (renderEntitiesStartupCounter <= 0) {
-+ 			theWorld.theProfiler.startSection("shadow_entity_prepare");
-+ 
 + 			TileEntityRendererDispatcher.instance.cacheActiveRenderInfo(theWorld, mc.getTextureManager(),
 + 					mc.fontRendererObj, renderViewEntity, partialTicks);
 + 			renderManager.cacheActiveRenderInfo(theWorld, mc.fontRendererObj, renderViewEntity, mc.pointedEntity,
@@ -289,7 +428,6 @@
 + 			TileEntityRendererDispatcher.staticPlayerZ = d5;
 + 			renderManager.setRenderPosition(d3, d4, d5);
 + 
-+ 			this.theWorld.theProfiler.endStartSection("shadow_entities");
 + 			for (RenderGlobal.ContainerLocalRenderInformation containerlocalrenderinformation : this.renderInfos) {
 + 				RenderChunk currentRenderChunk = containerlocalrenderinformation.renderChunk;
 + 
@@ -343,14 +481,11 @@
 + 					GlStateManager.depthMask(true);
 + 				}
 + 			}
-+ 			theWorld.theProfiler.endSection();
 + 		}
 + 	}
 + 
 + 	public void renderParaboloidTileEntities(Entity renderViewEntity, float partialTicks, int up) {
 + 		if (renderEntitiesStartupCounter <= 0) {
-+ 			theWorld.theProfiler.startSection("paraboloid_entity_prepare");
-+ 
 + 			TileEntityRendererDispatcher.instance.cacheActiveRenderInfo(theWorld, mc.getTextureManager(),
 + 					mc.fontRendererObj, renderViewEntity, partialTicks);
 + 			renderManager.cacheActiveRenderInfo(theWorld, mc.fontRendererObj, renderViewEntity, mc.pointedEntity,
@@ -391,7 +526,6 @@
 + 			maxY = MathHelper.floor_double(maxY / 16.0) * 16;
 + 			maxZ = MathHelper.floor_double(maxZ / 16.0) * 16;
 + 
-+ 			this.theWorld.theProfiler.endStartSection("paraboloid_entities");
 + 			for (int cx = minX; cx <= maxX; cx += 16) {
 + 				for (int cz = minZ; cz <= maxZ; cz += 16) {
 + 					for (int cy = minY; cy <= maxY; cy += 16) {
@@ -414,7 +548,6 @@
 + 					}
 + 				}
 + 			}
-+ 			theWorld.theProfiler.endSection();
 + 			mc.entityRenderer.disableLightmap();
 + 		}
 + 	}
@@ -430,7 +563,15 @@
 
 ~ 		return HString.format("C: %d/%d %sD: %d, %s",
 
-> CHANGE  53 : 55  @  53 : 54
+> DELETE  15  @  15 : 16
+
+> DELETE  15  @  15 : 16
+
+> DELETE  4  @  4 : 5
+
+> DELETE  7  @  7 : 8
+
+> CHANGE  8 : 10  @  8 : 9
 
 ~ 				|| (double) viewEntity.rotationYaw != this.lastViewEntityYaw
 ~ 				|| this.mc.entityRenderer.currentProjMatrixFOV != this.lastViewProjMatrixFOV;
@@ -457,12 +598,16 @@
 ~ 			RenderGlobal.ContainerLocalRenderInformation renderglobal$containerlocalrenderinformation2 = this.renderInfos
 ~ 					.get(ii);
 
-> CHANGE  3 : 5  @  3 : 4
+> CHANGE  3 : 5  @  3 : 5
 
 ~ 				if (this.mc.gameSettings.chunkFix ? this.isPositionInRenderChunkHack(blockpos1, renderchunk4)
 ~ 						: this.isPositionInRenderChunk(blockpos, renderchunk4)) {
 
-> INSERT  21 : 31  @  21
+> DELETE  2  @  2 : 3
+
+> DELETE  7  @  7 : 8
+
+> INSERT  9 : 19  @  9
 
 + 	/**
 + 	 * WARNING: use only in the above "build near" logic
@@ -475,17 +620,31 @@
 + 	}
 + 
 
-> INSERT  29 : 30  @  29
+> CHANGE  5 : 6  @  5 : 7
+
+~ 		for (BlockPos blockpos$mutableblockpos : BlockPos.getAllInBoxMutable(blockpos, blockpos.add(15, 15, 15))) {
+
+> INSERT  22 : 23  @  22
 
 + 		((ClippingHelperImpl) this.debugFixedClippingHelper).destroy();
 
-> CHANGE  58 : 61  @  58 : 59
+> DELETE  48  @  48 : 49
+
+> CHANGE  9 : 12  @  9 : 10
 
 ~ 				for (int ii = 0, ll = this.renderInfos.size(); ii < ll; ++ii) {
 ~ 					RenderGlobal.ContainerLocalRenderInformation renderglobal$containerlocalrenderinformation = this.renderInfos
 ~ 							.get(ii);
 
-> INSERT  33 : 70  @  33
+> DELETE  7  @  7 : 9
+
+> DELETE  2  @  2 : 3
+
+> DELETE  15  @  15 : 16
+
+> DELETE  1  @  1 : 2
+
+> INSERT  3 : 39  @  3
 
 + 	public static interface ChunkCullAdapter {
 + 		boolean shouldCull(RenderChunk chunk);
@@ -518,7 +677,6 @@
 + 			}
 + 		}
 + 		if (i > 0) {
-+ 			this.mc.mcProfiler.endStartSection("render_shadow_" + blockLayerIn);
 + 			this.renderContainer.renderChunkLayer(blockLayerIn);
 + 		}
 + 		return i;
@@ -579,17 +737,24 @@
 ~ 						++i;
 ~ 					}
 
-> CHANGE  3 : 10  @  3 : 5
+> CHANGE  3 : 9  @  3 : 5
 
 ~ 		if (i > 0) {
-~ 			this.mc.mcProfiler.endStartSection("render_paraboloid_" + up + "_" + blockLayerIn);
 ~ 			this.mc.entityRenderer.enableLightmap();
 ~ 			this.renderContainer.renderChunkLayer(blockLayerIn);
 ~ 			this.mc.entityRenderer.disableLightmap();
 ~ 		}
 ~ 		return i;
 
-> CHANGE  92 : 93  @  92 : 102
+> CHANGE  18 : 19  @  18 : 19
+
+~ 		alfheim$processLightUpdates();
+
+> INSERT  71 : 72  @  71
+
++ 			GlStateManager.disableDepth();
+
+> CHANGE  2 : 3  @  2 : 12
 
 ~ 			GlStateManager.callList(this.glSkyList);
 
@@ -597,19 +762,75 @@
 
 ~ 							.pos((double) (f12 * 120.0F), (double) (f13 * 120.0F), (double) (f13 * 40.0F * afloat[3]))
 
-> CHANGE  42 : 43  @  42 : 52
+> INSERT  14 : 15  @  14
+
++ 			CustomSky.renderSky(this.theWorld, this.renderEngine, partialTicks);
+
+> DELETE  1  @  1 : 2
+
+> CHANGE  1 : 2  @  1 : 8
+
+~ 			GlStateManager.callList(glSunList);
+
+> CHANGE  1 : 2  @  1 : 14
+
+~ 			GlStateManager.callList(getMoonList(this.theWorld.getMoonPhase()));
+
+> CHANGE  2 : 4  @  2 : 3
+
+~ 			boolean b = !CustomSky.hasSkyLayers(this.theWorld);
+~ 			if (f15 > 0.0F && b) {
+
+> CHANGE  1 : 2  @  1 : 11
 
 ~ 				GlStateManager.callList(this.starGLCallList);
 
-> CHANGE  13 : 14  @  13 : 23
+> CHANGE  10 : 11  @  10 : 11
+
+~ 			if (d0 < 0.0D && b) {
+
+> CHANGE  2 : 3  @  2 : 12
 
 ~ 				GlStateManager.callList(this.glSkyList2);
 
-> CHANGE  372 : 373  @  372 : 373
+> DELETE  2  @  2 : 3
+
+> CHANGE  1 : 7  @  1 : 24
+
+~ 
+~ 				GlStateManager.pushMatrix();
+~ 				GlStateManager.translate(0.0F, f19, 0.0F);
+~ 				GlStateManager.scale(1.0f, 1.0f - f19, 1.0f);
+~ 				GlStateManager.callList(this.glHorizonList);
+~ 				GlStateManager.popMatrix();
+
+> CHANGE  8 : 15  @  8 : 12
+
+~ 			if (b) {
+~ 				GlStateManager.pushMatrix();
+~ 				GlStateManager.translate(0.0F, -((float) (d0 - 16.0D)), 0.0F);
+~ 				GlStateManager.callList(this.glSkyList2);
+~ 				GlStateManager.popMatrix();
+~ 			}
+~ 
+
+> INSERT  2 : 3  @  2
+
++ 			GlStateManager.enableDepth();
+
+> DELETE  3  @  3 : 79
+
+> DELETE  4  @  4 : 251
+
+> CHANGE  1 : 2  @  1 : 2
 
 ~ 		this.displayListEntitiesDirty |= this.renderDispatcher.updateChunks(finishTimeNano);
 
-> DELETE  17  @  17 : 18
+> CHANGE  11 : 12  @  11 : 12
+
+~ 				long i = finishTimeNano - EagRuntime.nanoTime();
+
+> DELETE  5  @  5 : 6
 
 > CHANGE  155 : 159  @  155 : 156
 
@@ -638,11 +859,15 @@
 
 ~ 			EaglercraftGPU.glLineWidth(2.0F);
 
-> CHANGE  240 : 241  @  240 : 241
+> CHANGE  111 : 112  @  111 : 115
+
+~ 		this.alfheim$lightUpdatesQueue.enqueue(blockpos.toLong());
+
+> CHANGE  125 : 126  @  125 : 126
 
 ~ 		EaglercraftRandom random = this.theWorld.rand;
 
-> INSERT  229 : 248  @  229
+> INSERT  229 : 267  @  229
 
 + 
 + 	public String getDebugInfoShort() {
@@ -662,6 +887,25 @@
 + 
 + 		return "" + Minecraft.getDebugFPS() + "fps | C: " + j + "/" + i + ", E: " + this.countEntitiesRendered + "+" + k
 + 				+ ", " + renderDispatcher.getDebugInfo();
++ 	}
++ 
++ 	public void alfheim$processLightUpdates() {
++ 		if (alfheim$lightUpdatesQueue.isEmpty())
++ 			return;
++ 
++ 		do {
++ 			final long longPos = alfheim$lightUpdatesQueue.dequeue();
++ 			final int x = (int) (longPos << 64 - BlockPos.X_SHIFT - BlockPos.NUM_X_BITS >> 64 - BlockPos.NUM_X_BITS);
++ 			final int y = (int) (longPos << 64 - BlockPos.Y_SHIFT - BlockPos.NUM_Y_BITS >> 64 - BlockPos.NUM_Y_BITS);
++ 			final int z = (int) (longPos << 64 - BlockPos.NUM_Z_BITS >> 64 - BlockPos.NUM_Z_BITS);
++ 			markBlocksForUpdate(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1);
++ 		} while (!alfheim$lightUpdatesQueue.isEmpty());
++ 
++ 		alfheim$lightUpdatesQueue.newDeduplicationSet();
++ 	}
++ 
++ 	public double getCloudCounter(float partialTicks) {
++ 		return (double) cloudTickCounter + partialTicks;
 + 	}
 
 > EOF

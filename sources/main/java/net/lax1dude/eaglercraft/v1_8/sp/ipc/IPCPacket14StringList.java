@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.ipc;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
+/*
  * Copyright (c) 2023-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,6 +13,15 @@ import java.util.List;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.ipc;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public class IPCPacket14StringList implements IPCPacketBase {
 	
 	public static final int ID = 0x14;
@@ -34,11 +35,11 @@ public class IPCPacket14StringList implements IPCPacketBase {
 	public final List<String> stringList;
 	
 	public IPCPacket14StringList() {
-		stringList = new ArrayList();
+		stringList = new ArrayList<>();
 	}
 	
 	public IPCPacket14StringList(int opcode, String[] list) {
-		stringList = new ArrayList();
+		stringList = new ArrayList<>(list.length);
 		for(int i = 0; i < list.length; ++i) {
 			String s = list[i].trim();
 			if(s.length() > 0) {
@@ -49,7 +50,7 @@ public class IPCPacket14StringList implements IPCPacketBase {
 	}
 	
 	public IPCPacket14StringList(int opcode, List<String> list) {
-		stringList = new ArrayList();
+		stringList = new ArrayList<>(list.size());
 		for(int i = 0, l = list.size(); i < l; ++i) {
 			String s = list.get(i).trim();
 			if(s.length() > 0) {

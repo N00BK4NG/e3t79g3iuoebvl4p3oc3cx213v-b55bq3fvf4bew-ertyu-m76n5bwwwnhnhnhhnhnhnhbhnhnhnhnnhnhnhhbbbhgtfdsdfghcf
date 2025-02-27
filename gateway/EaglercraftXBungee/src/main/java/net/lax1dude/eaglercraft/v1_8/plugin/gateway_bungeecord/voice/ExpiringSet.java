@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.voice;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-
-/**
+/*
  * Copyright (c) 2022 ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,6 +13,16 @@ import java.util.Map;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.voice;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+
 public class ExpiringSet<T> extends HashSet<T> {
     private final long expiration;
     private final ExpiringEvent<T> event;
@@ -42,7 +45,7 @@ public class ExpiringSet<T> extends HashSet<T> {
 
     public void checkForExpirations() {
         Iterator<T> iterator = this.timestamps.keySet().iterator();
-        long now = System.currentTimeMillis();
+        long now = EaglerXBungeeAPIHelper.steadyTimeMillis();
         while (iterator.hasNext()) {
             T element = iterator.next();
             if (super.contains(element)) {
@@ -61,7 +64,7 @@ public class ExpiringSet<T> extends HashSet<T> {
     public boolean add(T o) {
         checkForExpirations();
         boolean success = super.add(o);
-        if (success) timestamps.put(o, System.currentTimeMillis());
+        if (success) timestamps.put(o, EaglerXBungeeAPIHelper.steadyTimeMillis());
         return success;
     }
 

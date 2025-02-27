@@ -1,40 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMUtils;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.sp.lan.LANPeerEvent;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQuery;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayWorldsQuery;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.*;
-import net.lax1dude.eaglercraft.v1_8.update.UpdateService;
-
-import org.json.JSONObject;
-import org.json.JSONWriter;
-import org.teavm.jso.JSBody;
-import org.teavm.jso.JSFunctor;
-import org.teavm.jso.JSObject;
-import org.teavm.jso.browser.Window;
-import org.teavm.jso.core.JSError;
-import org.teavm.jso.dom.events.Event;
-import org.teavm.jso.dom.events.EventListener;
-import org.teavm.jso.json.JSON;
-import org.teavm.jso.typedarrays.ArrayBuffer;
-import org.teavm.jso.websocket.WebSocket;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.*;
-
-/**
- * Copyright (c) 2022-2024 ayunami2000. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -48,27 +13,155 @@ import java.util.*;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.teavm.TeaVMUtils;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.sp.internal.ClientPlatformSingleplayer;
+import net.lax1dude.eaglercraft.v1_8.sp.lan.LANPeerEvent;
+
+import org.json.JSONObject;
+import org.json.JSONWriter;
+import org.teavm.jso.JSBody;
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
+import org.teavm.jso.browser.TimerHandler;
+import org.teavm.jso.browser.Window;
+import org.teavm.jso.core.JSError;
+import org.teavm.jso.dom.events.Event;
+import org.teavm.jso.dom.events.EventListener;
+import org.teavm.jso.json.JSON;
+import org.teavm.jso.typedarrays.ArrayBuffer;
+import org.teavm.jso.websocket.WebSocket;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
+
+import java.util.*;
+
 public class PlatformWebRTC {
 
 	private static final Logger logger = LogManager.getLogger("PlatformWebRTC");
 
-	@JSBody(script = "return typeof window.RTCPeerConnection !== \"undefined\";")
-	public static native boolean supported();
+	static final int WEBRTC_SUPPORT_NONE = 0;
+	static final int WEBRTC_SUPPORT_CORE = 1;
+	static final int WEBRTC_SUPPORT_WEBKIT = 2;
+	static final int WEBRTC_SUPPORT_MOZ = 3;
+	static final int WEBRTC_SUPPORT_CORE_NON_PROMISING = 4;
 
-	@JSBody(params = { "item" }, script = "return item.close();")
+	@JSBody(script = "var checkPromising = function() { try {"
+			+ "return (typeof (new RTCPeerConnection({iceServers:[{urls:\"stun:127.69.0.1:6969\"}]})).createOffer() === \"object\") ? 1 : 4;"
+			+ "} catch(ex) {"
+			+ "return (ex.name === \"TypeError\") ? 4 : 1;"
+			+ "}};"
+			+ "return (typeof RTCPeerConnection !== \"undefined\")"
+			+ " ? checkPromising()"
+			+ " : ((typeof webkitRTCPeerConnection !== \"undefined\") ? 2"
+			+ " : ((typeof mozRTCPeerConnection !== \"undefined\") ? 3"
+			+ " : 0));")
+	private static native int checkSupportedImpl();
+
+	static boolean hasCheckedSupport = false;
+	static int supportedImpl = WEBRTC_SUPPORT_NONE;
+	static boolean useSessionDescConstructor = false;
+	static boolean useOldConnStateCheck = false;
+	static boolean belowChrome71Fix = false;
+
+	public static boolean supported() {
+		if(!hasCheckedSupport) {
+			supportedImpl = checkSupportedImpl();
+			hasCheckedSupport = true;
+			if(supportedImpl == WEBRTC_SUPPORT_NONE) {
+				logger.error("WebRTC is not supported on this browser!");
+			}else if(supportedImpl == WEBRTC_SUPPORT_WEBKIT) {
+				logger.info("Using webkit- prefix for RTCPeerConnection");
+			}else if(supportedImpl == WEBRTC_SUPPORT_MOZ) {
+				logger.info("Using moz- prefix for RTCPeerConnection");
+			}else if(supportedImpl == WEBRTC_SUPPORT_CORE_NON_PROMISING) {
+				logger.info("Using non-promising RTCPeerConnection");
+			}
+			if(supportedImpl != WEBRTC_SUPPORT_NONE) {
+				belowChrome71Fix = isChromeBelow71();
+				if(belowChrome71Fix) {
+					logger.info("Note: Detected Chrome below version 71, stripping \"a=extmap-allow-mixed\" from the description SDP field");
+				}
+			}else {
+				belowChrome71Fix = false;
+			}
+		}
+		return supportedImpl != WEBRTC_SUPPORT_NONE;
+	}
+
+	@JSBody(params = { "item" }, script = "item.close();")
 	static native void closeIt(JSObject item);
 
 	@JSBody(params = { "item" }, script = "return item.readyState;")
 	static native String getReadyState(JSObject item);
 
-	@JSBody(params = { "item", "buffer" }, script = "return item.send(buffer);")
+	@JSBody(params = { "item", "buffer" }, script = "item.send(buffer);")
 	static native void sendIt(JSObject item, ArrayBuffer buffer);
 
 	@JSBody(params = { "item" }, script = "return !!item.candidate;")
 	static native boolean hasCandidate(JSObject item);
 
-	@JSBody(params = { "item" }, script = "return item.connectionState;")
-	static native String getConnectionState(JSObject item);
+	@JSBody(params = { "item" }, script = "return item.connectionState || \"\";")
+	private static native String getModernConnectionState(JSObject item);
+
+	@JSBody(params = { "item" }, script = "return item.iceConnectionState;")
+	private static native String getICEConnectionState(JSObject item);
+
+	@JSBody(params = { "item" }, script = "return item.signalingState;")
+	private static native String getSignalingState(JSObject item);
+
+	static String getConnectionState(JSObject item) {
+		if(useOldConnStateCheck) {
+			return getConnectionStateLegacy(item);
+		}else {
+			String str = getModernConnectionState(item);
+			if(str.length() == 0) {
+				useOldConnStateCheck = true;
+				logger.info("Note: Using legacy connection state check using iceConnectionState+signalingState");
+				return getConnectionStateLegacy(item);
+			}else {
+				return str;
+			}
+		}
+	}
+
+	private static String getConnectionStateLegacy(JSObject item) {
+		String connState = getICEConnectionState(item);
+		switch(connState) {
+		case "new":
+			return "new";
+		case "checking":
+			return "connecting";
+		case "failed":
+			return "failed";
+		case "disconnected":
+			return "disconnected";
+		case "connected":
+		case "completed":
+		case "closed":
+			String signalState = getSignalingState(item);
+			switch(signalState) {
+			case "stable":
+				return "connected";
+			case "have-local-offer":
+			case "have-remote-offer":
+			case "have-local-pranswer":
+			case "have-remote-pranswer":
+				return "connecting";
+			case "closed":
+			default:
+				return "closed";
+			}
+		default:
+			return "closed";
+		}
+	}
 
 	@JSBody(params = { "item" }, script = "return item.candidate.sdpMLineIndex;")
 	static native int getSdpMLineIndex(JSObject item);
@@ -76,13 +169,34 @@ public class PlatformWebRTC {
 	@JSBody(params = { "item" }, script = "return item.candidate.candidate;")
 	static native String getCandidate(JSObject item);
 
+	static JSObject createRTCPeerConnection(String iceServers) {
+		if(!hasCheckedSupport) supported();
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			return createCoreRTCPeerConnection(iceServers);
+		case WEBRTC_SUPPORT_WEBKIT:
+			return createWebkitRTCPeerConnection(iceServers);
+		case WEBRTC_SUPPORT_MOZ:
+			return createMozRTCPeerConnection(iceServers);
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
 	@JSBody(params = { "iceServers" }, script = "return new RTCPeerConnection({ iceServers: JSON.parse(iceServers), optional: [ { DtlsSrtpKeyAgreement: true } ] });")
-	static native JSObject createRTCPeerConnection(String iceServers);
+	static native JSObject createCoreRTCPeerConnection(String iceServers);
+
+	@JSBody(params = { "iceServers" }, script = "return new webkitRTCPeerConnection({ iceServers: JSON.parse(iceServers), optional: [ { DtlsSrtpKeyAgreement: true } ] });")
+	static native JSObject createWebkitRTCPeerConnection(String iceServers);
+
+	@JSBody(params = { "iceServers" }, script = "return new mozRTCPeerConnection({ iceServers: JSON.parse(iceServers), optional: [ { DtlsSrtpKeyAgreement: true } ] });")
+	static native JSObject createMozRTCPeerConnection(String iceServers);
 
 	@JSBody(params = { "peerConnection", "name" }, script = "return peerConnection.createDataChannel(name);")
 	static native JSObject createDataChannel(JSObject peerConnection, String name);
 
-	@JSBody(params = { "item", "type" }, script = "return (item.binaryType = type);")
+	@JSBody(params = { "item", "type" }, script = "item.binaryType = type;")
 	static native void setBinaryType(JSObject item, String type);
 
 	@JSBody(params = { "item" }, script = "return item.data;")
@@ -91,28 +205,212 @@ public class PlatformWebRTC {
 	@JSBody(params = { "item" }, script = "return item.channel;")
 	static native JSObject getChannel(JSObject item);
 
-	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "return peerConnection.createOffer(h1, h2);")
-	static native void createOffer(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
+	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "peerConnection.createOffer().then(h1).catch(h2);")
+	private static native void createOfferPromising(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
 
-	@JSBody(params = { "peerConnection", "desc", "h1", "h2" }, script = "return peerConnection.setLocalDescription(desc, h1, h2);")
-	static native void setLocalDescription(JSObject peerConnection, JSObject desc, EmptyHandler h1, ErrorHandler h2);
+	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "peerConnection.createOffer(h1, h2);")
+	private static native void createOfferLegacy(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
 
-	@JSBody(params = { "peerConnection", "str" }, script = "return peerConnection.setRemoteDescription(JSON.parse(str));")
-	static native void setRemoteDescription(JSObject peerConnection, String str);
+	static void createOffer(JSObject peerConnection, DescHandler h1, ErrorHandler h2) {
+		if(!hasCheckedSupport) supported();
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+			createOfferPromising(peerConnection, h1, h2);
+			break;
+		case WEBRTC_SUPPORT_WEBKIT:
+		case WEBRTC_SUPPORT_MOZ:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			createOfferLegacy(peerConnection, h1, h2);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
 
-	@JSBody(params = { "peerConnection", "str" }, script = "const candidateList = JSON.parse(str); for (let i = 0; i < candidateList.length; ++i) { peerConnection.addIceCandidate(candidateList[i]); }; return null;")
-	static native void addIceCandidates(JSObject peerConnection, String str);
+	@JSBody(params = { "peerConnection", "desc", "h1", "h2" }, script = "peerConnection.setLocalDescription(desc).then(h1).catch(h2);")
+	private static native void setLocalDescriptionPromising(JSObject peerConnection, JSObject desc, EmptyHandler h1, ErrorHandler h2);
 
-	@JSBody(params = { "peerConnection", "str" }, script = "const candidateList = JSON.parse(str); for (let i = 0; i < candidateList.length; ++i) { peerConnection.addIceCandidate(new RTCIceCandidate(candidateList[i])); }; return null;")
-	static native void addIceCandidates2(JSObject peerConnection, String str);
+	@JSBody(params = { "peerConnection", "desc", "h1", "h2" }, script = "peerConnection.setLocalDescription(desc, h1, h2);")
+	private static native void setLocalDescriptionLegacy(JSObject peerConnection, JSObject desc, EmptyHandler h1, ErrorHandler h2);
 
-	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "return peerConnection.setRemoteDescription(JSON.parse(str), h1, h2);")
-	static native void setRemoteDescription2(JSObject peerConnection, String str, EmptyHandler h1, ErrorHandler h2);
+	static void setLocalDescription(JSObject peerConnection, JSObject desc, EmptyHandler h1, ErrorHandler h2) {
+		if(!hasCheckedSupport) supported();
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+			setLocalDescriptionPromising(peerConnection, desc, h1, h2);
+			break;
+		case WEBRTC_SUPPORT_WEBKIT:
+		case WEBRTC_SUPPORT_MOZ:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			setLocalDescriptionLegacy(peerConnection, desc, h1, h2);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
 
-	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "return peerConnection.createAnswer(h1, h2);")
-	static native void createAnswer(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
+	@JSBody(params = { "peerConnection", "str" }, script = "var candidateList = JSON.parse(str); for (var i = 0; i < candidateList.length; ++i) { peerConnection.addIceCandidate(new RTCIceCandidate(candidateList[i])); }; return null;")
+	private static native void addCoreIceCandidates(JSObject peerConnection, String str);
 
-	private static final Map<String, JSObject> fuckTeaVM = new HashMap<>();
+	@JSBody(params = { "peerConnection", "str" }, script = "var candidateList = JSON.parse(str); for (var i = 0; i < candidateList.length; ++i) { peerConnection.addIceCandidate(new mozRTCIceCandidate(candidateList[i])); }; return null;")
+	private static native void addMozIceCandidates(JSObject peerConnection, String str);
+
+	@JSBody(params = { }, script = "if(!navigator || !navigator.userAgent) return false;"
+			+ "var ua = navigator.userAgent.toLowerCase();"
+			+ "var i = ua.indexOf(\"chrome/\");"
+			+ "if(i === -1) return false;"
+			+ "i += 7;"
+			+ "var j = ua.indexOf(\".\", i);"
+			+ "if(j === -1 || j < i) j = ua.length;"
+			+ "var versStr = ua.substring(i, j);"
+			+ "versStr = parseInt(versStr);"
+			+ "return !isNaN(versStr) && versStr < 71;")
+	private static native boolean isChromeBelow71();
+
+	static void addIceCandidates(JSObject peerConnection, String str) {
+		if(!hasCheckedSupport) supported();
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+		case WEBRTC_SUPPORT_WEBKIT:
+			addCoreIceCandidates(peerConnection, str);
+			break;
+		case WEBRTC_SUPPORT_MOZ:
+			addMozIceCandidates(peerConnection, str);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	@JSBody(params = { "peerConnection", "str" }, script = "try { peerConnection.setRemoteDescription(str); return true; } catch(ex) { if(ex.name === \"TypeError\") return false; else throw ex; }")
+	private static native boolean setCoreRemoteDescription(JSObject peerConnection, JSObject str);
+
+	@JSBody(params = { "peerConnection", "str" }, script = "peerConnection.setRemoteDescription(new RTCSessionDescription(str));")
+	private static native void setCoreRemoteDescriptionLegacy(JSObject peerConnection, JSObject str);
+
+	@JSBody(params = { "peerConnection", "str" }, script = "peerConnection.setRemoteDescription(new mozRTCSessionDescription(str));")
+	private static native void setMozRemoteDescriptionLegacy(JSObject peerConnection, JSObject str);
+
+	static void setRemoteDescription(JSObject peerConnection, JSObject str) {
+		if(!hasCheckedSupport) supported();
+		if(belowChrome71Fix) {
+			removeExtmapAllowMixed(str);
+		}
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			if(useSessionDescConstructor) {
+				setCoreRemoteDescriptionLegacy(peerConnection, str);
+			}else {
+				if(!setCoreRemoteDescription(peerConnection, str)) {
+					useSessionDescConstructor = true;
+					logger.info("Note: Caught suspicious exception, using legacy RTCSessionDescription method");
+					setCoreRemoteDescriptionLegacy(peerConnection, str);
+				}
+			}
+			break;
+		case WEBRTC_SUPPORT_WEBKIT:
+			setCoreRemoteDescriptionLegacy(peerConnection, str);
+			break;
+		case WEBRTC_SUPPORT_MOZ:
+			setMozRemoteDescriptionLegacy(peerConnection, str);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "try { peerConnection.setRemoteDescription(str).then(h1).catch(h2); return true; } catch(ex) { if(ex.name === \"TypeError\") return false; else throw ex; }")
+	private static native boolean setCoreRemoteDescription2Promising(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2);
+
+	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "try { peerConnection.setRemoteDescription(str, h1, h2); return true; } catch(ex) { if(ex.name === \"TypeError\") return false; else throw ex; }")
+	private static native boolean setCoreRemoteDescription2Legacy(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2);
+
+	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "peerConnection.setRemoteDescription(new RTCSessionDescription(str)).then(h1).catch(h2);")
+	private static native void setCoreRemoteDescription2PromisingLegacy(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2);
+
+	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "peerConnection.setRemoteDescription(new RTCSessionDescription(str), h1, h2);")
+	private static native void setCoreRemoteDescription2LegacyLegacy(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2);
+
+	@JSBody(params = { "peerConnection", "str", "h1", "h2" }, script = "peerConnection.setRemoteDescription(new mozRTCSessionDescription(str), h1, h2);")
+	private static native void setMozRemoteDescription2LegacyLegacy(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2);
+
+	static void setRemoteDescription2(JSObject peerConnection, JSObject str, EmptyHandler h1, ErrorHandler h2) {
+		if(!hasCheckedSupport) supported();
+		if(belowChrome71Fix) {
+			removeExtmapAllowMixed(str);
+		}
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+			if(useSessionDescConstructor) {
+				setCoreRemoteDescription2PromisingLegacy(peerConnection, str, h1, h2);
+			}else {
+				if(!setCoreRemoteDescription2Promising(peerConnection, str, h1, h2)) {
+					useSessionDescConstructor = true;
+					logger.info("Note: Caught suspicious exception, using legacy RTCSessionDescription method");
+					setCoreRemoteDescription2PromisingLegacy(peerConnection, str, h1, h2);
+				}
+			}
+			break;
+		case WEBRTC_SUPPORT_WEBKIT:
+			setCoreRemoteDescription2LegacyLegacy(peerConnection, str, h1, h2);
+			break;
+		case WEBRTC_SUPPORT_MOZ:
+			setMozRemoteDescription2LegacyLegacy(peerConnection, str, h1, h2);
+			break;
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			if(useSessionDescConstructor) {
+				setCoreRemoteDescription2LegacyLegacy(peerConnection, str, h1, h2);
+			}else {
+				if(!setCoreRemoteDescription2Legacy(peerConnection, str, h1, h2)) {
+					useSessionDescConstructor = true;
+					logger.info("Note: Caught suspicious exception, using legacy RTCSessionDescription method");
+					setCoreRemoteDescription2LegacyLegacy(peerConnection, str, h1, h2);
+				}
+			}
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	@JSBody(params = { "objIn" }, script = "if(typeof objIn.sdp === \"string\""
+			+ "&& objIn.sdp.indexOf(\"a=extmap-allow-mixed\") !== -1) {"
+			+ "objIn.sdp = objIn.sdp.split(\"\\n\").filter(function(line) {"
+			+ "return line.trim() !== \"a=extmap-allow-mixed\";"
+			+ "}).join(\"\\n\");"
+			+ "}")
+	private static native void removeExtmapAllowMixed(JSObject objIn);
+
+	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "peerConnection.createAnswer().then(h1).catch(h2);")
+	private static native void createAnswerPromising(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
+
+	@JSBody(params = { "peerConnection", "h1", "h2" }, script = "peerConnection.createAnswer(h1, h2);")
+	private static native void createAnswerLegacy(JSObject peerConnection, DescHandler h1, ErrorHandler h2);
+
+	static void createAnswer(JSObject peerConnection, DescHandler h1, ErrorHandler h2) {
+		if(!hasCheckedSupport) supported();
+		switch(supportedImpl) {
+		case WEBRTC_SUPPORT_CORE:
+			createAnswerPromising(peerConnection, h1, h2);
+			break;
+		case WEBRTC_SUPPORT_WEBKIT:
+		case WEBRTC_SUPPORT_MOZ:
+		case WEBRTC_SUPPORT_CORE_NON_PROMISING:
+			createAnswerLegacy(peerConnection, h1, h2);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	@JSBody(params = { "sock", "buffer" }, script = "sock.send(buffer);")
+	static native void nativeBinarySend(WebSocket sock, ArrayBuffer buffer);
+
+	public static void runScheduledTasks() {
+		
+	}
 
 	public static class LANClient {
 		public static final byte READYSTATE_INIT_FAILED = -2;
@@ -130,11 +428,17 @@ public class PlatformWebRTC {
 		public void initialize() {
 			try {
 				if (dataChannel != null) {
-					closeIt(dataChannel);
+					try {
+						closeIt(dataChannel);
+					} catch (Throwable t) {
+					}
 					dataChannel = null;
 				}
 				if (peerConnection != null) {
-					closeIt(peerConnection);
+					try {
+						closeIt(peerConnection);
+					} catch (Throwable t) {
+					}
 				}
 				this.peerConnection = createRTCPeerConnection(JSONWriter.valueToString(iceServers));
 				this.readyState = READYSTATE_CONNECTING;
@@ -179,12 +483,20 @@ public class PlatformWebRTC {
 			TeaVMUtils.addEventListener(peerConnection, "icecandidate", (EventListener<Event>) evt -> {
 				if (hasCandidate(evt)) {
 					if (iceCandidates.isEmpty()) {
-						Window.setTimeout(() -> {
+						final int[] candidateState = new int[2];
+						final TimerHandler[] runnable = new TimerHandler[1];
+						Window.setTimeout(runnable[0] = () -> {
 							if (peerConnection != null && !"disconnected".equals(getConnectionState(peerConnection))) {
+								int trial = ++candidateState[1];
+								if(candidateState[0] != iceCandidates.size() && trial < 3) {
+									candidateState[0] = iceCandidates.size();
+									Window.setTimeout(runnable[0], 2000);
+									return;
+								}
 								clientICECandidate = JSONWriter.valueToString(iceCandidates);
 								iceCandidates.clear();
 							}
-						}, 3000);
+						}, 2000);
 					}
 					Map<String, String> m = new HashMap<>();
 					m.put("sdpMLineIndex", "" + getSdpMLineIndex(evt));
@@ -199,7 +511,7 @@ public class PlatformWebRTC {
 			final Object[] evtHandler = new Object[1];
 			evtHandler[0] = (EventListener<Event>) evt -> {
 				if (!iceCandidates.isEmpty()) {
-					Window.setTimeout(() -> ((EventListener<Event>)evtHandler[0]).handleEvent(evt), 1);
+					Window.setTimeout(() -> ((EventListener<Event>)evtHandler[0]).handleEvent(evt), 10);
 					return;
 				}
 				clientDataChannelClosed = false;
@@ -243,7 +555,7 @@ public class PlatformWebRTC {
 
 		public void signalRemoteDescription(String json) {
 			try {
-				setRemoteDescription(peerConnection, json);
+				setRemoteDescription(peerConnection, JSON.parse(json));
 			} catch (Throwable t) {
 				EagRuntime.debugPrintStackTrace(t);
 				readyState = READYSTATE_FAILED;
@@ -274,14 +586,12 @@ public class PlatformWebRTC {
 		}
 	}
 
-	public static final byte PEERSTATE_FAILED = 0;
-	public static final byte PEERSTATE_SUCCESS = 1;
-	public static final byte PEERSTATE_LOADING = 2;
-
 	public static class LANPeer {
 		public LANServer client;
 		public String peerId;
 		public JSObject peerConnection;
+		public JSObject dataChannel;
+		public String ipcChannel;
 
 		public LANPeer(LANServer client, String peerId, JSObject peerConnection) {
 			this.client = client;
@@ -293,15 +603,23 @@ public class PlatformWebRTC {
 			TeaVMUtils.addEventListener(peerConnection, "icecandidate", (EventListener<Event>) evt -> {
 				if (hasCandidate(evt)) {
 					if (iceCandidates.isEmpty()) {
-						Window.setTimeout(() -> {
+						final int[] candidateState = new int[2];
+						final TimerHandler[] runnable = new TimerHandler[1];
+						Window.setTimeout(runnable[0] = () -> {
 							if (peerConnection != null && !"disconnected".equals(getConnectionState(peerConnection))) {
+								int trial = ++candidateState[1];
+								if(candidateState[0] != iceCandidates.size() && trial < 3) {
+									candidateState[0] = iceCandidates.size();
+									Window.setTimeout(runnable[0], 2000);
+									return;
+								}
 								LANPeerEvent.LANPeerICECandidateEvent e = new LANPeerEvent.LANPeerICECandidateEvent(peerId, JSONWriter.valueToString(iceCandidates));
 								synchronized(serverLANEventBuffer) {
 									serverLANEventBuffer.put(peerId, e);
 								}
 								iceCandidates.clear();
 							}
-						}, 3000);
+						}, 2000);
 					}
 					Map<String, String> m = new HashMap<>();
 					m.put("sdpMLineIndex", "" + getSdpMLineIndex(evt));
@@ -313,21 +631,28 @@ public class PlatformWebRTC {
 			final Object[] evtHandler = new Object[1];
 			evtHandler[0] = (EventListener<Event>) evt -> {
 				if (!iceCandidates.isEmpty()) {
-					Window.setTimeout(() -> ((EventListener<Event>)evtHandler[0]).handleEvent(evt), 1);
+					Window.setTimeout(() -> ((EventListener<Event>)evtHandler[0]).handleEvent(evt), 10);
 					return;
 				}
 				if (getChannel(evt) == null) return;
 				JSObject dataChannel = getChannel(evt);
-				synchronized(fuckTeaVM) {
-					fuckTeaVM.put(peerId, dataChannel);
+				if(this.dataChannel != null) {
+					closeIt(dataChannel);
+					return;
 				}
+				this.dataChannel = dataChannel;
 				synchronized(serverLANEventBuffer) {
 					serverLANEventBuffer.put(peerId, new LANPeerEvent.LANPeerDataChannelEvent(peerId));
 				}
 				TeaVMUtils.addEventListener(dataChannel, "message", (EventListener<Event>) evt2 -> {
-					LANPeerEvent.LANPeerPacketEvent e = new LANPeerEvent.LANPeerPacketEvent(peerId, TeaVMUtils.wrapByteArrayBuffer(getData(evt2)));
-					synchronized(serverLANEventBuffer) {
-						serverLANEventBuffer.put(peerId, e);
+					ArrayBuffer data = getData(evt2);
+					if(ipcChannel != null) {
+						ClientPlatformSingleplayer.sendPacketTeaVM(ipcChannel, data);
+					}else {
+						LANPeerEvent.LANPeerPacketEvent e = new LANPeerEvent.LANPeerPacketEvent(peerId, TeaVMUtils.wrapByteArrayBuffer(data));
+						synchronized(serverLANEventBuffer) {
+							serverLANEventBuffer.put(peerId, e);
+						}
 					}
 				});
 			};
@@ -336,23 +661,15 @@ public class PlatformWebRTC {
 
 			TeaVMUtils.addEventListener(peerConnection, "connectionstatechange", (EventListener<Event>) evt -> {
 				String connectionState = getConnectionState(peerConnection);
-				if ("disconnected".equals(connectionState)) {
-					client.signalRemoteDisconnect(peerId);
-				} else if ("connected".equals(connectionState)) {
-					if (client.peerState != PEERSTATE_SUCCESS) client.peerState = PEERSTATE_SUCCESS;
-				} else if ("failed".equals(connectionState)) {
-					if (client.peerState == PEERSTATE_LOADING) client.peerState = PEERSTATE_FAILED;
+				if ("disconnected".equals(connectionState) || "failed".equals(connectionState)) {
 					client.signalRemoteDisconnect(peerId);
 				}
 			});
 		}
 
 		public void disconnect() {
-			synchronized(fuckTeaVM) {
-				if (fuckTeaVM.get(peerId) != null) {
-					closeIt(fuckTeaVM.get(peerId));
-					fuckTeaVM.remove(peerId);
-				}
+			if(dataChannel != null) {
+				closeIt(dataChannel);
 			}
 			closeIt(peerConnection);
 		}
@@ -360,7 +677,7 @@ public class PlatformWebRTC {
 		public void setRemoteDescription(String descJSON) {
 			try {
 				JSONObject remoteDesc = new JSONObject(descJSON);
-				setRemoteDescription2(peerConnection, descJSON, () -> {
+				setRemoteDescription2(peerConnection, JSON.parse(descJSON), () -> {
 					if (remoteDesc.has("type") && "offer".equals(remoteDesc.getString("type"))) {
 						createAnswer(peerConnection, desc -> {
 							setLocalDescription(peerConnection, desc, () -> {
@@ -368,38 +685,46 @@ public class PlatformWebRTC {
 								synchronized(serverLANEventBuffer) {
 									serverLANEventBuffer.put(peerId, e);
 								}
-								if (client.peerStateDesc != PEERSTATE_SUCCESS) client.peerStateDesc = PEERSTATE_SUCCESS;
 							}, err -> {
-								logger.error("Failed to set local description for \"{}\"! {}", peerId, err.getMessage());
-								if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
+								logger.error("Failed to set local description for \"{}\"! {}", peerId, TeaVMUtils.safeErrorMsgToString(err));
 								client.signalRemoteDisconnect(peerId);
 							});
 						}, err -> {
-							logger.error("Failed to create answer for \"{}\"! {}", peerId, err.getMessage());
-							if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
+							logger.error("Failed to create answer for \"{}\"! {}", peerId, TeaVMUtils.safeErrorMsgToString(err));
 							client.signalRemoteDisconnect(peerId);
 						});
 					}
 				}, err -> {
-					logger.error("Failed to set remote description for \"{}\"! {}", peerId, err.getMessage());
-					if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
+					logger.error("Failed to set remote description for \"{}\"! {}", peerId, TeaVMUtils.safeErrorMsgToString(err));
 					client.signalRemoteDisconnect(peerId);
 				});
 			} catch (Throwable err) {
 				logger.error("Failed to parse remote description for \"{}\"! {}", peerId, err.getMessage());
-				if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
+				logger.error(err);
 				client.signalRemoteDisconnect(peerId);
 			}
 		}
 
 		public void addICECandidate(String candidates) {
 			try {
-				addIceCandidates2(peerConnection, candidates);
-				if (client.peerStateIce != PEERSTATE_SUCCESS) client.peerStateIce = PEERSTATE_SUCCESS;
+				addIceCandidates(peerConnection, candidates);
 			} catch (Throwable err) {
 				logger.error("Failed to parse ice candidate for \"{}\"! {}", peerId, err.getMessage());
-				if (client.peerStateIce == PEERSTATE_LOADING) client.peerStateIce = PEERSTATE_FAILED;
 				client.signalRemoteDisconnect(peerId);
+			}
+		}
+
+		public void mapIPC(String ipcChannel) {
+			if(this.ipcChannel == null) {
+				if(ipcChannel != null) {
+					this.ipcChannel = ipcChannel;
+					this.client.ipcMapList.put(ipcChannel, this);
+				}
+			}else {
+				if(ipcChannel == null) {
+					this.client.ipcMapList.remove(this.ipcChannel);
+					this.ipcChannel = null;
+				}
 			}
 		}
 	}
@@ -407,11 +732,7 @@ public class PlatformWebRTC {
 	public static class LANServer {
 		public Set<Map<String, String>> iceServers = new HashSet<>();
 		public Map<String, LANPeer> peerList = new HashMap<>();
-		public byte peerState = PEERSTATE_LOADING;
-		public byte peerStateConnect = PEERSTATE_LOADING;
-		public byte peerStateInitial = PEERSTATE_LOADING;
-		public byte peerStateDesc = PEERSTATE_LOADING;
-		public byte peerStateIce = PEERSTATE_LOADING;
+		public Map<String, LANPeer> ipcMapList = new HashMap<>();
 
 		public void setIceServers(String[] urls) {
 			iceServers.clear();
@@ -434,26 +755,24 @@ public class PlatformWebRTC {
 		public void sendPacketToRemoteClient(String peerId, ArrayBuffer buffer) {
 			LANPeer thePeer = this.peerList.get(peerId);
 			if (thePeer != null) {
-				boolean b = false;
-				synchronized(fuckTeaVM) {
-					if (fuckTeaVM.get(thePeer.peerId) != null && "open".equals(getReadyState(fuckTeaVM.get(thePeer.peerId)))) {
-						try {
-							sendIt(fuckTeaVM.get(thePeer.peerId), buffer);
-						} catch (Throwable e) {
-							b = true;
-						}
-					} else {
-						b = true;
-					}
-				}
-				if(b) {
-					signalRemoteDisconnect(peerId);
-				}
+				sendPacketToRemoteClient(thePeer, buffer);
 			}
 		}
 
-		public void resetPeerStates() {
-			peerState = peerStateConnect = peerStateInitial = peerStateDesc = peerStateIce = PEERSTATE_LOADING;
+		public void sendPacketToRemoteClient(LANPeer thePeer, ArrayBuffer buffer) {
+			boolean b = false;
+			if (thePeer.dataChannel != null && "open".equals(getReadyState(thePeer.dataChannel))) {
+				try {
+					sendIt(thePeer.dataChannel, buffer);
+				} catch (Throwable e) {
+					b = true;
+				}
+			} else {
+				b = true;
+			}
+			if(b) {
+				signalRemoteDisconnect(thePeer.peerId);
+			}
 		}
 
 		public void signalRemoteConnect(String peerId) {
@@ -461,9 +780,10 @@ public class PlatformWebRTC {
 				JSObject peerConnection = createRTCPeerConnection(JSONWriter.valueToString(iceServers));
 				LANPeer peerInstance = new LANPeer(this, peerId, peerConnection);
 				peerList.put(peerId, peerInstance);
-				if (peerStateConnect != PEERSTATE_SUCCESS) peerStateConnect = PEERSTATE_SUCCESS;
 			} catch (Throwable e) {
-				if (peerStateConnect == PEERSTATE_LOADING) peerStateConnect = PEERSTATE_FAILED;
+				logger.error("Failed to create peer for \"{}\"", peerId);
+				logger.error(e);
+				signalRemoteDisconnect(peerId);
 			}
 		}
 
@@ -494,23 +814,26 @@ public class PlatformWebRTC {
 					}
 				}
 				peerList.clear();
-				synchronized(fuckTeaVM) {
-					fuckTeaVM.clear();
-				}
 				return;
 			}
-			LANPeer thePeer = peerList.get(peerId);
+			LANPeer thePeer = peerList.remove(peerId);
 			if(thePeer != null) {
-				peerList.remove(peerId);
+				if(thePeer.ipcChannel != null) {
+					ipcMapList.remove(thePeer.ipcChannel);
+				}
 				try {
 					thePeer.disconnect();
 				} catch (Throwable ignored) {}
-				synchronized(fuckTeaVM) {
-					fuckTeaVM.remove(peerId);
-				}
 				synchronized(serverLANEventBuffer) {
 					serverLANEventBuffer.put(thePeer.peerId, new LANPeerEvent.LANPeerDisconnectEvent(peerId));
 				}
+			}
+		}
+
+		public void serverPeerMapIPC(String peer, String ipcChannel) {
+			LANPeer peerr = peerList.get(peer);
+			if(peerr != null) {
+				peerr.mapIPC(ipcChannel);
 			}
 		}
 
@@ -532,725 +855,6 @@ public class PlatformWebRTC {
 	@JSFunctor
 	public interface ErrorHandler extends JSObject {
 		void call(JSError err);
-	}
-
-	@JSBody(params = { "obj" }, script = "return typeof obj === \"string\";")
-	private static native boolean isString(JSObject obj);
-
-	private static final Map<String,Long> relayQueryLimited = new HashMap<>();
-	private static final Map<String,Long> relayQueryBlocked = new HashMap<>();
-
-	private static class RelayQueryImpl implements RelayQuery {
-
-		private final WebSocket sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData = false;
-
-		private int vers = -1;
-		private String comment = "<no comment>";
-		private String brand = "<no brand>";
-
-		private long connectionOpenedAt;
-		private long connectionPingStart = -1;
-		private long connectionPingTimer = -1;
-
-		private RateLimit rateLimitStatus = RateLimit.NONE;
-
-		private VersionMismatch versError = VersionMismatch.UNKNOWN;
-
-		private RelayQueryImpl(String uri) {
-			this.uri = uri;
-			WebSocket s;
-			try {
-				connectionOpenedAt = System.currentTimeMillis();
-				s = WebSocket.create(uri);
-				s.setBinaryType("arraybuffer");
-				open = true;
-				failed = false;
-			}catch(Throwable t) {
-				connectionOpenedAt = 0l;
-				sock = null;
-				open = false;
-				failed = true;
-				return;
-			}
-			sock = s;
-			sock.onOpen(evt -> {
-				try {
-					connectionPingStart = System.currentTimeMillis();
-					PlatformNetworking.nativeBinarySend(sock, TeaVMUtils.unwrapArrayBuffer(
-							IPacket.writePacket(new IPacket00Handshake(0x03, RelayManager.preferredRelayVersion, ""))
-					));
-				} catch (IOException e) {
-					logger.error(e.toString());
-					sock.close();
-					failed = true;
-				}
-			});
-			sock.onMessage(evt -> {
-				if(evt.getData() != null && !isString(evt.getData())) {
-					hasRecievedAnyData = true;
-					byte[] arr = TeaVMUtils.wrapByteArrayBuffer(evt.getDataAsArray());
-					if(arr.length == 2 && arr[0] == (byte)0xFC) {
-						long millis = System.currentTimeMillis();
-						if(arr[1] == (byte)0x00 || arr[1] == (byte)0x01) {
-							rateLimitStatus = RateLimit.BLOCKED;
-							relayQueryLimited.put(RelayQueryImpl.this.uri, millis);
-						}else if(arr[1] == (byte)0x02) {
-							rateLimitStatus = RateLimit.NOW_LOCKED;
-							relayQueryLimited.put(RelayQueryImpl.this.uri, millis);
-							relayQueryBlocked.put(RelayQueryImpl.this.uri, millis);
-						}else {
-							rateLimitStatus = RateLimit.LOCKED;
-							relayQueryBlocked.put(RelayQueryImpl.this.uri, millis);
-						}
-						failed = true;
-						open = false;
-						sock.close();
-					}else {
-						if(open) {
-							try {
-								IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)));
-								if(pkt instanceof IPacket69Pong) {
-									IPacket69Pong ipkt = (IPacket69Pong)pkt;
-									versError = VersionMismatch.COMPATIBLE;
-									if(connectionPingTimer == -1) {
-										connectionPingTimer = System.currentTimeMillis() - connectionPingStart;
-									}
-									vers = ipkt.protcolVersion;
-									comment = ipkt.comment;
-									brand = ipkt.brand;
-									open = false;
-									failed = false;
-									sock.close();
-								}else if(pkt instanceof IPacket70SpecialUpdate) {
-									IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-									if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-										UpdateService.addCertificateToSet(ipkt.updatePacket);
-									}
-								}else if(pkt instanceof IPacketFFErrorCode) {
-									IPacketFFErrorCode ipkt = (IPacketFFErrorCode)pkt;
-									if(ipkt.code == IPacketFFErrorCode.TYPE_PROTOCOL_VERSION) {
-										String s1 = ipkt.desc.toLowerCase();
-										if(s1.contains("outdated client") || s1.contains("client outdated")) {
-											versError = VersionMismatch.CLIENT_OUTDATED;
-										}else if(s1.contains("outdated server") || s1.contains("server outdated") ||
-												s1.contains("outdated relay") || s1.contains("server relay")) {
-											versError = VersionMismatch.RELAY_OUTDATED;
-										}else {
-											versError = VersionMismatch.UNKNOWN;
-										}
-									}
-									logger.error("{}\": Recieved query error code {}: {}", uri, ipkt.code, ipkt.desc);
-									open = false;
-									failed = true;
-									sock.close();
-								}else {
-									throw new IOException("Unexpected packet '" + pkt.getClass().getSimpleName() + "'");
-								}
-							} catch (IOException e) {
-								logger.error("Relay Query Error: {}", e.toString());
-								EagRuntime.debugPrintStackTrace(e);
-								open = false;
-								failed = true;
-								sock.close();
-							}
-						}
-					}
-				}
-			});
-			sock.onClose(evt -> {
-				open = false;
-				if(!hasRecievedAnyData) {
-					failed = true;
-					Long l = relayQueryBlocked.get(uri);
-					if(l != null) {
-						if(System.currentTimeMillis() - l.longValue() < 400000l) {
-							rateLimitStatus = RateLimit.LOCKED;
-							return;
-						}
-					}
-					l = relayQueryLimited.get(uri);
-					if(l != null) {
-						if(System.currentTimeMillis() - l.longValue() < 900000l) {
-							rateLimitStatus = RateLimit.BLOCKED;
-							return;
-						}
-					}
-				}
-			});
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return failed;
-		}
-
-		@Override
-		public RateLimit isQueryRateLimit() {
-			return rateLimitStatus;
-		}
-
-		@Override
-		public void close() {
-			if(sock != null && open) {
-				sock.close();
-			}
-			open = false;
-		}
-
-		@Override
-		public int getVersion() {
-			return vers;
-		}
-
-		@Override
-		public String getComment() {
-			return comment;
-		}
-
-		@Override
-		public String getBrand() {
-			return brand;
-		}
-
-		@Override
-		public long getPing() {
-			return connectionPingTimer < 1 ? 1 : connectionPingTimer;
-		}
-
-		@Override
-		public VersionMismatch getCompatible() {
-			return versError;
-		}
-
-	}
-
-	private static class RelayQueryRatelimitDummy implements RelayQuery {
-
-		private final RateLimit type;
-
-		private RelayQueryRatelimitDummy(RateLimit type) {
-			this.type = type;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return true;
-		}
-
-		@Override
-		public RateLimit isQueryRateLimit() {
-			return type;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public int getVersion() {
-			return RelayManager.preferredRelayVersion;
-		}
-
-		@Override
-		public String getComment() {
-			return "this query was rate limited";
-		}
-
-		@Override
-		public String getBrand() {
-			return "lax1dude";
-		}
-
-		@Override
-		public long getPing() {
-			return 0l;
-		}
-
-		@Override
-		public VersionMismatch getCompatible() {
-			return VersionMismatch.COMPATIBLE;
-		}
-
-	}
-
-	public static RelayQuery openRelayQuery(String addr) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayQueryRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayQueryRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayQueryImpl(addr);
-	}
-
-	private static class RelayWorldsQueryImpl implements RelayWorldsQuery {
-
-		private final WebSocket sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData = false;
-		private RelayQuery.RateLimit rateLimitStatus = RelayQuery.RateLimit.NONE;
-
-		private RelayQuery.VersionMismatch versError = RelayQuery.VersionMismatch.UNKNOWN;
-
-		private List<IPacket07LocalWorlds.LocalWorld> worlds = null;
-
-		private RelayWorldsQueryImpl(String uri) {
-			this.uri = uri;
-			WebSocket s;
-			try {
-				s = WebSocket.create(uri);
-				s.setBinaryType("arraybuffer");
-				open = true;
-				failed = false;
-			}catch(Throwable t) {
-				sock = null;
-				open = false;
-				failed = true;
-				return;
-			}
-			sock = s;
-			sock.onOpen(evt -> {
-				try {
-					PlatformNetworking.nativeBinarySend(sock, TeaVMUtils.unwrapArrayBuffer(
-							IPacket.writePacket(new IPacket00Handshake(0x04, RelayManager.preferredRelayVersion, ""))
-					));
-				} catch (IOException e) {
-					logger.error(e.toString());
-					sock.close();
-					open = false;
-					failed = true;
-				}
-			});
-			sock.onMessage(evt -> {
-				if(evt.getData() != null && !isString(evt.getData())) {
-					hasRecievedAnyData = true;
-					byte[] arr = TeaVMUtils.wrapByteArrayBuffer(evt.getDataAsArray());
-					if(arr.length == 2 && arr[0] == (byte)0xFC) {
-						long millis = System.currentTimeMillis();
-						if(arr[1] == (byte)0x00 || arr[1] == (byte)0x01) {
-							rateLimitStatus = RelayQuery.RateLimit.BLOCKED;
-							relayQueryLimited.put(RelayWorldsQueryImpl.this.uri, millis);
-						}else if(arr[1] == (byte)0x02) {
-							rateLimitStatus = RelayQuery.RateLimit.NOW_LOCKED;
-							relayQueryLimited.put(RelayWorldsQueryImpl.this.uri, millis);
-							relayQueryBlocked.put(RelayWorldsQueryImpl.this.uri, millis);
-						}else {
-							rateLimitStatus = RelayQuery.RateLimit.LOCKED;
-							relayQueryBlocked.put(RelayWorldsQueryImpl.this.uri, millis);
-						}
-						open = false;
-						failed = true;
-						sock.close();
-					}else {
-						if(open) {
-							try {
-								IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)));
-								if(pkt instanceof IPacket07LocalWorlds) {
-									worlds = ((IPacket07LocalWorlds)pkt).worldsList;
-									sock.close();
-									open = false;
-									failed = false;
-								}else if(pkt instanceof IPacket70SpecialUpdate) {
-									IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-									if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-										UpdateService.addCertificateToSet(ipkt.updatePacket);
-									}
-								}else if(pkt instanceof IPacketFFErrorCode) {
-									IPacketFFErrorCode ipkt = (IPacketFFErrorCode)pkt;
-									if(ipkt.code == IPacketFFErrorCode.TYPE_PROTOCOL_VERSION) {
-										String s1 = ipkt.desc.toLowerCase();
-										if(s1.contains("outdated client") || s1.contains("client outdated")) {
-											versError = RelayQuery.VersionMismatch.CLIENT_OUTDATED;
-										}else if(s1.contains("outdated server") || s1.contains("server outdated") ||
-												s1.contains("outdated relay") || s1.contains("server relay")) {
-											versError = RelayQuery.VersionMismatch.RELAY_OUTDATED;
-										}else {
-											versError = RelayQuery.VersionMismatch.UNKNOWN;
-										}
-									}
-									logger.error("{}: Recieved query error code {}: {}", uri, ipkt.code, ipkt.desc);
-									open = false;
-									failed = true;
-									sock.close();
-								}else {
-									throw new IOException("Unexpected packet '" + pkt.getClass().getSimpleName() + "'");
-								}
-							} catch (IOException e) {
-								logger.error("Relay World Query Error: {}", e.toString());
-								EagRuntime.debugPrintStackTrace(e);
-								open = false;
-								failed = true;
-								sock.close();
-							}
-						}
-					}
-				}
-			});
-			sock.onClose(evt -> {
-				open = false;
-				if(!hasRecievedAnyData) {
-					failed = true;
-					Long l = relayQueryBlocked.get(uri);
-					if(l != null) {
-						if(System.currentTimeMillis() - l.longValue() < 400000l) {
-							rateLimitStatus = RelayQuery.RateLimit.LOCKED;
-							return;
-						}
-					}
-					l = relayQueryLimited.get(uri);
-					if(l != null) {
-						if(System.currentTimeMillis() - l.longValue() < 900000l) {
-							rateLimitStatus = RelayQuery.RateLimit.BLOCKED;
-							return;
-						}
-					}
-				}
-			});
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return failed;
-		}
-
-		@Override
-		public RelayQuery.RateLimit isQueryRateLimit() {
-			return rateLimitStatus;
-		}
-
-		@Override
-		public void close() {
-			if(open && sock != null) {
-				sock.close();
-			}
-			open = false;
-		}
-
-		@Override
-		public List<IPacket07LocalWorlds.LocalWorld> getWorlds() {
-			return worlds;
-		}
-
-		@Override
-		public RelayQuery.VersionMismatch getCompatible() {
-			return versError;
-		}
-
-	}
-
-	private static class RelayWorldsQueryRatelimitDummy implements RelayWorldsQuery {
-
-		private final RelayQuery.RateLimit rateLimit;
-
-		private RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit rateLimit) {
-			this.rateLimit = rateLimit;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return true;
-		}
-
-		@Override
-		public RelayQuery.RateLimit isQueryRateLimit() {
-			return rateLimit;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public List<IPacket07LocalWorlds.LocalWorld> getWorlds() {
-			return new ArrayList(0);
-		}
-
-		@Override
-		public RelayQuery.VersionMismatch getCompatible() {
-			return RelayQuery.VersionMismatch.COMPATIBLE;
-		}
-	}
-
-	public static RelayWorldsQuery openRelayWorldsQuery(String addr) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayWorldsQueryImpl(addr);
-	}
-
-	private static class RelayServerSocketImpl implements RelayServerSocket {
-
-		private final WebSocket sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean closed;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData;
-
-		private final List<Throwable> exceptions = new LinkedList();
-		private final List<IPacket> packets = new LinkedList();
-
-		private RelayServerSocketImpl(String uri, int timeout) {
-			this.uri = uri;
-			WebSocket s;
-			try {
-				s = WebSocket.create(uri);
-				s.setBinaryType("arraybuffer");
-				open = false;
-				closed = false;
-				failed = false;
-			}catch(Throwable t) {
-				exceptions.add(t);
-				sock = null;
-				open = false;
-				closed = true;
-				failed = true;
-				return;
-			}
-			sock = s;
-			sock.onOpen(evt -> open = true);
-			sock.onMessage(evt -> {
-				if(evt.getData() != null && !isString(evt.getData())) {
-					hasRecievedAnyData = true;
-					try {
-						IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(TeaVMUtils.wrapByteArrayBuffer(evt.getDataAsArray()))));
-						if(pkt instanceof IPacket70SpecialUpdate) {
-							IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-							if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-								UpdateService.addCertificateToSet(ipkt.updatePacket);
-							}
-						}else {
-							packets.add(pkt);
-						}
-					} catch (IOException e) {
-						exceptions.add(e);
-						logger.error("Relay Socket Error: {}", e.toString());
-						EagRuntime.debugPrintStackTrace(e);
-						open = false;
-						failed = true;
-						closed = true;
-						sock.close();
-					}
-				}
-			});
-			sock.onClose(evt -> {
-				if (!hasRecievedAnyData) {
-					failed = true;
-				}
-				open = false;
-				closed = true;
-			});
-			Window.setTimeout(() -> {
-				if(!open && !closed) {
-					closed = true;
-					sock.close();
-				}
-			}, timeout);
-		}
-
-		@Override
-		public boolean isOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isClosed() {
-			return closed;
-		}
-
-		@Override
-		public void close() {
-			if(open && sock != null) {
-				sock.close();
-			}
-			open = false;
-			closed = true;
-		}
-
-		@Override
-		public boolean isFailed() {
-			return failed;
-		}
-
-		@Override
-		public Throwable getException() {
-			if(!exceptions.isEmpty()) {
-				return exceptions.remove(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public void writePacket(IPacket pkt) {
-			try {
-				PlatformNetworking.nativeBinarySend(sock, TeaVMUtils.unwrapArrayBuffer(IPacket.writePacket(pkt)));
-			} catch (Throwable e) {
-				logger.error("Relay connection error: {}", e.toString());
-				EagRuntime.debugPrintStackTrace(e);
-				exceptions.add(e);
-				failed = true;
-				open = false;
-				closed = true;
-				sock.close();
-			}
-		}
-
-		@Override
-		public IPacket readPacket() {
-			if(!packets.isEmpty()) {
-				return packets.remove(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public IPacket nextPacket() {
-			if(!packets.isEmpty()) {
-				return packets.get(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public RelayQuery.RateLimit getRatelimitHistory() {
-			if(relayQueryBlocked.containsKey(uri)) {
-				return RelayQuery.RateLimit.LOCKED;
-			}
-			if(relayQueryLimited.containsKey(uri)) {
-				return RelayQuery.RateLimit.BLOCKED;
-			}
-			return RelayQuery.RateLimit.NONE;
-		}
-
-		@Override
-		public String getURI() {
-			return uri;
-		}
-
-	}
-
-	private static class RelayServerSocketRatelimitDummy implements RelayServerSocket {
-
-		private final RelayQuery.RateLimit limit;
-
-		private RelayServerSocketRatelimitDummy(RelayQuery.RateLimit limit) {
-			this.limit = limit;
-		}
-
-		@Override
-		public boolean isOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isClosed() {
-			return true;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public boolean isFailed() {
-			return true;
-		}
-
-		@Override
-		public Throwable getException() {
-			return null;
-		}
-
-		@Override
-		public void writePacket(IPacket pkt) {
-		}
-
-		@Override
-		public IPacket readPacket() {
-			return null;
-		}
-
-		@Override
-		public IPacket nextPacket() {
-			return null;
-		}
-
-		@Override
-		public RelayQuery.RateLimit getRatelimitHistory() {
-			return limit;
-		}
-
-		@Override
-		public String getURI() {
-			return "<disconnected>";
-		}
-
-	}
-
-	public static RelayServerSocket openRelayConnection(String addr, int timeout) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayServerSocketRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayServerSocketRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayServerSocketImpl(addr, timeout);
 	}
 
 	private static LANClient rtcLANClient = null;
@@ -1276,7 +880,6 @@ public class PlatformWebRTC {
 		rtcLANClient.signalRemoteDisconnect(false);
 	}
 
-	// todo: ArrayBuffer version
 	public static void clientLANSendPacket(byte[] pkt) {
 		rtcLANClient.sendPacketToServer(TeaVMUtils.unwrapArrayBuffer(pkt));
 	}
@@ -1290,7 +893,7 @@ public class PlatformWebRTC {
 	public static List<byte[]> clientLANReadAllPacket() {
 		synchronized(clientLANPacketBuffer) {
 			if(!clientLANPacketBuffer.isEmpty()) {
-				List<byte[]> ret = new ArrayList(clientLANPacketBuffer);
+				List<byte[]> ret = new ArrayList<>(clientLANPacketBuffer);
 				clientLANPacketBuffer.clear();
 				return ret;
 			}else {
@@ -1370,7 +973,6 @@ public class PlatformWebRTC {
 		synchronized(serverLANEventBuffer) {
 			serverLANEventBuffer.clear();
 		}
-		rtcLANServer.resetPeerStates();
 		rtcLANServer.setIceServers(servers);
 	}
 
@@ -1419,6 +1021,24 @@ public class PlatformWebRTC {
 		rtcLANServer.signalRemoteDescription(peer, description);
 	}
 
+	public static void serverLANPeerMapIPC(String peer, String ipcChannel) {
+		rtcLANServer.serverPeerMapIPC(peer, ipcChannel);
+	}
+
+	public static boolean serverLANPeerPassIPC(String channelName, ArrayBuffer data) {
+		if(rtcLANServer != null) {
+			LANPeer peer = rtcLANServer.ipcMapList.get(channelName);
+			if(peer != null) {
+				rtcLANServer.sendPacketToRemoteClient(peer, data);
+				return true;
+			}else {
+				return false;
+			}
+		}else {
+			return false;
+		}
+	}
+
 	public static void serverLANDisconnectPeer(String peer) {
 		rtcLANServer.signalRemoteDisconnect(peer);
 	}
@@ -1429,4 +1049,5 @@ public class PlatformWebRTC {
 		}
 		return rtcLANServer.countPeers();
 	}
+
 }

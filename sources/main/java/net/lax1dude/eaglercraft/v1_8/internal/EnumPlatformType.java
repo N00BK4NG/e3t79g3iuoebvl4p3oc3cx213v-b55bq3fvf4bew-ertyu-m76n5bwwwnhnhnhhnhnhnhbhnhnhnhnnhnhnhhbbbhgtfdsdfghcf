@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,8 +13,11 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
 public enum EnumPlatformType {
-	DESKTOP("Desktop"), JAVASCRIPT("HTML5");
+	DESKTOP("Desktop"), JAVASCRIPT("JS"), WASM_GC("WASM-GC");
 	
 	private final String name;
 	

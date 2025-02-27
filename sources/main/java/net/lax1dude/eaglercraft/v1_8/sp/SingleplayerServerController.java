@@ -1,11 +1,29 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.sp;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
 
@@ -13,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.internal.EnumEaglerConnectionState;
+import net.lax1dude.eaglercraft.v1_8.internal.EnumPlatformType;
 import net.lax1dude.eaglercraft.v1_8.internal.IPCPacketData;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformApplication;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
@@ -32,21 +51,6 @@ import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.SaveFormatComparator;
 import net.minecraft.world.storage.WorldInfo;
 
-/**
- * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class SingleplayerServerController implements ISaveFormat {
 
 	public static final String IPC_CHANNEL = "~!IPC";
@@ -56,32 +60,58 @@ public class SingleplayerServerController implements ISaveFormat {
 	private static boolean loggingState = true;
 	private static String worldStatusString = "";
 	private static float worldStatusProgress = 0.0f;
-	private static final LinkedList<IPCPacket15Crashed> exceptions = new LinkedList();
+	private static final LinkedList<IPCPacket15Crashed> exceptions = new LinkedList<>();
+	private static final Set<Integer> issuesDetected = new HashSet<>();
 
 	public static final SingleplayerServerController instance = new SingleplayerServerController();
 	public static final Logger logger = LogManager.getLogger("SingleplayerServerController");
-	public static final List<SaveFormatComparator> saveListCache = new ArrayList();
-	public static final Map<String, WorldInfo> saveListMap = new HashMap();
-	public static final List<NBTTagCompound> saveListNBT = new ArrayList();
+	public static final List<SaveFormatComparator> saveListCache = new ArrayList<>();
+	public static final Map<String, WorldInfo> saveListMap = new HashMap<>();
+	public static final List<NBTTagCompound> saveListNBT = new ArrayList<>();
 
 	private static boolean isPaused = false;
-	private static List<String> integratedServerTPS = new ArrayList();
+	private static List<String> integratedServerTPS = new ArrayList<>();
 	private static long integratedServerLastTPSUpdate = 0;
 	public static final ClientIntegratedServerNetworkManager localPlayerNetworkManager = new ClientIntegratedServerNetworkManager(PLAYER_CHANNEL);
-	private static final List<String> openLANChannels = new ArrayList();
+	private static final List<String> openLANChannels = new ArrayList<>();
 
 	private static final IPCPacketManager packetManagerInstance = new IPCPacketManager();
 
 	private SingleplayerServerController() {
 	}
 
-	public static void startIntegratedServerWorker() {
+	public static void startIntegratedServerWorker(boolean forceSingleThread) {
 		if(statusState == IntegratedServerState.WORLD_WORKER_NOT_RUNNING) {
 			exceptions.clear();
+			issuesDetected.clear();
 			statusState = IntegratedServerState.WORLD_WORKER_BOOTING;
 			loggingState = true;
-			ClientPlatformSingleplayer.startIntegratedServer();
+			callFailed = false;
+			boolean singleThreadSupport = ClientPlatformSingleplayer.isSingleThreadModeSupported();
+			if(!singleThreadSupport && forceSingleThread) {
+				throw new UnsupportedOperationException("Single thread mode is not supported!");
+			}
+			if(forceSingleThread || !singleThreadSupport) {
+				ClientPlatformSingleplayer.startIntegratedServer(forceSingleThread);
+			}else {
+				try {
+					ClientPlatformSingleplayer.startIntegratedServer(forceSingleThread);
+				}catch(Throwable t) {
+					logger.error("Failed to start integrated server worker");
+					logger.error(t);
+					logger.error("Attempting to use single thread mode");
+					exceptions.clear();
+					issuesDetected.clear();
+					statusState = IntegratedServerState.WORLD_WORKER_BOOTING;
+					loggingState = true;
+					ClientPlatformSingleplayer.startIntegratedServer(true);
+				}
+			}
 		}
+	}
+
+	public static boolean isIssueDetected(int issue) {
+		return issuesDetected.contains(issue);
 	}
 
 	public static boolean isIntegratedServerWorkerStarted() {
@@ -124,7 +154,7 @@ public class SingleplayerServerController implements ISaveFormat {
 	}
 	
 	public static boolean isChannelNameAllowed(String ch) {
-		return !IPC_CHANNEL.equals(ch) && !PLAYER_CHANNEL.equals(ch);
+		return !ch.startsWith("~!");
 	}
 	
 	public static void openPlayerChannel(String ch) {
@@ -135,7 +165,6 @@ public class SingleplayerServerController implements ISaveFormat {
 		}else {
 			openLANChannels.add(ch);
 			sendIPCPacket(new IPCPacket0CPlayerChannel(ch, true));
-			PlatformWebRTC.serverLANCreatePeer(ch);
 		}
 	}
 	
@@ -196,7 +225,7 @@ public class SingleplayerServerController implements ISaveFormat {
 	}
 
 	public static long getTPSAge() {
-		return System.currentTimeMillis() - integratedServerLastTPSUpdate;
+		return EagRuntime.steadyTimeMillis() - integratedServerLastTPSUpdate;
 	}
 
 	public static boolean hangupEaglercraftServer() {
@@ -261,15 +290,23 @@ public class SingleplayerServerController implements ISaveFormat {
 						logger.warn("Recieved {} byte packet on closed local player connection", packetData.contents.length);
 					}
 				}else {
+					//logger.warn("Recieved packet on IPC channel '{}', forwarding to PlatformWebRTC even though the channel should be mapped", packetData.channel);
+					// just to be safe
 					PlatformWebRTC.serverLANWritePacket(packetData.channel, packetData.contents);
 				}
 			}
 		}
 
-		boolean logWindowState = PlatformApplication.isShowingDebugConsole();
-		if(loggingState != logWindowState) {
-			loggingState = logWindowState;
-			sendIPCPacket(new IPCPacket21EnableLogging(logWindowState));
+		if(EagRuntime.getPlatformType() == EnumPlatformType.JAVASCRIPT) {
+			boolean logWindowState = PlatformApplication.isShowingDebugConsole();
+			if(loggingState != logWindowState) {
+				loggingState = logWindowState;
+				sendIPCPacket(new IPCPacket1BEnableLogging(logWindowState));
+			}
+		}
+
+		if(ClientPlatformSingleplayer.isRunningSingleThreadMode()) {
+			ClientPlatformSingleplayer.updateSingleThreadMode();
 		}
 
 		LANServerController.updateLANServer();
@@ -385,15 +422,20 @@ public class SingleplayerServerController implements ISaveFormat {
 			if(pkt.opCode == IPCPacket14StringList.SERVER_TPS) {
 				integratedServerTPS.clear();
 				integratedServerTPS.addAll(pkt.stringList);
-				integratedServerLastTPSUpdate = System.currentTimeMillis();
+				integratedServerLastTPSUpdate = EagRuntime.steadyTimeMillis();
 			}else {
 				logger.warn("Strange string list type {} recieved!", pkt.opCode);
 			}
 			break;
 		}
-		case IPCPacket20LoggerMessage.ID: {
-			IPCPacket20LoggerMessage pkt = (IPCPacket20LoggerMessage)ipc;
+		case IPCPacket1ALoggerMessage.ID: {
+			IPCPacket1ALoggerMessage pkt = (IPCPacket1ALoggerMessage)ipc;
 			PlatformApplication.addLogMessage(pkt.logMessage, pkt.isError);
+			break;
+		}
+		case IPCPacket1CIssueDetected.ID: {
+			IPCPacket1CIssueDetected pkt = (IPCPacket1CIssueDetected)ipc;
+			issuesDetected.add(pkt.issueID);
 			break;
 		}
 		default:

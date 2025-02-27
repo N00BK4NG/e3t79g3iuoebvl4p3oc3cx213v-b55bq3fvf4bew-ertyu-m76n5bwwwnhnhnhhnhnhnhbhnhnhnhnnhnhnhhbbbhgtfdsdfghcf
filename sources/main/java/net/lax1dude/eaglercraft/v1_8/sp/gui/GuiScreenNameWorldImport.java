@@ -1,16 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.gui;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
-import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
-import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiCreateWorld;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.resources.I18n;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -25,6 +13,20 @@ import net.minecraft.client.resources.I18n;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.gui;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.Keyboard;
+import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
+import net.lax1dude.eaglercraft.v1_8.minecraft.EnumInputEvent;
+import net.lax1dude.eaglercraft.v1_8.sp.SingleplayerServerController;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiCreateWorld;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.resources.I18n;
+
 public class GuiScreenNameWorldImport extends GuiScreen {
 	private GuiScreen parentGuiScreen;
 	private GuiTextField theGuiTextField;
@@ -144,10 +146,21 @@ public class GuiScreenNameWorldImport extends GuiScreen {
 			this.theGuiTextField.drawTextBox();
 		}else {
 			definetlyTimeToImport = true;
-			long dots = (System.currentTimeMillis() / 500l) % 4l;
+			long dots = (EagRuntime.steadyTimeMillis() / 500l) % 4l;
 			String str = I18n.format("singleplayer.import.reading", world.fileName);
 			this.drawString(fontRendererObj, str + (dots > 0 ? "." : "") + (dots > 1 ? "." : "") + (dots > 2 ? "." : ""), (this.width - this.fontRendererObj.getStringWidth(str)) / 2, this.height / 3 + 10, 0xFFFFFF);
 		}
 		super.drawScreen(par1, par2, par3);
 	}
+
+	@Override
+	public boolean showCopyPasteButtons() {
+		return theGuiTextField.isFocused();
+	}
+
+	@Override
+	public void fireInputEvent(EnumInputEvent event, String param) {
+		theGuiTextField.fireInputEvent(event, param);
+	}
+
 }

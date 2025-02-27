@@ -1,26 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.voice;
-
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
-import java.util.List;
-import java.util.Set;
-
-import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.lax1dude.eaglercraft.v1_8.sp.gui.GuiSlider2;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -35,6 +13,31 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.voice;
+
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import java.util.List;
+import java.util.Set;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
+import net.lax1dude.eaglercraft.v1_8.Keyboard;
+import net.lax1dude.eaglercraft.v1_8.PointerInputAbstraction;
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.lax1dude.eaglercraft.v1_8.sp.gui.GuiSlider2;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.PositionedSoundRecord;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
+
 public class GuiVoiceMenu extends Gui {
 
 	public class AbortedException extends RuntimeException {
@@ -124,17 +127,8 @@ public class GuiVoiceMenu extends Gui {
 	
 	public void initGui() {
 		this.sliderBlocks = new GuiSlider2(-1, (width - 150) / 2, height / 3 + 20, 150, 20, (VoiceClientController.getVoiceProximity() - 5) / 17.0f, 1.0f) {
-			public boolean mousePressed(Minecraft par1Minecraft, int par2, int par3) {
-				if(super.mousePressed(par1Minecraft, par2, par3)) {
-					this.displayString = "" + (int)((sliderValue * 17.0f) + 5.0f) + " Blocks";
-					return true;
-				}else {
-					return false;
-				}
-			}
-			public void mouseDragged(Minecraft par1Minecraft, int par2, int par3) {
-				super.mouseDragged(par1Minecraft, par2, par3);
-				this.displayString = "" + (int)((sliderValue * 17.0f) + 5.0f) + " Blocks";
+			protected String updateDisplayString() {
+				return (int)((sliderValue * 17.0f) + 5.0f) + " Blocks";
 			}
 		};
 		sliderBlocks.displayString = "" + VoiceClientController.getVoiceProximity() + " Blocks";
@@ -386,7 +380,7 @@ public class GuiVoiceMenu extends Gui {
 				}
 				
 			}else if(status == EnumVoiceChannelStatus.CONNECTING) {
-				float fadeTimer = MathHelper.sin((float)((System.currentTimeMillis() % 700l) * 0.0014d) * 3.14159f) * 0.35f + 0.3f;
+				float fadeTimer = MathHelper.sin((float)((EagRuntime.steadyTimeMillis() % 700l) * 0.0014d) * 3.14159f) * 0.35f + 0.3f;
 				txt = I18n.format("voice.connecting");
 				GlStateManager.enableBlend();
 				GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -487,7 +481,7 @@ public class GuiVoiceMenu extends Gui {
 			
 			drawNotice(I18n.format("voice.unsupportedWarning1"), false, I18n.format("voice.unsupportedWarning2"), I18n.format("voice.unsupportedWarning3"),
 					"", I18n.format("voice.unsupportedWarning4"), I18n.format("voice.unsupportedWarning5"), I18n.format("voice.unsupportedWarning6"),
-					I18n.format("voice.unsupportedWarning7"), I18n.format("voice.unsupportedWarning8"), I18n.format("voice.unsupportedWarning9"));
+					I18n.format("voice.unsupportedWarning7"), "", I18n.format("voice.unsupportedWarning8"), I18n.format("voice.unsupportedWarning9"));
 			
 			noticeContinueButton.visible = true;
 			noticeCancelButton.visible = false;
@@ -495,8 +489,7 @@ public class GuiVoiceMenu extends Gui {
 			
 			drawNotice(I18n.format("voice.ipGrabWarning1"), true, I18n.format("voice.ipGrabWarning2"), I18n.format("voice.ipGrabWarning3"),
 					I18n.format("voice.ipGrabWarning4"), "", I18n.format("voice.ipGrabWarning5"), I18n.format("voice.ipGrabWarning6"),
-					I18n.format("voice.ipGrabWarning7"), I18n.format("voice.ipGrabWarning8"), I18n.format("voice.ipGrabWarning9"),
-					I18n.format("voice.ipGrabWarning10"), I18n.format("voice.ipGrabWarning11"), I18n.format("voice.ipGrabWarning12"));
+					I18n.format("voice.ipGrabWarning7"));
 			
 			noticeContinueButton.visible = true;
 			noticeCancelButton.visible = true;
@@ -559,9 +552,9 @@ public class GuiVoiceMenu extends Gui {
 	}
 	
 	public static int attenuate(int cin, float r, float g, float b, float a) {
-		float var10 = (float) (cin >> 24 & 255) / 255.0F;
-		float var6 = (float) (cin >> 16 & 255) / 255.0F;
-		float var7 = (float) (cin >> 8 & 255) / 255.0F;
+		float var10 = (float) (cin >>> 24 & 255) / 255.0F;
+		float var6 = (float) (cin >>> 16 & 255) / 255.0F;
+		float var7 = (float) (cin >>> 8 & 255) / 255.0F;
 		float var8 = (float) (cin & 255) / 255.0F;
 		var10 *= a;
 		var6 *= r;
@@ -590,17 +583,21 @@ public class GuiVoiceMenu extends Gui {
 	}
 	
 	public void mouseReleased(int par1, int par2, int par3) {
-		applyRadiusButton.mouseReleased(par1, par2);
-		applyVolumeButton.mouseReleased(par1, par2);
-		noticeContinueButton.mouseReleased(par1, par2);
-		noticeCancelButton.mouseReleased(par1, par2);
+		if(par3 != 0 && par3 != 12345) return;
+		boolean touchMode = PointerInputAbstraction.isTouchMode();
+		if(!touchMode || par3 == 0) {
+			applyRadiusButton.mouseReleased(par1, par2);
+			applyVolumeButton.mouseReleased(par1, par2);
+			noticeContinueButton.mouseReleased(par1, par2);
+			noticeCancelButton.mouseReleased(par1, par2);
+		}
 		if(showSliderBlocks || showSliderVolume) {
 			if(showSliderBlocks) {
-				if(par3 == 0) {
+				if(!touchMode || par3 == 12345) {
 					sliderBlocks.mouseReleased(par1, par2);
 				}
 			}else if(showSliderVolume) {
-				if(par3 == 0) {
+				if(!touchMode || par3 == 12345) {
 					sliderListenVolume.mouseReleased(par1, par2);
 					sliderSpeakVolume.mouseReleased(par1, par2);
 				}
@@ -624,19 +621,23 @@ public class GuiVoiceMenu extends Gui {
 	}
 	
 	public void mouseClicked(int mx, int my, int button) {
+		if(button != 0 && button != 12345) return;
+		boolean touchMode = PointerInputAbstraction.isTouchMode();
 		if(showSliderBlocks || showSliderVolume || showPTTKeyConfig || showingCompatWarning || showingTrackingWarning) {
 			if(showSliderBlocks) {
-				sliderBlocks.mousePressed(mc, mx, my);
+				if(!touchMode || button == 12345) {
+					sliderBlocks.mousePressed(mc, mx, my);
+				}
 			}else if(showSliderVolume) {
-				sliderListenVolume.mousePressed(mc, mx, my);
-				sliderSpeakVolume.mousePressed(mc, mx, my);
+				if(!touchMode || button == 12345) {
+					sliderListenVolume.mousePressed(mc, mx, my);
+					sliderSpeakVolume.mousePressed(mc, mx, my);
+				}
 			}
-			if(button == 0) {
-				if(applyRadiusButton.mousePressed(mc, mx, my)) actionPerformed(applyRadiusButton);
-				if(applyVolumeButton.mousePressed(mc, mx, my)) actionPerformed(applyVolumeButton);
-				if(noticeContinueButton.mousePressed(mc, mx, my)) actionPerformed(noticeContinueButton);
-				if(noticeCancelButton.mousePressed(mc, mx, my)) actionPerformed(noticeCancelButton);
-			}
+			if((!touchMode || button == 0) && applyRadiusButton.mousePressed(mc, mx, my)) actionPerformed(applyRadiusButton);
+			if((!touchMode || button == 0) && applyVolumeButton.mousePressed(mc, mx, my)) actionPerformed(applyVolumeButton);
+			if((!touchMode || button == 0) && noticeContinueButton.mousePressed(mc, mx, my)) actionPerformed(noticeContinueButton);
+			if((!touchMode || button == 0) && noticeCancelButton.mousePressed(mc, mx, my)) actionPerformed(noticeCancelButton);
 			throw new AbortedException();
 		}
 		

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -10,12 +10,14 @@
 + import java.io.IOException;
 + 
 
-> CHANGE  2 : 16  @  2 : 15
+> CHANGE  2 : 18  @  2 : 15
 
 ~ 
+~ import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 ~ import net.lax1dude.eaglercraft.v1_8.EaglerXBungeeVersion;
 ~ import net.lax1dude.eaglercraft.v1_8.Keyboard;
 ~ import net.lax1dude.eaglercraft.v1_8.Mouse;
+~ import net.lax1dude.eaglercraft.v1_8.cookie.ServerCookieDataStore;
 ~ import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
 ~ import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 ~ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
@@ -72,15 +74,22 @@
 
 > DELETE  1  @  1 : 10
 
-> INSERT  3 : 8  @  3
+> INSERT  3 : 7  @  3
 
 + 			if (lanServerList == null) {
 + 				lanServerList = new LANServerList();
-+ 			} else {
-+ 				lanServerList.forceRefresh();
 + 			}
++ 			lanServerList.forceRefresh();
 
-> CHANGE  32 : 35  @  32 : 36
+> INSERT  12 : 17  @  12
+
++ 	public void handleTouchInput() throws IOException {
++ 		super.handleTouchInput();
++ 		this.serverListSelector.handleTouchInput();
++ 	}
++ 
+
+> CHANGE  20 : 23  @  20 : 24
 
 ~ 		this.savedServerList.updateServerPing();
 ~ 		if (lanServerList.update()) {
@@ -111,7 +120,7 @@
 
 > CHANGE  3 : 8  @  3 : 4
 
-~ 				long millis = System.currentTimeMillis();
+~ 				long millis = EagRuntime.steadyTimeMillis();
 ~ 				if (millis - lastRefreshCommit > 700l) {
 ~ 					lastRefreshCommit = millis;
 ~ 					this.refreshServerList();
@@ -123,23 +132,35 @@
 
 > CHANGE  14 : 19  @  14 : 16
 
-~ 			long millis = System.currentTimeMillis();
+~ 			long millis = EagRuntime.steadyTimeMillis();
 ~ 			if (millis - lastRefreshCommit > 700l) {
 ~ 				lastRefreshCommit = millis;
 ~ 				this.refreshServerList();
 ~ 			}
 
-> CHANGE  15 : 20  @  15 : 17
+> INSERT  10 : 13  @  10
 
-~ 			long millis = System.currentTimeMillis();
++ 				if (!this.selectedServer.enableCookies) {
++ 					ServerCookieDataStore.clearCookie(this.selectedServer.serverIP);
++ 				}
+
+> CHANGE  5 : 10  @  5 : 7
+
+~ 			long millis = EagRuntime.steadyTimeMillis();
 ~ 			if (millis - lastRefreshCommit > 700l) {
 ~ 				lastRefreshCommit = millis;
 ~ 				this.refreshServerList();
 ~ 			}
 
-> CHANGE  10 : 15  @  10 : 12
+> INSERT  6 : 9  @  6
 
-~ 			long millis = System.currentTimeMillis();
++ 				if (serverdata.enableCookies && !this.selectedServer.enableCookies) {
++ 					ServerCookieDataStore.clearCookie(this.selectedServer.serverIP);
++ 				}
+
+> CHANGE  4 : 9  @  4 : 6
+
+~ 			long millis = EagRuntime.steadyTimeMillis();
 ~ 			if (millis - lastRefreshCommit > 700l) {
 ~ 				lastRefreshCommit = millis;
 ~ 				this.refreshServerList();
@@ -171,7 +192,11 @@
 + 		relaysButton.drawScreen(i, j);
 + 		drawPluginDownloadLink(i, j);
 
-> INSERT  3 : 4  @  3
+> INSERT  2 : 3  @  2
+
++ 			GlStateManager.disableLighting();
+
+> INSERT  1 : 2  @  1
 
 + 	}
 
@@ -257,9 +282,5 @@
 + 		return lanServerList;
 + 	}
 + 
-
-> CHANGE  5 : 6  @  5 : 6
-
-~ 		return parInt1 < this.savedServerList.countServers();
 
 > EOF

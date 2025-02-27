@@ -1,12 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.event;
-
-import java.net.InetAddress;
-import java.util.function.Consumer;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListenerConfig;
-
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -20,6 +13,14 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListen
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.event;
+
+import java.net.InetAddress;
+import java.util.function.Consumer;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListenerConfig;
+
 public class EaglercraftIsAuthRequiredEvent {
 
 	public static enum AuthResponse {
@@ -52,6 +53,7 @@ public class EaglercraftIsAuthRequiredEvent {
 	private String eventAuthMessage = "enter the code:";
 	private String kickUserMessage = "Login Denied";
 	private Object authAttachment;
+	private boolean enableCookieAuth;
 	private Consumer<EaglercraftIsAuthRequiredEvent> continueThread;
 	private Runnable continueRunnable;
 	private volatile boolean hasContinue = false;
@@ -114,6 +116,14 @@ public class EaglercraftIsAuthRequiredEvent {
 
 	public void setAuthAttachment(Object authAttachment) {
 		this.authAttachment = authAttachment;
+	}
+
+	public boolean getEnableCookieAuth() {
+		return enableCookieAuth;
+	}
+
+	public void setEnableCookieAuth(boolean enable) {
+		this.enableCookieAuth = enable;
 	}
 
 	public boolean shouldKickUser() {

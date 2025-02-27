@@ -1,22 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.update;
-
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
-import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.client.gui.GuiSlot;
-import net.minecraft.util.ResourceLocation;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -31,11 +13,29 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.update;
+
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
+import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.util.ResourceLocation;
+
 public class GuiUpdateVersionSlot extends GuiSlot {
 
 	private static final ResourceLocation eaglerGuiTex = new ResourceLocation("eagler:gui/eagler_gui.png");
 
-	final List<UpdateCertificate> certList = new ArrayList();
+	final List<UpdateCertificate> certList = new ArrayList<>();
 
 	final GuiUpdateVersionList screen;
 
@@ -86,7 +86,7 @@ public class GuiUpdateVersionSlot extends GuiSlot {
 		screen.drawBackground(0);
 	}
 
-	public static final SimpleDateFormat dateFmt = EagRuntime.fixDateFormat(new SimpleDateFormat("M/dd/yyyy"));
+	public static final SimpleDateFormat dateFmt = new SimpleDateFormat("M/dd/yyyy");
 	private static final char[] hexChars = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 	@Override
@@ -127,13 +127,13 @@ public class GuiUpdateVersionSlot extends GuiSlot {
 			if(strs.size() > 2 && screen.mx > xx + iconSize && screen.my > yy + 8 && screen.mx < xx + getListWidth() - 5 && screen.my < yy + 25) {
 				screen.tooltip = cert.bundleVersionComment;
 			}
-			char[] hexStr1 = new char[] { hexChars[(cert.bundleDataHash[0] >> 4) & 0xF],
-					hexChars[cert.bundleDataHash[1] & 0xF], hexChars[(cert.bundleDataHash[1] >> 4) & 0xF],
-					hexChars[cert.bundleDataHash[1] & 0xF], hexChars[(cert.bundleDataHash[2] >> 4) & 0xF],
+			char[] hexStr1 = new char[] { hexChars[(cert.bundleDataHash[0] >>> 4) & 0xF],
+					hexChars[cert.bundleDataHash[1] & 0xF], hexChars[(cert.bundleDataHash[1] >>> 4) & 0xF],
+					hexChars[cert.bundleDataHash[1] & 0xF], hexChars[(cert.bundleDataHash[2] >>> 4) & 0xF],
 					hexChars[cert.bundleDataHash[2] & 0xF] };
-			char[] hexStr2 = new char[] { hexChars[(cert.bundleDataHash[29] >> 4) & 0xF],
-					hexChars[cert.bundleDataHash[29] & 0xF], hexChars[(cert.bundleDataHash[30] >> 4) & 0xF],
-					hexChars[cert.bundleDataHash[30] & 0xF], hexChars[(cert.bundleDataHash[31] >> 4) & 0xF],
+			char[] hexStr2 = new char[] { hexChars[(cert.bundleDataHash[29] >>> 4) & 0xF],
+					hexChars[cert.bundleDataHash[29] & 0xF], hexChars[(cert.bundleDataHash[30] >>> 4) & 0xF],
+					hexChars[cert.bundleDataHash[30] & 0xF], hexChars[(cert.bundleDataHash[31] >>> 4) & 0xF],
 					hexChars[cert.bundleDataHash[31] & 0xF] };
 			screen.drawString(mc.fontRendererObj,
 					"Author: " + EnumChatFormatting.GRAY + cert.bundleAuthorName + EnumChatFormatting.WHITE + "  Hash: "

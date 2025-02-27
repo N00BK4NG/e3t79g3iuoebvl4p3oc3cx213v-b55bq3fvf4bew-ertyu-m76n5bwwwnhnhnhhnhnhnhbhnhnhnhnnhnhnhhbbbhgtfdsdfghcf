@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -11,7 +11,16 @@
 
 > DELETE  18  @  18 : 21
 
-> CHANGE  25 : 26  @  25 : 26
+> CHANGE  3 : 9  @  3 : 6
+
+~ 		MapGenStructureIO.registerStructureComponent(ComponentScatteredFeaturePieces.DesertPyramid.class,
+~ 				ComponentScatteredFeaturePieces.DesertPyramid::new, "TeDP");
+~ 		MapGenStructureIO.registerStructureComponent(ComponentScatteredFeaturePieces.JunglePyramid.class,
+~ 				ComponentScatteredFeaturePieces.JunglePyramid::new, "TeJP");
+~ 		MapGenStructureIO.registerStructureComponent(ComponentScatteredFeaturePieces.SwampHut.class,
+~ 				ComponentScatteredFeaturePieces.SwampHut::new, "TeSH");
+
+> CHANGE  19 : 20  @  19 : 20
 
 ~ 		public DesertPyramid(EaglercraftRandom parRandom, int parInt1, int parInt2) {
 
@@ -30,7 +39,11 @@
 
 ~ 		protected Feature(EaglercraftRandom parRandom, int parInt1, int parInt2, int parInt3, int parInt4, int parInt5,
 
-> CHANGE  86 : 87  @  86 : 87
+> CHANGE  39 : 40  @  39 : 40
+
+~ 				BlockPos blockpos$mutableblockpos = new BlockPos();
+
+> CHANGE  46 : 47  @  46 : 47
 
 ~ 		public JunglePyramid(EaglercraftRandom parRandom, int parInt1, int parInt2) {
 

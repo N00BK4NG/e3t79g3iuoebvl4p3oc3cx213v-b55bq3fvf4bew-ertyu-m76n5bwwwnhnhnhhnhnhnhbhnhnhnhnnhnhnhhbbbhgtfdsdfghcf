@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.futures;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,9 +13,17 @@ import java.util.concurrent.Executor;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.futures;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+
 public class ListenableFutureTask<V> extends FutureTask<V> implements ListenableFuture<V> {
 	
-	private final List<Runnable> listeners = new ArrayList();
+	private final List<Runnable> listeners = new ArrayList<>();
 
 	public ListenableFutureTask(Callable<V> callable) {
 		super(callable);
@@ -54,7 +55,7 @@ public class ListenableFutureTask<V> extends FutureTask<V> implements Listenable
 	}
 
 	public static <V> ListenableFutureTask<V> create(Callable<V> callableToSchedule) {
-		return new ListenableFutureTask(callableToSchedule);
+		return new ListenableFutureTask<>(callableToSchedule);
 	}
 	
 }

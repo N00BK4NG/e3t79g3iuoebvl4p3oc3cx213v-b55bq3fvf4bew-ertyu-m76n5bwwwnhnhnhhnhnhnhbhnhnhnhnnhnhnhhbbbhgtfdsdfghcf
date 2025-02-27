@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.update;
-
-import java.io.IOException;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,6 +13,17 @@ import net.minecraft.client.resources.I18n;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.update;
+
+import java.io.IOException;
+
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
+
 public class GuiUpdateVersionList extends GuiScreen {
 
 	final GuiScreen back;
@@ -60,11 +63,12 @@ public class GuiUpdateVersionList extends GuiScreen {
 				UpdateService.startClientUpdateFrom(slots.certList.get(selected));
 			}
 		case 0:
-		default:
 			mc.displayGuiScreen(back);
 			break;
 		case 2:
 			this.initGui();
+			break;
+		default:
 			break;
 		}
 	}
@@ -79,6 +83,7 @@ public class GuiUpdateVersionList extends GuiScreen {
 		super.drawScreen(par1, par2, par3);
 		if(tooltip != null) {
 			drawHoveringText(mc.fontRendererObj.listFormattedStringToWidth(tooltip, 180), par1, par2);
+			GlStateManager.disableLighting();
 			tooltip = null;
 		}
 	}
@@ -88,4 +93,11 @@ public class GuiUpdateVersionList extends GuiScreen {
 		super.handleMouseInput();
 		slots.handleMouseInput();
 	}
+
+	@Override
+	public void handleTouchInput() throws IOException {
+		super.handleTouchInput();
+		slots.handleTouchInput();
+	}
+
 }

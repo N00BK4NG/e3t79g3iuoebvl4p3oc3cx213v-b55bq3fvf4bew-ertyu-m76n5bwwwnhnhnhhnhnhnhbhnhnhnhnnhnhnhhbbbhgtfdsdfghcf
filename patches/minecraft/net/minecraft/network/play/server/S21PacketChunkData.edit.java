@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -13,7 +13,11 @@
 + import com.google.common.collect.Lists;
 + 
 
-> CHANGE  59 : 60  @  59 : 60
+> INSERT  19 : 20  @  19
+
++ 		chunkIn.alfheim$getLightingEngine().processLightUpdates();
+
+> CHANGE  40 : 41  @  40 : 41
 
 ~ 		ArrayList<ExtendedBlockStorage> arraylist = Lists.newArrayList();
 

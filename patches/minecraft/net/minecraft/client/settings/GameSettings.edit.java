@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -14,7 +14,7 @@
 
 > DELETE  1  @  1 : 3
 
-> INSERT  3 : 27  @  3
+> INSERT  3 : 32  @  3
 
 + 
 + import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
@@ -34,16 +34,27 @@
 + import net.lax1dude.eaglercraft.v1_8.EaglerZLIB;
 + import net.lax1dude.eaglercraft.v1_8.HString;
 + import net.lax1dude.eaglercraft.v1_8.Keyboard;
-+ import net.lax1dude.eaglercraft.v1_8.Mouse;
++ import net.lax1dude.eaglercraft.v1_8.PointerInputAbstraction;
 + import net.lax1dude.eaglercraft.v1_8.internal.EnumPlatformType;
 + import net.lax1dude.eaglercraft.v1_8.internal.KeyboardConstants;
 + import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 + import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
++ import net.lax1dude.eaglercraft.v1_8.minecraft.GuiScreenVideoSettingsWarning;
 + import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.EaglerDeferredConfig;
++ import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.EaglerDeferredPipeline;
++ import net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights.DynamicLightsStateManager;
++ import net.lax1dude.eaglercraft.v1_8.recording.EnumScreenRecordingCodec;
++ import net.lax1dude.eaglercraft.v1_8.recording.ScreenRecordingController;
 
 > DELETE  5  @  5 : 7
 
-> DELETE  5  @  5 : 11
+> INSERT  3 : 4  @  3
+
++ import net.minecraft.util.EnumChatFormatting;
+
+> CHANGE  2 : 3  @  2 : 8
+
+~ import net.optifine.CustomSky;
 
 > DELETE  3  @  3 : 8
 
@@ -91,7 +102,7 @@
 
 ~ 	public int guiScale = 3;
 
-> INSERT  3 : 18  @  3
+> INSERT  3 : 24  @  3
 
 + 	public boolean hudFps = true;
 + 	public boolean hudCoords = true;
@@ -108,13 +119,33 @@
 + 	public boolean enableUpdateSvc = true;
 + 	public boolean enableFNAWSkins = true;
 + 	public boolean enableDynamicLights = false;
++ 	public boolean hasHiddenPhishWarning = false;
++ 	public boolean enableProfanityFilter = false;
++ 	public boolean hasShownProfanityFilter = false;
++ 	public float touchControlOpacity = 1.0f;
++ 	public boolean hideDefaultUsernameWarning = false;
++ 	public boolean hideVideoSettingsWarning = EagRuntime.getPlatformType() == EnumPlatformType.DESKTOP;
 
-> CHANGE  1 : 7  @  1 : 2
+> CHANGE  1 : 21  @  1 : 2
 
 ~ 	public int voiceListenRadius = 16;
 ~ 	public float voiceListenVolume = 0.5f;
 ~ 	public float voiceSpeakVolume = 0.5f;
 ~ 	public int voicePTTKey = 47; // V
+~ 
+~ 	public EnumScreenRecordingCodec screenRecordCodec;
+~ 	public int screenRecordFPS = ScreenRecordingController.DEFAULT_FPS;
+~ 	public int screenRecordResolution = ScreenRecordingController.DEFAULT_RESOLUTION;
+~ 	public int screenRecordAudioBitrate = ScreenRecordingController.DEFAULT_AUDIO_BITRATE;
+~ 	public int screenRecordVideoBitrate = ScreenRecordingController.DEFAULT_VIDEO_BITRATE;
+~ 	public float screenRecordGameVolume = ScreenRecordingController.DEFAULT_GAME_VOLUME;
+~ 	public float screenRecordMicVolume = ScreenRecordingController.DEFAULT_MIC_VOLUME;
+~ 
+~ 	public int betterGrassOF = 0;
+~ 	public int connectedTexturesOF = 1;
+~ 	public boolean customSkyOF = true;
+~ 	public boolean smartLeavesOF = false;
+~ 	public boolean customItemsOF = true;
 ~ 
 ~ 	public GameSettings(Minecraft mcIn) {
 
@@ -133,13 +164,10 @@
 ~ 		this.gammaSetting = 1.0F;
 ~ 		this.language = EagRuntime.getConfiguration().getDefaultLocale();
 
-> CHANGE  2 : 3  @  2 : 8
-
-~ 		GameSettings.Options.RENDER_DISTANCE.setValueMax(18.0F);
-
-> CHANGE  1 : 2  @  1 : 2
+> CHANGE  2 : 4  @  2 : 10
 
 ~ 		this.renderDistanceChunks = 4;
+~ 		this.screenRecordCodec = ScreenRecordingController.getDefaultCodec();
 
 > DELETE  3  @  3 : 18
 
@@ -147,83 +175,162 @@
 
 ~ 						: HString.format("%c", new Object[] { Character.valueOf((char) (parInt1 - 256)) })
 
-> DELETE  76  @  76 : 99
+> CHANGE  5 : 7  @  5 : 6
+
+~ 				: (parKeyBinding.getKeyCode() < 0
+~ 						? PointerInputAbstraction.getVCursorButtonDown(parKeyBinding.getKeyCode() + 100)
+
+> CHANGE  71 : 73  @  71 : 73
+
+~ 		if (parOptions == GameSettings.Options.EAGLER_TOUCH_CONTROL_OPACITY) {
+~ 			this.touchControlOpacity = parFloat1;
+
+> DELETE  1  @  1 : 20
 
 > INSERT  35 : 37  @  35
 
 + 			this.mc.loadingScreen.eaglerShow(I18n.format("resourcePack.load.refreshing"),
 + 					I18n.format("resourcePack.load.pleaseWait"));
 
-> DELETE  18  @  18 : 38
+> CHANGE  18 : 20  @  18 : 20
 
-> DELETE  20  @  20 : 37
+~ 		if (parOptions == GameSettings.Options.CHAT_COLOR) {
+~ 			this.chatColours = !this.chatColours;
 
-> INSERT  13 : 67  @  13
+> CHANGE  2 : 4  @  2 : 4
 
-+ 		if (parOptions == GameSettings.Options.HUD_FPS) {
-+ 			this.hudFps = !this.hudFps;
+~ 		if (parOptions == GameSettings.Options.CHAT_LINKS) {
+~ 			this.chatLinks = !this.chatLinks;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.CHAT_LINKS_PROMPT) {
+~ 			this.chatLinksPrompt = !this.chatLinksPrompt;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.SNOOPER_ENABLED) {
+~ 			this.snooperEnabled = !this.snooperEnabled;
+
+> CHANGE  2 : 5  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.BLOCK_ALTERNATIVES) {
+~ 			this.allowBlockAlternatives = !this.allowBlockAlternatives;
+~ 			this.mc.renderGlobal.loadRenderers();
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.REDUCED_DEBUG_INFO) {
+~ 			this.reducedDebugInfo = !this.reducedDebugInfo;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.ENTITY_SHADOWS) {
+~ 			this.field_181151_V = !this.field_181151_V;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.HUD_FPS) {
+~ 			this.hudFps = !this.hudFps;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.HUD_COORDS) {
+~ 			this.hudCoords = !this.hudCoords;
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.HUD_PLAYER) {
+~ 			this.hudPlayer = !this.hudPlayer;
+
+> CHANGE  2 : 4  @  2 : 7
+
+~ 		if (parOptions == GameSettings.Options.HUD_STATS) {
+~ 			this.hudStats = !this.hudStats;
+
+> CHANGE  2 : 32  @  2 : 3
+
+~ 		if (parOptions == GameSettings.Options.HUD_WORLD) {
+~ 			this.hudWorld = !this.hudWorld;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.HUD_24H) {
+~ 			this.hud24h = !this.hud24h;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.CHUNK_FIX) {
+~ 			this.chunkFix = !this.chunkFix;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.FOG) {
+~ 			this.fog = !this.fog;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.FXAA) {
+~ 			this.fxaa = (this.fxaa + parInt1) % 3;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.FULLSCREEN) {
+~ 			this.mc.toggleFullscreen();
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.FNAW_SKINS) {
+~ 			this.enableFNAWSkins = !this.enableFNAWSkins;
+~ 			this.mc.getRenderManager().setEnableFNAWSkins(this.mc.getEnableFNAWSkins());
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.EAGLER_VSYNC) {
+
+> DELETE  1  @  1 : 2
+
+> CHANGE  2 : 4  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.EAGLER_DYNAMIC_LIGHTS) {
+~ 			this.enableDynamicLights = !this.enableDynamicLights;
+
+> CHANGE  3 : 9  @  3 : 5
+
+~ 		if (parOptions == GameSettings.Options.EAGLER_PROFANITY_FILTER) {
+~ 			this.enableProfanityFilter = !this.enableProfanityFilter;
+~ 		}
+~ 
+~ 		if (parOptions == GameSettings.Options.OF_CONNECTED_TEXTURES) {
+~ 			this.connectedTexturesOF = (this.connectedTexturesOF + 1) % 3;
+
+> CHANGE  3 : 6  @  3 : 5
+
+~ 		if (parOptions == GameSettings.Options.OF_BETTER_GRASS) {
+~ 			this.betterGrassOF = (this.betterGrassOF + 1) % 3;
+~ 			this.mc.renderGlobal.loadRenderers();
+
+> CHANGE  2 : 5  @  2 : 4
+
+~ 		if (parOptions == GameSettings.Options.OF_CUSTOM_SKIES) {
+~ 			this.customSkyOF = !this.customSkyOF;
+~ 			CustomSky.update();
+
+> INSERT  2 : 12  @  2
+
++ 		if (parOptions == GameSettings.Options.OF_SMART_LEAVES) {
++ 			this.smartLeavesOF = !this.smartLeavesOF;
++ 			this.mc.renderGlobal.loadRenderers();
 + 		}
 + 
-+ 		if (parOptions == GameSettings.Options.HUD_COORDS) {
-+ 			this.hudCoords = !this.hudCoords;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.HUD_PLAYER) {
-+ 			this.hudPlayer = !this.hudPlayer;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.HUD_STATS) {
-+ 			this.hudStats = !this.hudStats;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.HUD_WORLD) {
-+ 			this.hudWorld = !this.hudWorld;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.HUD_24H) {
-+ 			this.hud24h = !this.hud24h;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.CHUNK_FIX) {
-+ 			this.chunkFix = !this.chunkFix;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.FOG) {
-+ 			this.fog = !this.fog;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.FXAA) {
-+ 			this.fxaa = (this.fxaa + parInt1) % 3;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.FULLSCREEN) {
-+ 			this.mc.toggleFullscreen();
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.FNAW_SKINS) {
-+ 			this.enableFNAWSkins = !this.enableFNAWSkins;
-+ 			this.mc.getRenderManager().setEnableFNAWSkins(this.mc.getEnableFNAWSkins());
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.EAGLER_VSYNC) {
-+ 			this.enableVsync = !this.enableVsync;
-+ 		}
-+ 
-+ 		if (parOptions == GameSettings.Options.EAGLER_DYNAMIC_LIGHTS) {
-+ 			this.enableDynamicLights = !this.enableDynamicLights;
++ 		if (parOptions == GameSettings.Options.OF_CUSTOM_ITEMS) {
++ 			this.customItemsOF = !this.customItemsOF;
 + 			this.mc.renderGlobal.loadRenderers();
 + 		}
 + 
 
-> CHANGE  23 : 24  @  23 : 34
+> CHANGE  23 : 26  @  23 : 34
 
-~ 																										: 0.0F)))))))))));
+~ 																										: (parOptions == GameSettings.Options.EAGLER_TOUCH_CONTROL_OPACITY
+~ 																												? this.touchControlOpacity
+~ 																												: 0.0F))))))))))));
 
-> DELETE  20  @  20 : 26
+> DELETE  20  @  20 : 30
 
-> DELETE  2  @  2 : 4
-
-> INSERT  8 : 32  @  8
+> INSERT  8 : 40  @  8
 
 + 		case HUD_COORDS:
 + 			return this.hudCoords;
@@ -249,6 +356,14 @@
 + 			return this.enableVsync;
 + 		case EAGLER_DYNAMIC_LIGHTS:
 + 			return this.enableDynamicLights;
++ 		case EAGLER_PROFANITY_FILTER:
++ 			return this.enableProfanityFilter;
++ 		case OF_CUSTOM_SKIES:
++ 			return this.customSkyOF;
++ 		case OF_SMART_LEAVES:
++ 			return this.smartLeavesOF;
++ 		case OF_CUSTOM_ITEMS:
++ 			return this.customItemsOF;
 
 > CHANGE  43 : 46  @  43 : 47
 
@@ -264,7 +379,7 @@
 
 ~ 																									.calculateChatboxHeight(
 
-> CHANGE  2 : 21  @  2 : 36
+> CHANGE  2 : 30  @  2 : 36
 
 ~ 																							: (parOptions == GameSettings.Options.CHAT_WIDTH
 ~ 																									? s + GuiNewChat
@@ -284,11 +399,20 @@
 ~ 																															: s + (int) (f
 ~ 																																	* 100.0F)
 ~ 																																	+ "%")
-~ 																													: "yee"))))))))))));
+~ 																													: (parOptions == GameSettings.Options.EAGLER_TOUCH_CONTROL_OPACITY
+~ 																															? (s + (int) (f
+~ 																																	* 100.0F)
+~ 																																	+ "%")
+~ 																															: "yee")))))))))))));
+~ 		} else if (EagRuntime.getPlatformType() != EnumPlatformType.DESKTOP
+~ 				&& parOptions == GameSettings.Options.EAGLER_VSYNC) {
+~ 			boolean flag = this.getOptionOrdinalValue(parOptions);
+~ 			return flag ? s + I18n.format("options.on", new Object[0])
+~ 					: EnumChatFormatting.RED + s + I18n.format("options.off", new Object[0]);
 
 > DELETE  11  @  11 : 19
 
-> INSERT  9 : 17  @  9
+> INSERT  9 : 33  @  9
 
 + 		} else if (parOptions == GameSettings.Options.FXAA) {
 + 			if (this.fxaa == 0) {
@@ -297,6 +421,22 @@
 + 				return s + I18n.format("options.on");
 + 			} else {
 + 				return s + I18n.format("options.off");
++ 			}
++ 		} else if (parOptions == GameSettings.Options.OF_CONNECTED_TEXTURES) {
++ 			if (this.connectedTexturesOF == 0) {
++ 				return s + I18n.format("options.off");
++ 			} else if (this.connectedTexturesOF == 1) {
++ 				return s + I18n.format("options.graphics.fast");
++ 			} else {
++ 				return s + I18n.format("options.graphics.fancy");
++ 			}
++ 		} else if (parOptions == GameSettings.Options.OF_BETTER_GRASS) {
++ 			if (this.betterGrassOF == 0) {
++ 				return s + I18n.format("options.off");
++ 			} else if (this.betterGrassOF == 1) {
++ 				return s + I18n.format("options.graphics.fast");
++ 			} else {
++ 				return s + I18n.format("options.graphics.fancy");
 + 			}
 
 > CHANGE  6 : 12  @  6 : 10
@@ -354,7 +494,9 @@
 
 > DELETE  3  @  3 : 7
 
-> CHANGE  52 : 54  @  52 : 54
+> DELETE  12  @  12 : 16
+
+> CHANGE  36 : 38  @  36 : 38
 
 ~ 					if (astring[0].equals("forceUnicodeFont")) {
 ~ 						this.forceUnicodeFont = astring[1].equals("true");
@@ -459,7 +601,7 @@
 
 ~ 					for (EnumPlayerModelParts enumplayermodelparts : EnumPlayerModelParts._VALUES) {
 
-> INSERT  4 : 14  @  4
+> INSERT  4 : 94  @  4
 
 + 
 + 					if (astring[0].equals("enableFNAWSkins")) {
@@ -470,17 +612,107 @@
 + 						this.enableDynamicLights = astring[1].equals("true");
 + 					}
 + 
++ 					if (astring[0].equals("hasHiddenPhishWarning")) {
++ 						this.hasHiddenPhishWarning = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("enableProfanityFilter")) {
++ 						this.enableProfanityFilter = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("hasShownProfanityFilter")) {
++ 						this.hasShownProfanityFilter = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordCodec")) {
++ 						EnumScreenRecordingCodec codec = EnumScreenRecordingCodec.valueOf(astring[1]);
++ 						if (!ScreenRecordingController.codecs.contains(codec)) {
++ 							throw new IllegalStateException("Selected codec is not supported: " + codec.name);
++ 						}
++ 						screenRecordCodec = codec;
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordFPS")) {
++ 						screenRecordFPS = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordFPS")) {
++ 						screenRecordFPS = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordResolution")) {
++ 						screenRecordResolution = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordAudioBitrate")) {
++ 						screenRecordAudioBitrate = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordVideoBitrate")) {
++ 						screenRecordVideoBitrate = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordGameVolume")) {
++ 						screenRecordGameVolume = parseFloat(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("screenRecordMicVolume")) {
++ 						screenRecordMicVolume = parseFloat(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("touchControlOpacity")) {
++ 						touchControlOpacity = parseFloat(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("hideDefaultUsernameWarning")) {
++ 						this.hideDefaultUsernameWarning = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("hideVideoSettingsWarning")) {
++ 						hideVideoSettingsWarning = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("betterGrassOF")) {
++ 						betterGrassOF = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("connectedTexturesOF")) {
++ 						connectedTexturesOF = Integer.parseInt(astring[1]);
++ 					}
++ 
++ 					if (astring[0].equals("customSkyOF")) {
++ 						customSkyOF = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("smartLeavesOF")) {
++ 						smartLeavesOF = astring[1].equals("true");
++ 					}
++ 
++ 					if (astring[0].equals("customItemsOF")) {
++ 						customItemsOF = astring[1].equals("true");
++ 					}
++ 
 + 					deferredShaderConf.readOption(astring[0], astring[1]);
 
-> CHANGE  6 : 13  @  6 : 7
+> CHANGE  6 : 23  @  6 : 7
 
 ~ 
 ~ 			Keyboard.setFunctionKeyModifier(keyBindFunction.getKeyCode());
 ~ 			VoiceClientController.setVoiceListenVolume(voiceListenVolume);
 ~ 			VoiceClientController.setVoiceSpeakVolume(voiceSpeakVolume);
 ~ 			VoiceClientController.setVoiceProximity(voiceListenRadius);
+~ 			ScreenRecordingController.setGameVolume(screenRecordGameVolume);
+~ 			ScreenRecordingController.setMicrophoneVolume(screenRecordMicVolume);
 ~ 			if (this.mc.getRenderManager() != null)
 ~ 				this.mc.getRenderManager().setEnableFNAWSkins(this.enableFNAWSkins);
+~ 			if (this.shaders && !EaglerDeferredPipeline.isSupported()) {
+~ 				logger.error("Setting shaders to false because they are not supported");
+~ 				this.shaders = false;
+~ 			}
+~ 			if (this.enableDynamicLights && !DynamicLightsStateManager.isSupported()) {
+~ 				logger.error("Setting dynamic lights to false because they are not supported");
+~ 				this.enableDynamicLights = false;
+~ 			}
 
 > CHANGE  1 : 3  @  1 : 2
 
@@ -519,9 +751,11 @@
 
 ~ 			printwriter.println("enableVsyncEag:" + this.enableVsync);
 
-> DELETE  13  @  13 : 24
+> DELETE  3  @  3 : 4
 
-> INSERT  5 : 22  @  5
+> DELETE  9  @  9 : 20
+
+> INSERT  5 : 42  @  5
 
 + 			printwriter.println("hudFps:" + this.hudFps);
 + 			printwriter.println("hudWorld:" + this.hudWorld);
@@ -540,6 +774,26 @@
 + 			printwriter.println("voicePTTKey:" + this.voicePTTKey);
 + 			printwriter.println("enableFNAWSkins:" + this.enableFNAWSkins);
 + 			printwriter.println("enableDynamicLights:" + this.enableDynamicLights);
++ 			printwriter.println("hasHiddenPhishWarning:" + this.hasHiddenPhishWarning);
++ 			printwriter.println("enableProfanityFilter:" + this.enableProfanityFilter);
++ 			printwriter.println("hasShownProfanityFilter:" + this.hasShownProfanityFilter);
++ 			if (screenRecordCodec != null) {
++ 				printwriter.println("screenRecordCodec:" + this.screenRecordCodec);
++ 			}
++ 			printwriter.println("screenRecordFPS:" + this.screenRecordFPS);
++ 			printwriter.println("screenRecordResolution:" + this.screenRecordResolution);
++ 			printwriter.println("screenRecordAudioBitrate:" + this.screenRecordAudioBitrate);
++ 			printwriter.println("screenRecordVideoBitrate:" + this.screenRecordVideoBitrate);
++ 			printwriter.println("screenRecordGameVolume:" + this.screenRecordGameVolume);
++ 			printwriter.println("screenRecordMicVolume:" + this.screenRecordMicVolume);
++ 			printwriter.println("touchControlOpacity:" + this.touchControlOpacity);
++ 			printwriter.println("hideDefaultUsernameWarning:" + this.hideDefaultUsernameWarning);
++ 			printwriter.println("hideVideoSettingsWarning:" + this.hideVideoSettingsWarning);
++ 			printwriter.println("betterGrassOF:" + this.betterGrassOF);
++ 			printwriter.println("connectedTexturesOF:" + this.connectedTexturesOF);
++ 			printwriter.println("customSkyOF:" + this.customSkyOF);
++ 			printwriter.println("smartLeavesOF:" + this.smartLeavesOF);
++ 			printwriter.println("customItemsOF:" + this.customItemsOF);
 
 > CHANGE  5 : 8  @  5 : 6
 
@@ -568,15 +822,11 @@
 
 > DELETE  2  @  2 : 3
 
-> CHANGE  5 : 6  @  5 : 6
+> CHANGE  22 : 23  @  22 : 23
 
-~ 				: (parSoundCategory == SoundCategory.VOICE ? 0.0F : 1.0F);
+~ 					Math.max(this.renderDistanceChunks, 3), this.chatVisibility, this.chatColours, i));
 
-> CHANGE  16 : 17  @  16 : 17
-
-~ 					Math.max(this.renderDistanceChunks, 2), this.chatVisibility, this.chatColours, i));
-
-> INSERT  36 : 44  @  36
+> INSERT  36 : 60  @  36
 
 + 	private String toJSONArray(List<String> e) {
 + 		JSONArray arr = new JSONArray();
@@ -586,17 +836,30 @@
 + 		return arr.toString();
 + 	}
 + 
++ 	public int checkBadVideoSettings() {
++ 		return hideVideoSettingsWarning ? 0
++ 				: ((renderDistanceChunks > 6 ? GuiScreenVideoSettingsWarning.WARNING_RENDER_DISTANCE : 0)
++ 						| (!enableVsync ? GuiScreenVideoSettingsWarning.WARNING_VSYNC : 0)
++ 						| (limitFramerate < 30 ? GuiScreenVideoSettingsWarning.WARNING_FRAME_LIMIT : 0));
++ 	}
++ 
++ 	public void fixBadVideoSettings() {
++ 		if (renderDistanceChunks > 6)
++ 			renderDistanceChunks = 4;
++ 		if (!enableVsync)
++ 			enableVsync = true;
++ 		if (limitFramerate < 30)
++ 			limitFramerate = 260;
++ 	}
++ 
 
 > CHANGE  4 : 5  @  4 : 5
 
 ~ 		RENDER_DISTANCE("options.renderDistance", true, false, 1.0F, 18.0F, 1.0F),
 
-> CHANGE  8 : 10  @  8 : 12
+> DELETE  8  @  8 : 10
 
-~ 		TOUCHSCREEN("options.touchscreen", false, true), CHAT_SCALE("options.chat.scale", true, false),
-~ 		CHAT_WIDTH("options.chat.width", true, false), CHAT_HEIGHT_FOCUSED("options.chat.height.focused", true, false),
-
-> CHANGE  14 : 22  @  14 : 15
+> CHANGE  16 : 29  @  16 : 17
 
 ~ 		ENTITY_SHADOWS("options.entityShadows", false, true), HUD_FPS("options.hud.fps", false, true),
 ~ 		HUD_COORDS("options.hud.coords", false, true), HUD_STATS("options.hud.stats", false, true),
@@ -605,6 +868,11 @@
 ~ 		FOG("options.fog", false, true), FXAA("options.fxaa", false, false),
 ~ 		FULLSCREEN("options.fullscreen", false, true),
 ~ 		FNAW_SKINS("options.skinCustomisation.enableFNAWSkins", false, true),
-~ 		EAGLER_VSYNC("options.vsync", false, true), EAGLER_DYNAMIC_LIGHTS("options.dynamicLights", false, true);
+~ 		EAGLER_VSYNC("options.vsync", false, true), EAGLER_DYNAMIC_LIGHTS("options.dynamicLights", false, true),
+~ 		EAGLER_PROFANITY_FILTER("options.profanityFilterButton", false, true),
+~ 		EAGLER_TOUCH_CONTROL_OPACITY("options.touchControlOpacity", true, false),
+~ 		OF_CONNECTED_TEXTURES("options.connectedTexturesOF", false, false),
+~ 		OF_BETTER_GRASS("options.betterGrassOF", false, false), OF_CUSTOM_SKIES("options.customSkiesOF", false, true),
+~ 		OF_SMART_LEAVES("options.smartLeavesOF", false, true), OF_CUSTOM_ITEMS("options.customItemsOF", false, true);
 
 > EOF

@@ -1,19 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
-
-import java.lang.reflect.Method;
-import java.util.List;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.bungeeprotocol.EaglerBungeeProtocol;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.bungeeprotocol.EaglerProtocolAccessProxy;
-import net.md_5.bungee.protocol.DefinedPacket;
-import net.md_5.bungee.protocol.Protocol;
-import net.md_5.bungee.protocol.ProtocolConstants.Direction;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -28,34 +13,34 @@ import net.md_5.bungee.protocol.ProtocolConstants.Direction;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
+
+import java.lang.reflect.Method;
+import java.util.List;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import net.md_5.bungee.protocol.DefinedPacket;
+import net.md_5.bungee.protocol.Protocol;
+import net.md_5.bungee.protocol.ProtocolConstants.Direction;
+
 public class EaglerMinecraftEncoder extends MessageToMessageEncoder<DefinedPacket> {
 	
-	private EaglerBungeeProtocol protocol;
+	private Protocol protocol;
 	private boolean server;
 	private int protocolVersion;
 	private static Method meth = null;
 	
 	@Override
 	protected void encode(ChannelHandlerContext ctx, DefinedPacket msg, List<Object> out) throws Exception {
-		Protocol bungeeProtocol = null;
-		switch(this.protocol) {
-			case GAME:
-				bungeeProtocol = Protocol.GAME;
-				break;
-			case HANDSHAKE:
-				bungeeProtocol = Protocol.HANDSHAKE;
-				break;
-			case LOGIN:
-				bungeeProtocol = Protocol.LOGIN;
-				break;
-			case STATUS:
-				bungeeProtocol = Protocol.STATUS;
-		}
 		ByteBuf buf = ctx.alloc().buffer();
 		int pk = EaglerProtocolAccessProxy.getPacketId(protocol, protocolVersion, msg, server);
 		DefinedPacket.writeVarInt(pk, buf);
 		try {
-			msg.write(buf, bungeeProtocol, server ? Direction.TO_CLIENT : Direction.TO_SERVER, protocolVersion);
+			msg.write(buf, protocol, server ? Direction.TO_CLIENT : Direction.TO_SERVER, protocolVersion);
 		} catch (NoSuchMethodError e) {
 			try {
 				if (meth == null) {
@@ -73,21 +58,21 @@ public class EaglerMinecraftEncoder extends MessageToMessageEncoder<DefinedPacke
 		out.add(new BinaryWebSocketFrame(buf));
 	}
 
-	public EaglerMinecraftEncoder(final EaglerBungeeProtocol protocol, final boolean server, final int protocolVersion) {
+	public EaglerMinecraftEncoder(Protocol protocol, boolean server, int protocolVersion) {
 		this.protocol = protocol;
 		this.server = server;
 		this.protocolVersion = protocolVersion;
 	}
 
-	public void setProtocol(final EaglerBungeeProtocol protocol) {
+	public void setProtocol(Protocol protocol) {
 		this.protocol = protocol;
 	}
 
-	public void setProtocolVersion(final int protocolVersion) {
+	public void setProtocolVersion(int protocolVersion) {
 		this.protocolVersion = protocolVersion;
 	}
 
-	public EaglerBungeeProtocol getProtocol() {
+	public Protocol getProtocol() {
 		return this.protocol;
 	}
 

@@ -1,20 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.server.export;
-
-import java.io.IOException;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
-import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerIntegratedServerWorker;
-import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerSaveFormat;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.storage.WorldInfo;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -29,6 +13,24 @@ import net.minecraft.world.storage.WorldInfo;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.server.export;
+
+import java.io.IOException;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
+import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
+import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFile2;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerIntegratedServerWorker;
+import net.lax1dude.eaglercraft.v1_8.sp.server.EaglerSaveFormat;
+import net.lax1dude.eaglercraft.v1_8.sp.server.WorldsDB;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.storage.WorldInfo;
+
 public class WorldConverterEPK {
 
 	private static final Logger logger = LogManager.getLogger("WorldConverterEPK");
@@ -37,7 +39,7 @@ public class WorldConverterEPK {
 		logger.info("Importing world \"{}\" from EPK", newName);
 		String folderName = newName.replaceAll("[\\./\"]", "_");
 		VFile2 worldDir = EaglerIntegratedServerWorker.saveFormat.getSaveLoader(folderName, false).getWorldDirectory();
-		while((new VFile2(worldDir, "level.dat")).exists() || (new VFile2(worldDir, "level.dat_old")).exists()) {
+		while(WorldsDB.newVFile(worldDir, "level.dat").exists() || WorldsDB.newVFile(worldDir, "level.dat_old").exists()) {
 			folderName += "_";
 			worldDir = EaglerIntegratedServerWorker.saveFormat.getSaveLoader(folderName, false).getWorldDirectory();
 		}
@@ -74,7 +76,7 @@ public class WorldConverterEPK {
 						CompressedStreamTools.writeCompressed(worldDatNBT, tmp);
 						b = tmp.toByteArray();
 					}
-					VFile2 ff = new VFile2(worldDir, f.name);
+					VFile2 ff = WorldsDB.newVFile(worldDir, f.name);
 					ff.setAllBytes(b);
 					prog += b.length;
 					++cnt;
@@ -102,11 +104,10 @@ public class WorldConverterEPK {
 	public static byte[] exportWorld(String worldName) {
 		String realWorldName = worldName;
 		String worldOwner = "UNKNOWN";
-		String splitter = new String(new char[] { (char)253, (char)233, (char)233 });
-		if(worldName.contains(splitter)) {
-			int i = worldName.lastIndexOf(splitter);
-			worldOwner = worldName.substring(i + 3);
-			realWorldName = worldName.substring(0, i);
+		int j = worldName.lastIndexOf(new String(new char[] { (char)253, (char)233, (char)233 }));
+		if(j != -1) {
+			worldOwner = worldName.substring(j + 3);
+			realWorldName = worldName.substring(0, j);
 		}
 		VFile2 worldDir = EaglerIntegratedServerWorker.saveFormat.getSaveLoader(realWorldName, false).getWorldDirectory();
 		logger.info("Exporting world directory \"{}\" as EPK", worldDir.getPath());

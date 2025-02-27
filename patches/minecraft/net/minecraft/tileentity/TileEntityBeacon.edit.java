@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -21,7 +21,11 @@
 ~ 				for (int m = 0, l = list.size(); m < l; ++m) {
 ~ 					list.get(m).addPotionEffect(new PotionEffect(this.secondaryEffect, 180, 0, true, true));
 
-> CHANGE  87 : 88  @  87 : 88
+> CHANGE  18 : 19  @  18 : 19
+
+~ 		BlockPos blockpos$mutableblockpos = new BlockPos();
+
+> CHANGE  68 : 69  @  68 : 69
 
 ~ 			List<EntityPlayer> lst = this.worldObj.getEntitiesWithinAABB(EntityPlayer.class,
 

@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.teavm.opts;
-
-import org.teavm.jso.JSBody;
-import org.teavm.jso.JSObject;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,10 +13,19 @@ import org.teavm.jso.JSObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.teavm.opts;
+
+import org.teavm.jso.JSBody;
+import org.teavm.jso.JSObject;
+
 public abstract class JSEaglercraftXOptsServer implements JSObject {
 
 	@JSBody(script = "return (typeof this.addr === \"string\") ? this.addr : null;")
 	public native String getAddr();
+
+	@JSBody(params = { "def" }, script = "return (typeof this.hideAddr === \"boolean\") ? this.hideAddr : def;")
+	public native boolean getHideAddr(boolean defaultValue);
 
 	@JSBody(params = { "def" }, script = "return (typeof this.name === \"string\") ? this.name : def;")
 	public native String getName(String defaultValue);

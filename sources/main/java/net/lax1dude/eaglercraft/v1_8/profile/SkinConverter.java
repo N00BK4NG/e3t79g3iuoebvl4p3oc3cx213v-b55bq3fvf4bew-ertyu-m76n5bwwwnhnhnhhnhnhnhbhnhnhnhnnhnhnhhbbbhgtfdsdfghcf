@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.profile;
-
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,6 +13,11 @@ import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.profile;
+
+import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
+
 public class SkinConverter {
 
 	public static void convert64x32to64x64(ImageData skinIn, ImageData skinOut) {
@@ -42,8 +43,8 @@ public class SkinConverter {
 				i = (y * 23 + x) * 3;
 				j = skinIn.pixels[y * skinIn.width + x];
 				if((j & 0xFF000000) != 0) {
-					skinOut[i] = (byte)(j >> 16);
-					skinOut[i + 1] = (byte)(j >> 8);
+					skinOut[i] = (byte)(j >>> 16);
+					skinOut[i + 1] = (byte)(j >>> 8);
 					skinOut[i + 2] = (byte)(j & 0xFF);
 				}else {
 					skinOut[i] = skinOut[i + 1] = skinOut[i + 2] = 0;
@@ -54,8 +55,8 @@ public class SkinConverter {
 			i = ((y + 6) * 23 + 22) * 3;
 			j = skinIn.pixels[(y + 11) * skinIn.width + 22];
 			if((j & 0xFF000000) != 0) {
-				skinOut[i] = (byte)(j >> 16);
-				skinOut[i + 1] = (byte)(j >> 8);
+				skinOut[i] = (byte)(j >>> 16);
+				skinOut[i + 1] = (byte)(j >>> 8);
 				skinOut[i + 2] = (byte)(j & 0xFF);
 			}else {
 				skinOut[i] = skinOut[i + 1] = skinOut[i + 2] = 0;

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -62,7 +62,11 @@
 ~ 				modelplayer_.bipedRightArmwear.showModel = clientPlayer.isWearing(EnumPlayerModelParts.RIGHT_SLEEVE);
 ~ 			}
 
-> CHANGE  50 : 60  @  50 : 58
+> CHANGE  41 : 42  @  41 : 42
+
+~ 						score.getScorePoints() + " " + scoreobjective.getDisplayNameProfanityFilter(), d0, d1, d2, 64);
+
+> CHANGE  8 : 18  @  8 : 16
 
 ~ 		if (!zombieModel) {
 ~ 			float f = 1.0F;

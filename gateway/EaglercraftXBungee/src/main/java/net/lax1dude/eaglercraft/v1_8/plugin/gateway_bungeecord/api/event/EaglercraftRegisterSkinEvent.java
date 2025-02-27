@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event;
-
-import java.util.UUID;
-
-import net.md_5.bungee.api.plugin.Event;
-import net.md_5.bungee.protocol.Property;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,32 +13,39 @@ import net.md_5.bungee.protocol.Property;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event;
+
+import java.util.UUID;
+
+import net.md_5.bungee.api.plugin.Event;
+import net.md_5.bungee.protocol.Property;
+
 public class EaglercraftRegisterSkinEvent extends Event {
 
+	private final Object authAttachment;
 	private final String username;
 	private final UUID uuid;
 	private Property useMojangProfileProperty = null;
 	private boolean useLoginResultTextures = false;
 	private byte[] customTex = null;
-	private String customURL = null;
 
-	public EaglercraftRegisterSkinEvent(String username, UUID uuid) {
+	public EaglercraftRegisterSkinEvent(String username, UUID uuid, Object authAttachment) {
 		this.username = username;
 		this.uuid = uuid;
+		this.authAttachment = authAttachment;
 	}
 
 	public void setForceUseMojangProfileProperty(Property prop) {
 		useMojangProfileProperty = prop;
 		useLoginResultTextures = false;
 		customTex = null;
-		customURL = null;
 	}
 
 	public void setForceUseLoginResultObjectTextures(boolean b) {
 		useMojangProfileProperty = null;
 		useLoginResultTextures = b;
 		customTex = null;
-		customURL = null;
 	}
 
 	public void setForceUsePreset(int p) {
@@ -53,13 +53,15 @@ public class EaglercraftRegisterSkinEvent extends Event {
 		useLoginResultTextures = false;
 		customTex = new byte[5];
 		customTex[0] = (byte)1;
-		customTex[1] = (byte)(p >> 24);
-		customTex[2] = (byte)(p >> 16);
-		customTex[3] = (byte)(p >> 8);
+		customTex[1] = (byte)(p >>> 24);
+		customTex[2] = (byte)(p >>> 16);
+		customTex[3] = (byte)(p >>> 8);
 		customTex[4] = (byte)(p & 0xFF);
-		customURL = null;
 	}
 
+	/**
+	 * @param tex raw 64x64 pixel RGBA texture (16384 bytes long)
+	 */
 	public void setForceUseCustom(int model, byte[] tex) {
 		useMojangProfileProperty = null;
 		useLoginResultTextures = false;
@@ -67,21 +69,12 @@ public class EaglercraftRegisterSkinEvent extends Event {
 		customTex[0] = (byte)2;
 		customTex[1] = (byte)model;
 		System.arraycopy(tex, 0, customTex, 2, tex.length);
-		customURL = null;
 	}
 
 	public void setForceUseCustomByPacket(byte[] packet) {
 		useMojangProfileProperty = null;
 		useLoginResultTextures = false;
 		customTex = packet;
-		customURL = null;
-	}
-
-	public void setForceUseURL(String url) {
-		useMojangProfileProperty = null;
-		useLoginResultTextures = false;
-		customTex = null;
-		customURL = url;
 	}
 
 	public String getUsername() {
@@ -104,8 +97,8 @@ public class EaglercraftRegisterSkinEvent extends Event {
 		return customTex;
 	}
 
-	public String getForceSetUseURL() {
-		return customURL;
+	public <T> T getAuthAttachment() {
+		return (T)authAttachment;
 	}
 
 }

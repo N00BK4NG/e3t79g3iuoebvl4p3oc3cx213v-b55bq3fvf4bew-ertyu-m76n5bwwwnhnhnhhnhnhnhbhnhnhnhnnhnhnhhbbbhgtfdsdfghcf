@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -52,7 +52,11 @@
 ~ 				if (emissive) {
 ~ 					DeferredStateManager.setEmissionConstant(0.0f);
 
-> INSERT  19 : 23  @  19
+> CHANGE  17 : 18  @  17 : 18
+
+~ 				String s = entityitemframe.getDisplayedItem().getDisplayNameProfanityFilter();
+
+> INSERT  1 : 5  @  1
 
 + 					if (DeferredStateManager.isInDeferredPass()) {
 + 						NameTagRenderer.renderNameTag(entityitemframe, null, d0, d1, d2, -69);

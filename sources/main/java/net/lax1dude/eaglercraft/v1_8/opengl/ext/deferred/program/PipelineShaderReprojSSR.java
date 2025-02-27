@@ -1,13 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program;
-
-import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
-import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -22,6 +13,16 @@ import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program;
+
+import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
+
 public class PipelineShaderReprojSSR extends ShaderProgram<PipelineShaderReprojSSR.Uniforms> {
 
 	public static PipelineShaderReprojSSR compile() throws ShaderException {
@@ -48,6 +49,7 @@ public class PipelineShaderReprojSSR extends ShaderProgram<PipelineShaderReprojS
 		public IUniformGL u_inverseProjectionMatrix4f;
 		public IUniformGL u_sampleStep1f;
 		public IUniformGL u_pixelAlignment4f = null;
+		public IUniformGL u_sampleDelta1i;
 
 		@Override
 		public void loadUniforms(IProgramGL prog) {
@@ -62,6 +64,7 @@ public class PipelineShaderReprojSSR extends ShaderProgram<PipelineShaderReprojS
 			u_inverseProjectionMatrix4f = _wglGetUniformLocation(prog, "u_inverseProjectionMatrix4f");
 			u_sampleStep1f = _wglGetUniformLocation(prog, "u_sampleStep1f");
 			u_pixelAlignment4f = _wglGetUniformLocation(prog, "u_pixelAlignment4f");
+			u_sampleDelta1i = _wglGetUniformLocation(prog, "u_sampleDelta1i");
 		}
 
 	}

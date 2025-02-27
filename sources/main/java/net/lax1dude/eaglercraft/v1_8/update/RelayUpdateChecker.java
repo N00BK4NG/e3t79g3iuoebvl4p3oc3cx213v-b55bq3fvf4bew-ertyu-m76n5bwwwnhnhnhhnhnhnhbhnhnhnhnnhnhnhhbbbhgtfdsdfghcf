@@ -1,22 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.update;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformApplication;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacket00Handshake;
-import net.minecraft.client.Minecraft;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -31,6 +13,25 @@ import net.minecraft.client.Minecraft;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.update;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
+import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformApplication;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQueryDispatch;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket00Handshake;
+import net.minecraft.client.Minecraft;
+
 public class RelayUpdateChecker {
 
 	private static class RelayEntry {
@@ -46,7 +47,7 @@ public class RelayUpdateChecker {
 		
 	}
 
-	private static final List<RelayEntry> relaysList = new ArrayList();
+	private static final List<RelayEntry> relaysList = new ArrayList<>();
 
 	private static long lastUpdateCheck = -1l;
 	private static boolean hasInit = false;
@@ -74,7 +75,8 @@ public class RelayUpdateChecker {
 		}
 		long millis = System.currentTimeMillis();
 		Minecraft mc = Minecraft.getMinecraft();
-		if((mc.theWorld == null || mc.isSingleplayer()) && millis - lastUpdateCheck > updateCheckRate) {
+		if ((mc.theWorld == null || mc.isSingleplayer())
+				&& (millis - lastUpdateCheck > updateCheckRate || millis + 60000l < lastUpdateCheck)) {
 			lastUpdateCheck = millis;
 			try {
 				EaglerOutputStream bao = new EaglerOutputStream(8);
@@ -110,7 +112,7 @@ public class RelayUpdateChecker {
 	private static void connect(RelayEntry socket) {
 		try {
 			socket.handshake = false;
-			socket.currentSocket = PlatformWebRTC.openRelayConnection(socket.uri, 10000);
+			socket.currentSocket = RelayQueryDispatch.openRelayConnection(socket.uri, 10000);
 			if(socket.currentSocket.isClosed()) {
 				socket.currentSocket = null;
 			}
@@ -120,12 +122,13 @@ public class RelayUpdateChecker {
 
 	private static void updateRelay(RelayEntry socket) {
 		try {
+			socket.currentSocket.update();
 			if(socket.currentSocket.isClosed()) {
 				socket.currentSocket = null;
 			}else if(socket.currentSocket.isOpen()) {
 				if(!socket.handshake) {
 					socket.handshake = true;
-					socket.currentSocket.writePacket(new IPacket00Handshake(0x02, RelayManager.preferredRelayVersion, magic));
+					socket.currentSocket.writePacket(new RelayPacket00Handshake(0x02, RelayManager.preferredRelayVersion, magic));
 				}else {
 					// close immediately
 					if(socket.currentSocket.nextPacket() != null) {

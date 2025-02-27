@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.internal;
 
 import java.awt.image.BufferedImage;
@@ -13,21 +29,6 @@ import javax.imageio.ImageIO;
 import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
 import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
 
-/**
- * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class PlatformAssets {
 	
 	static URL getDesktopResourceURL(String path) {
@@ -43,7 +44,11 @@ public class PlatformAssets {
 		}
 	}
 	
-	public static final byte[] getResourceBytes(String path) {
+	public static boolean getResourceExists(String path) {
+		return (new File("resources", path)).isFile();
+	}
+	
+	public static byte[] getResourceBytes(String path) {
 		File loadFile = new File("resources", path);
 		byte[] ret = new byte[(int) loadFile.length()];
 		try(FileInputStream is = new FileInputStream(loadFile)) {
@@ -56,8 +61,12 @@ public class PlatformAssets {
 			return null;
 		}
 	}
-	
-	public static final ImageData loadImageFile(InputStream data) {
+
+	public static ImageData loadImageFile(InputStream data) {
+		return loadImageFile(data, "image/png");
+	}
+
+	public static ImageData loadImageFile(InputStream data, String mime) {
 		try {
 			BufferedImage img = ImageIO.read(data);
 			if(img == null) {
@@ -73,7 +82,7 @@ public class PlatformAssets {
 				if(!a) {
 					j = j | 0xFF000000;
 				}
-				pixels[i] = (j & 0xFF00FF00) | ((j & 0x00FF0000) >> 16) |
+				pixels[i] = (j & 0xFF00FF00) | ((j & 0x00FF0000) >>> 16) |
 						((j & 0x000000FF) << 16);
 			}
 			return new ImageData(w, h, pixels, a);
@@ -81,9 +90,13 @@ public class PlatformAssets {
 			return null;
 		}
 	}
-	
-	public static final ImageData loadImageFile(byte[] data) {
-		return loadImageFile(new EaglerInputStream(data));
+
+	public static ImageData loadImageFile(byte[] data) {
+		return loadImageFile(new EaglerInputStream(data), "image/png");
 	}
-	
+
+	public static ImageData loadImageFile(byte[] data, String mime) {
+		return loadImageFile(new EaglerInputStream(data), mime);
+	}
+
 }

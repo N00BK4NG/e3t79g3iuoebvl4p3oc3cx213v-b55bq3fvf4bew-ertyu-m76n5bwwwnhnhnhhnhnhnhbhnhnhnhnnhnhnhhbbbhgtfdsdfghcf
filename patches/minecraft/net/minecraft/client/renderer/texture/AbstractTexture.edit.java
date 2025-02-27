@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -38,7 +38,7 @@
 
 + 			hasAllocated = false;
 
-> INSERT  12 : 26  @  12
+> INSERT  12 : 28  @  12
 
 + 
 + 	/**
@@ -49,7 +49,9 @@
 + 	protected void regenerateIfNotAllocated() {
 + 		if (this.glTextureId != -1) {
 + 			if (hasAllocated) {
-+ 				EaglercraftGPU.regenerateTexture(glTextureId);
++ 				if (EaglercraftGPU.checkTexStorageCapable()) {
++ 					EaglercraftGPU.regenerateTexture(glTextureId);
++ 				}
 + 			}
 + 			hasAllocated = true;
 + 		}

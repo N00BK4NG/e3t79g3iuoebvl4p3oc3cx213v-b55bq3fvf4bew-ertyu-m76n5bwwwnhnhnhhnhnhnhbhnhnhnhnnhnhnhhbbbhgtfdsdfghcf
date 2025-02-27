@@ -1,20 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem.IFilesystemProvider;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
-import net.lax1dude.eaglercraft.v1_8.internal.vfs2.EaglerFileSystemException;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -29,11 +13,28 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.internal.IEaglerFilesystem;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
+import net.lax1dude.eaglercraft.v1_8.internal.vfs2.EaglerFileSystemException;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+
 public class JDBCFilesystemConverter {
 
 	private static final Logger logger = LogManager.getLogger("JDBCFilesystemConverter");
 
-	public static void convertFilesystem(String title, File oldFS, IFilesystemProvider newFS, boolean deleteOld) {
+	public static void convertFilesystem(String title, File oldFS, IEaglerFilesystem newFS, boolean deleteOld) {
 		FilesystemConvertingDialog progressDialog = new FilesystemConvertingDialog(title);
 		try {
 			progressDialog.setProgressIndeterminate(true);
@@ -41,7 +42,7 @@ public class JDBCFilesystemConverter {
 			progressDialog.setVisible(true);
 			
 			String slug = oldFS.getAbsolutePath();
-			List<String> filesToCopy = new ArrayList();
+			List<String> filesToCopy = new ArrayList<>();
 			logger.info("Discovering files to convert...");
 			iterateFolder(slug.length(), oldFS, filesToCopy);
 			logger.info("Found {} files in the old directory", filesToCopy.size());

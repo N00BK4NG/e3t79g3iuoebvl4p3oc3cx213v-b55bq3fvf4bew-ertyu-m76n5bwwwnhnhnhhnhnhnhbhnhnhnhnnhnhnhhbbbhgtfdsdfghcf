@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayEntry;
-import org.json.JSONObject;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,16 +13,26 @@ import org.json.JSONObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayEntry;
+import org.json.JSONObject;
+
 public interface IClientConfigAdapter {
 
 	public static class DefaultServer {
 
 		public final String name;
 		public final String addr;
+		public final boolean hideAddress;
 
-		public DefaultServer(String name, String addr) {
+		public DefaultServer(String name, String addr, boolean hideAddress) {
 			this.name = name;
 			this.addr = addr;
+			this.hideAddress = hideAddress;
 		}
 
 	}
@@ -47,6 +50,8 @@ public interface IClientConfigAdapter {
 	JSONObject getIntegratedServerOpts();
 
 	List<RelayEntry> getRelays();
+
+	boolean isCheckGLErrors();
 
 	boolean isCheckShaderGLErrors();
 
@@ -75,6 +80,26 @@ public interface IClientConfigAdapter {
 	String getLocalStorageNamespace();
 
 	boolean isEnableMinceraft();
+
+	boolean isEnableServerCookies();
+
+	boolean isAllowServerRedirects();
+
+	boolean isOpenDebugConsoleOnLaunch();
+
+	boolean isForceWebViewSupport();
+
+	boolean isEnableWebViewCSP();
+
+	boolean isAllowBootMenu();
+
+	boolean isForceProfanityFilter();
+
+	boolean isEaglerNoDelay();
+
+	boolean isRamdiskMode();
+
+	boolean isEnforceVSync();
 
 	IClientConfigAdapterHooks getHooks();
 

@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
-
-import java.io.IOException;
-import java.util.UUID;
-
-import net.md_5.bungee.UserConnection;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,6 +13,15 @@ import net.md_5.bungee.UserConnection;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
+
+import java.util.UUID;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.EaglerInitialHandler;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.util.SkinPacketVersionCache;
+import net.md_5.bungee.UserConnection;
+
 public interface ISkinService {
 
 	void init(String uri, String driverClass, String driverPath, int keepObjectsDays, int keepProfilesDays,
@@ -29,7 +31,7 @@ public interface ISkinService {
 
 	void processGetOtherSkin(UUID searchUUID, String skinURL, UserConnection sender);
 
-	void registerEaglercraftPlayer(UUID clientUUID, byte[] generatedPacket, int modelId) throws IOException;
+	void registerEaglercraftPlayer(UUID clientUUID, SkinPacketVersionCache generatedPacket, int modelId);
 
 	void unregisterPlayer(UUID clientUUID);
 
@@ -42,5 +44,9 @@ public interface ISkinService {
 	void flush();
 
 	void shutdown();
+
+	void processForceSkin(UUID playerUUID, EaglerInitialHandler initialHandler);
+
+	SkinPacketVersionCache getSkin(UUID playerUUID);
 
 }

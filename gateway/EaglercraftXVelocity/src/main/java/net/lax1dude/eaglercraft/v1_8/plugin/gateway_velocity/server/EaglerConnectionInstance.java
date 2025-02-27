@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server;
-
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
-
-import io.netty.channel.Channel;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,14 @@ import io.netty.channel.Channel;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server;
+
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
+
+import io.netty.channel.Channel;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
+
 public class EaglerConnectionInstance {
 
 	public final Channel channel;
@@ -35,11 +37,12 @@ public class EaglerConnectionInstance {
 	
 	public ConnectedPlayer userConnection = null;
 	public EaglerPlayerData eaglerData = null;
+	public HttpServerQueryHandler queryHandler = null;
 	
 	public EaglerConnectionInstance(Channel channel) {
 		this.channel = channel;
 		this.creationTime = this.lastServerPingPacket = this.lastClientPingPacket =
-				this.lastClientPongPacket = System.currentTimeMillis();
+				this.lastClientPongPacket = EaglerXVelocityAPIHelper.steadyTimeMillis();
 	}
 
 }

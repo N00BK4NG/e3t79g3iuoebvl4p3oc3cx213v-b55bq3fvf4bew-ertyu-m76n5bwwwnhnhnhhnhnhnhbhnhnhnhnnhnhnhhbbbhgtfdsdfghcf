@@ -1,16 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
-
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -25,9 +13,22 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.texture;
+
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
+import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.client.resources.IResource;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.util.ResourceLocation;
+
 public class PBRTextureMapUtils {
 
-	public static final ImageData defaultNormalsTexture = new ImageData(1, 1, new int[] { 0 }, true);
+	public static final ImageData defaultNormalsTexture = new ImageData(1, 1, new int[] { 0xFFFF7F7F }, true);
 
 	public static final PBRMaterialConstants blockMaterialConstants = new PBRMaterialConstants(new ResourceLocation("eagler:glsl/deferred/material_block_constants.csv"));
 
@@ -125,13 +126,17 @@ public class PBRTextureMapUtils {
 		}
 	}
 
-	public static ImageData generateMaterialTextureFor(String iconName) {
+	public static ImageData generateMaterialTextureFor(String iconName, String iconName2) {
 		if(iconName.startsWith("minecraft:")) {
 			iconName = iconName.substring(10);
 		}
 		Integer in = blockMaterialConstants.spriteNameToMaterialConstants.get(iconName);
 		if(in == null) {
-			return new ImageData(1, 1, new int[] { blockMaterialConstants.defaultMaterial }, true);
+			if(iconName2 != null) {
+				return generateMaterialTextureFor(iconName2, null);
+			}else {
+				return new ImageData(1, 1, new int[] { blockMaterialConstants.defaultMaterial }, true);
+			}
 		}else {
 			return new ImageData(1, 1, new int[] { in.intValue() }, true);
 		}
@@ -150,8 +155,8 @@ public class PBRTextureMapUtils {
 					ret[i] = new int[len];
 					int x, y, s1, s2, s3, s4, c1, c2, c3, c4;
 					for(int j = 0; j < len; ++j) {
-						x = (j % len) << 1;
-						y = (j / len) << 1;
+						x = (j % lvlW) << 1;
+						y = (j / lvlW) << 1;
 						s1 = ret[i - 1][x + y * lvl2W];
 						s2 = ret[i - 1][x + y * lvl2W + 1];
 						s3 = ret[i - 1][x + y * lvl2W + lvl2W];

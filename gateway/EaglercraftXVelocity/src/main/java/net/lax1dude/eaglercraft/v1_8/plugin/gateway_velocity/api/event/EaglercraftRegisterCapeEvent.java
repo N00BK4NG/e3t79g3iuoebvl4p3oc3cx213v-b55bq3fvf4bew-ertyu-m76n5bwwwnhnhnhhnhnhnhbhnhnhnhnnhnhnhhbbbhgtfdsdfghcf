@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.event;
-
-import java.util.UUID;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,15 +13,24 @@ import java.util.UUID;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.event;
+
+import java.util.UUID;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
+
 public class EaglercraftRegisterCapeEvent {
 
+	private final Object authAttachment;
 	private final String username;
 	private final UUID uuid;
 	private byte[] customTex = null;
 
-	public EaglercraftRegisterCapeEvent(String username, UUID uuid) {
+	public EaglercraftRegisterCapeEvent(String username, UUID uuid, Object authAttachment) {
 		this.username = username;
 		this.uuid = uuid;
+		this.authAttachment = authAttachment;
 	}
 
 	public String getUsername() {
@@ -39,16 +44,19 @@ public class EaglercraftRegisterCapeEvent {
 	public void setForceUsePreset(int p) {
 		customTex = new byte[5];
 		customTex[0] = (byte)1;
-		customTex[1] = (byte)(p >> 24);
-		customTex[2] = (byte)(p >> 16);
-		customTex[3] = (byte)(p >> 8);
+		customTex[1] = (byte)(p >>> 24);
+		customTex[2] = (byte)(p >>> 16);
+		customTex[3] = (byte)(p >>> 8);
 		customTex[4] = (byte)(p & 0xFF);
 	}
 
+	/**
+	 * @param tex raw 32x32 pixel RGBA texture (4096 bytes long), see capes in "sources/resources/assets/eagler/capes"
+	 */
 	public void setForceUseCustom(byte[] tex) {
-		customTex = new byte[1 + tex.length];
+		customTex = new byte[1174];
 		customTex[0] = (byte)2;
-		System.arraycopy(tex, 0, customTex, 1, tex.length);
+		EaglerXVelocityAPIHelper.convertCape32x32RGBAto23x17RGB(tex, 0, customTex, 1);
 	}
 
 	public void setForceUseCustomByPacket(byte[] packet) {
@@ -57,5 +65,9 @@ public class EaglercraftRegisterCapeEvent {
 
 	public byte[] getForceSetUseCustomPacket() {
 		return customTex;
+	}
+
+	public <T> T getAuthAttachment() {
+		return (T)authAttachment;
 	}
 }

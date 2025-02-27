@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -13,7 +13,7 @@
 
 > CHANGE  3 : 5  @  3 : 100
 
-~ 	public static void appMain(String[] astring) {
+~ 	public static void appMain() {
 ~ 		System.setProperty("java.net.preferIPv6Addresses", "true");
 
 > CHANGE  1 : 5  @  1 : 12

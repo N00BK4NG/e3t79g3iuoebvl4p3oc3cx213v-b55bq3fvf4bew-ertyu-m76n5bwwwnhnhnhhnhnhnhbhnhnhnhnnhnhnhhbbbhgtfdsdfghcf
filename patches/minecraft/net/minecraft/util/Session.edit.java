@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -19,7 +19,7 @@
 
 > CHANGE  1 : 2  @  1 : 7
 
-~ 	private static final EaglercraftUUID offlineUUID;
+~ 	private static final EaglercraftUUID outOfGameUUID;
 
 > CHANGE  1 : 3  @  1 : 3
 
@@ -39,7 +39,7 @@
 > CHANGE  2 : 4  @  2 : 4
 
 ~ 	public void reset() {
-~ 		update(EaglerProfile.getName(), offlineUUID);
+~ 		update(EaglerProfile.getName(), outOfGameUUID);
 
 > CHANGE  2 : 4  @  2 : 9
 
@@ -51,7 +51,7 @@
 ~ 	static {
 ~ 		byte[] bytes = new byte[16];
 ~ 		(new EaglercraftRandom()).nextBytes(bytes);
-~ 		offlineUUID = new EaglercraftUUID(bytes);
+~ 		outOfGameUUID = new EaglercraftUUID(bytes);
 
 > DELETE  2  @  2 : 23
 

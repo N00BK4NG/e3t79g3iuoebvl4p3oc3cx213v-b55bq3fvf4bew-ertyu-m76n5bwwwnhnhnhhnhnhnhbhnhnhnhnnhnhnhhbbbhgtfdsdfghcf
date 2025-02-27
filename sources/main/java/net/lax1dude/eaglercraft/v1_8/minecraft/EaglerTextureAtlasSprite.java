@@ -1,30 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.minecraft;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
-
-import com.google.common.collect.Lists;
-
-import net.lax1dude.eaglercraft.v1_8.HString;
-import net.lax1dude.eaglercraft.v1_8.internal.IFramebufferGL;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
-import net.minecraft.client.renderer.texture.TextureClock;
-import net.minecraft.client.renderer.texture.TextureCompass;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.client.resources.data.AnimationFrame;
-import net.minecraft.client.resources.data.AnimationMetadataSection;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.util.ReportedException;
-import net.minecraft.util.ResourceLocation;
-
-/**
- * Copyright (c) 2022 lax1dude. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2025 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -38,6 +13,32 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.minecraft;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import com.carrotsearch.hppc.cursors.IntCursor;
+import com.google.common.collect.Lists;
+
+import net.lax1dude.eaglercraft.v1_8.HString;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.opengl.ImageData;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureClock;
+import net.minecraft.client.renderer.texture.TextureCompass;
+import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.client.resources.data.AnimationFrame;
+import net.minecraft.client.resources.data.AnimationMetadataSection;
+import net.minecraft.crash.CrashReport;
+import net.minecraft.crash.CrashReportCategory;
+import net.minecraft.util.ReportedException;
+import net.minecraft.util.ResourceLocation;
+import net.optifine.util.CounterInt;
+
 public class EaglerTextureAtlasSprite {
 
 	private static final Logger logger = LogManager.getLogger("EaglerTextureAtlasSprite");
@@ -57,10 +58,13 @@ public class EaglerTextureAtlasSprite {
 	protected float maxV;
 	protected int frameCounter;
 	protected int tickCounter;
+    private int indexInMap = -1;
 	protected static String locationNameClock = "builtin/clock";
 	protected static String locationNameCompass = "builtin/compass";
 
 	protected TextureAnimationCache animationCache = null;
+
+	public String optifineBaseTextureName = null;
 
 	public EaglerTextureAtlasSprite(String spriteName) {
 		this.iconName = spriteName;
@@ -102,6 +106,9 @@ public class EaglerTextureAtlasSprite {
 		this.maxU = atlasSpirit.maxU;
 		this.minV = atlasSpirit.minV;
 		this.maxV = atlasSpirit.maxV;
+		if (atlasSpirit != Minecraft.getMinecraft().getTextureMapBlocks().getMissingSprite()) {
+			this.indexInMap = atlasSpirit.indexInMap;
+		}
 	}
 
 	public int getOriginX() {
@@ -150,7 +157,13 @@ public class EaglerTextureAtlasSprite {
 		return this.iconName;
 	}
 
-	public void updateAnimation(IFramebufferGL[] copyColorFramebuffer) {
+	protected static interface IAnimCopyFunction {
+		void updateAnimation(int mapWidth, int mapHeight, int mapLevel);
+	}
+
+	protected IAnimCopyFunction currentAnimUpdater = null;
+
+	public void updateAnimation() {
 		if(animationCache == null) {
 			throw new IllegalStateException("Animation cache for '" + this.iconName + "' was never baked!");
 		}
@@ -163,7 +176,12 @@ public class EaglerTextureAtlasSprite {
 			this.tickCounter = 0;
 			int k = this.animationMetadata.getFrameIndex(this.frameCounter);
 			if (i != k && k >= 0 && k < this.framesTextureData.size()) {
-				animationCache.copyFrameLevelsToTex2D(k, this.originX, this.originY, this.width, this.height, copyColorFramebuffer);
+				currentAnimUpdater = (mapWidth, mapHeight, mapLevel) -> {
+					animationCache.copyFrameToTex2D(k, mapLevel, this.originX >> mapLevel, this.originY >> mapLevel,
+							this.width >> mapLevel, this.height >> mapLevel, mapWidth, mapHeight);
+				};
+			}else {
+				currentAnimUpdater = null;
 			}
 		} else if (this.animationMetadata.isInterpolate()) {
 			float f = 1.0f - (float) this.tickCounter / (float) this.animationMetadata.getFrameTimeSingle(this.frameCounter);
@@ -172,8 +190,22 @@ public class EaglerTextureAtlasSprite {
 					: this.animationMetadata.getFrameCount();
 			int k = this.animationMetadata.getFrameIndex((this.frameCounter + 1) % j);
 			if (i != k && k >= 0 && k < this.framesTextureData.size()) {
-				animationCache.copyInterpolatedFrameLevelsToTex2D(i, k, f, this.originX, this.originY, this.width, this.height, copyColorFramebuffer);
+				currentAnimUpdater = (mapWidth, mapHeight, mapLevel) -> {
+					animationCache.copyInterpolatedFrameToTex2D(i, k, f, mapLevel, this.originX >> mapLevel,
+							this.originY >> mapLevel, this.width >> mapLevel, this.height >> mapLevel, mapWidth,
+							mapHeight);
+				};
+			}else {
+				currentAnimUpdater = null;
 			}
+		} else {
+			currentAnimUpdater = null;
+		}
+	}
+
+	public void copyAnimationFrame(int mapWidth, int mapHeight, int mapLevel) {
+		if(currentAnimUpdater != null) {
+			currentAnimUpdater.updateAnimation(mapWidth, mapHeight, mapLevel);
 		}
 	}
 
@@ -229,10 +261,8 @@ public class EaglerTextureAtlasSprite {
 			int l = i;
 			this.height = this.width;
 			if (meta.getFrameCount() > 0) {
-				Iterator iterator = meta.getFrameIndexSet().iterator();
-
-				while (iterator.hasNext()) {
-					int i1 = ((Integer) iterator.next()).intValue();
+				for (IntCursor cur : meta.getFrameIndexSet()) {
+					int i1 = cur.value;
 					if (i1 >= j1) {
 						throw new RuntimeException("invalid frameindex " + i1);
 					}
@@ -243,7 +273,7 @@ public class EaglerTextureAtlasSprite {
 
 				this.animationMetadata = meta;
 			} else {
-				ArrayList arraylist = Lists.newArrayList();
+				List<AnimationFrame> arraylist = Lists.newArrayList();
 
 				for (int l1 = 0; l1 < j1; ++l1) {
 					this.framesTextureData.add(getFrameTextureData(aint, k1, l, l1));
@@ -258,10 +288,10 @@ public class EaglerTextureAtlasSprite {
 	}
 
 	public void generateMipmaps(int level) {
-		ArrayList arraylist = Lists.newArrayList();
+		List<int[][]> arraylist = Lists.newArrayList();
 
 		for (int i = 0; i < this.framesTextureData.size(); ++i) {
-			final int[][] aint = (int[][]) this.framesTextureData.get(i);
+			final int[][] aint = this.framesTextureData.get(i);
 			if (aint != null) {
 				try {
 					arraylist.add(TextureUtil.generateMipmapData(level, this.width, aint));
@@ -370,12 +400,45 @@ public class EaglerTextureAtlasSprite {
 		}
 	}
 
-	public void updateAnimationPBR(IFramebufferGL[] copyColorFramebuffer, IFramebufferGL[] copyMaterialFramebuffer, int materialTexOffset) {
+	public void updateAnimationPBR() {
 		Throwable t = new UnsupportedOperationException("PBR is not enabled");
 		try {
 			throw t;
 		}catch(Throwable tt) {
 			logger.error(t);
 		}
+	}
+
+	public void copyAnimationFramePBR(int pass, int width, int height, int level) {
+		Throwable t = new UnsupportedOperationException("PBR is not enabled");
+		try {
+			throw t;
+		}catch(Throwable tt) {
+			logger.error(t);
+		}
+	}
+
+	public int getIndexInMap() {
+		return this.indexInMap;
+	}
+
+	public void setIndexInMap(int p_setIndexInMap_1_) {
+		this.indexInMap = p_setIndexInMap_1_;
+	}
+
+	public void updateIndexInMap(CounterInt p_updateIndexInMap_1_) {
+		if (this.indexInMap < 0) {
+			this.indexInMap = p_updateIndexInMap_1_.nextValue();
+		}
+	}
+
+	public double getSpriteU16(float p_getSpriteU16_1_) {
+		float f = this.maxU - this.minU;
+		return (double) ((p_getSpriteU16_1_ - this.minU) / f * 16.0F);
+	}
+
+	public double getSpriteV16(float p_getSpriteV16_1_) {
+		float f = this.maxV - this.minV;
+		return (double) ((p_getSpriteV16_1_ - this.minV) / f * 16.0F);
 	}
 }

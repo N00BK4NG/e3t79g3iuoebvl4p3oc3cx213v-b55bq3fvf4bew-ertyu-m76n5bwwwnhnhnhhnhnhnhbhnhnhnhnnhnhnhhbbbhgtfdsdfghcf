@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.sp.relay;
 
 import java.io.IOException;
@@ -14,28 +30,13 @@ import net.lax1dude.eaglercraft.v1_8.EaglerOutputStream;
 import net.lax1dude.eaglercraft.v1_8.ThreadLocalRandom;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacket;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacket00Handshake;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacketFFErrorCode;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket00Handshake;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacketFFErrorCode;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
-/**
- * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class RelayManager {
 
 	public static final Logger logger = LogManager.getLogger("RelayManager");
@@ -43,7 +44,7 @@ public class RelayManager {
 	public static final RelayManager relayManager = new RelayManager();
 	public static final int preferredRelayVersion = 1;
 	
-	private final List<RelayServer> relays = new ArrayList();
+	private final List<RelayServer> relays = new ArrayList<>();
 	private long lastPingThrough = 0l;
 
 	public void load(byte[] relayConfig) {
@@ -180,7 +181,7 @@ public class RelayManager {
 	}
 	
 	public void ping() {
-		lastPingThrough = System.currentTimeMillis();
+		lastPingThrough = EagRuntime.steadyTimeMillis();
 		for(int i = 0, l = relays.size(); i < l; ++i) {
 			relays.get(i).ping();
 		}
@@ -274,16 +275,18 @@ public class RelayManager {
 	public RelayServerSocket connectHandshake(RelayServer relay, int type, String code) {
 		RelayServerSocket sock = relay.openSocket();
 		while(!sock.isClosed()) {
+			sock.update();
 			if(sock.isOpen()) {
-				sock.writePacket(new IPacket00Handshake(type, preferredRelayVersion, code));
+				sock.writePacket(new RelayPacket00Handshake(type, preferredRelayVersion, code));
 				while(!sock.isClosed()) {
-					IPacket pkt = sock.nextPacket();
+					sock.update();
+					RelayPacket pkt = sock.nextPacket();
 					if(pkt != null) {
-						if(pkt instanceof IPacket00Handshake) {
+						if(pkt instanceof RelayPacket00Handshake) {
 							return sock;
-						}else if(pkt instanceof IPacketFFErrorCode) {
-							IPacketFFErrorCode ipkt = (IPacketFFErrorCode) pkt;
-							logger.error("Relay [{}] failed: {}({}): {}", relay.address, IPacketFFErrorCode.code2string(ipkt.code), ipkt.code, ipkt.desc);
+						}else if(pkt instanceof RelayPacketFFErrorCode) {
+							RelayPacketFFErrorCode ipkt = (RelayPacketFFErrorCode) pkt;
+							logger.error("Relay [{}] failed: {}({}): {}", relay.address, RelayPacketFFErrorCode.code2string(ipkt.code), ipkt.code, ipkt.desc);
 							Throwable t;
 							while((t = sock.getException()) != null) {
 								logger.error(t);
@@ -296,10 +299,10 @@ public class RelayManager {
 							return null;
 						}
 					}
-					EagUtils.sleep(20l);
+					EagUtils.sleep(20);
 				}
 			}
-			EagUtils.sleep(20l);
+			EagUtils.sleep(20);
 		}
 		logger.error("Relay [{}] connection failed!", relay.address);
 		Throwable t;
@@ -309,12 +312,12 @@ public class RelayManager {
 		return null;
 	}
 	
-	private final List<RelayServer> brokenServers = new LinkedList();
+	private final List<RelayServer> brokenServers = new LinkedList<>();
 
 	public RelayServerSocket getWorkingRelay(Consumer<String> progressCallback, int type, String code) {
 		brokenServers.clear();
 		if(!relays.isEmpty()) {
-			long millis = System.currentTimeMillis();
+			long millis = EagRuntime.steadyTimeMillis();
 			if(millis - lastPingThrough < 10000l) {
 				RelayServer relay = getPrimary();
 				if(relay.getPing() > 0l && relay.getPingCompatible().isCompatible()) {

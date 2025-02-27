@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import net.lax1dude.eaglercraft.v1_8.update.UpdateCertificate;
-import net.lax1dude.eaglercraft.v1_8.update.UpdateProgressStruct;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,6 +13,13 @@ import net.lax1dude.eaglercraft.v1_8.update.UpdateProgressStruct;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import net.lax1dude.eaglercraft.v1_8.update.UpdateCertificate;
+import net.lax1dude.eaglercraft.v1_8.update.UpdateProgressStruct;
+import net.lax1dude.eaglercraft.v1_8.update.UpdateResultObj;
+
 public class PlatformUpdateSvc {
 
 	private static final UpdateProgressStruct dummyStruct = new UpdateProgressStruct();
@@ -44,6 +46,15 @@ public class PlatformUpdateSvc {
 
 	public static UpdateProgressStruct getUpdatingStatus() {
 		return dummyStruct;
+	}
+
+	public static UpdateResultObj getUpdateResult() {
+		return null;
+	}
+
+	public static void installSignedClient(UpdateCertificate clientCert, byte[] clientPayload, boolean setDefault,
+			boolean setTimeout) {
+
 	}
 
 	public static void quine(String filename, byte[] cert, byte[] data, String date) {

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth;
 
 import java.io.ByteArrayInputStream;
@@ -39,21 +55,6 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPipeli
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.Base64;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.sqlite.EaglerDrivers;
 
-/**
- * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class DefaultAuthSystem {
 
 	public static class AuthSystemException extends RuntimeException {
@@ -246,7 +247,7 @@ public class DefaultAuthSystem {
 		this.checkRegistrationByName = databaseConnection.prepareStatement("SELECT Version, MojangUUID, MojangTextures, HashBase, HashSalt, Registered, RegisteredIP, LastLogin, LastLoginIP FROM eaglercraft_accounts WHERE MojangUsername = ?");
 		this.setLastLogin = databaseConnection.prepareStatement("UPDATE eaglercraft_accounts SET LastLogin = ?, LastLoginIP = ? WHERE MojangUUID = ?");
 		this.updateTextures = databaseConnection.prepareStatement("UPDATE eaglercraft_accounts SET MojangTextures = ? WHERE MojangUUID = ?");
-		this.authLoadingCache = new AuthLoadingCache(new AccountLoader(), 120000l);
+		this.authLoadingCache = new AuthLoadingCache<>(new AccountLoader(), 120000l);
 		this.secureRandom = new SecureRandom();
 	}
 
@@ -338,7 +339,7 @@ public class DefaultAuthSystem {
 				}
 			}
 		}catch(SQLException ex) {
-			EaglerXVelocity.logger().error("Could not update last login for \"{}\"", info.mojangUUID.toString(), ex);
+			EaglerXVelocity.logger().error("Could not update last login for \"{}\"", info.mojangUUID, ex);
 		}
 		
 		event.setLoginAllowed();
@@ -538,7 +539,7 @@ public class DefaultAuthSystem {
 							if(!playerName.equals(username)) {
 								EaglerXVelocity.logger().info(
 										"Player \"{}\" changed their username from \"{}\" to \"{}\", updating authentication database...",
-										uuid.toString(), username, playerName);
+										uuid, username, playerName);
 								synchronized(updateMojangUsername) {
 									updateMojangUsername.setString(1, playerName);
 									updateMojangUsername.setString(2, uuidString);
@@ -558,7 +559,7 @@ public class DefaultAuthSystem {
 						}
 					}
 				}catch(SQLException ex) {
-					EaglerXVelocity.logger().error("Could not look up UUID \"{}\" in auth database!", uuid.toString(), ex);
+					EaglerXVelocity.logger().error("Could not look up UUID \"{}\" in auth database!", uuid, ex);
 				}
 			}
 			if(isRegistered) {

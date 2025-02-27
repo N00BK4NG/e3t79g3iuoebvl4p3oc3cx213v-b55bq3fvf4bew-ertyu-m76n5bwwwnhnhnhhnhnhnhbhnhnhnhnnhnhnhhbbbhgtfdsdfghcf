@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.gui;
-
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,13 @@ import net.minecraft.client.gui.GuiButton;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.gui;
+
+import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+
 public class GuiSlider2 extends GuiButton {
 	/** The value of this slider control. */
 	public float sliderValue = 1.0F;
@@ -27,10 +28,11 @@ public class GuiSlider2 extends GuiButton {
 	/** Is this slider control being dragged. */
 	public boolean dragging = false;
 
-	public GuiSlider2(int par1, int par2, int par3, int par4, int par5, float par6, float par7) {
-		super(par1, par2, par3, par4, par5, (int)(par6 * par7 * 100.0F) + "%");
-		this.sliderValue = par6;
-		this.sliderMax = par7;
+	public GuiSlider2(int buttonId, int x, int y, int widthIn, int heightIn, float sliderValue, float sliderMax) {
+		super(buttonId, x, y, widthIn, heightIn, null);
+		this.sliderValue = sliderValue;
+		this.sliderMax = sliderMax;
+		this.displayString = updateDisplayString();
 	}
 
 	/**
@@ -48,6 +50,7 @@ public class GuiSlider2 extends GuiButton {
 	protected void mouseDragged(Minecraft par1Minecraft, int par2, int par3) {
 		if (this.visible) {
 			if (this.dragging) {
+				float oldValue = sliderValue;
 				this.sliderValue = (float) (par2 - (this.xPosition + 4)) / (float) (this.width - 8);
 
 				if (this.sliderValue < 0.0F) {
@@ -58,7 +61,11 @@ public class GuiSlider2 extends GuiButton {
 					this.sliderValue = 1.0F;
 				}
 
-				this.displayString = (int)(this.sliderValue * this.sliderMax * 100.0F) + "%";
+				if(oldValue != sliderValue) {
+					onChange();
+				}
+
+				this.displayString = updateDisplayString();
 			}
 
 			if(this.enabled) {
@@ -75,6 +82,7 @@ public class GuiSlider2 extends GuiButton {
 	 */
 	public boolean mousePressed(Minecraft par1Minecraft, int par2, int par3) {
 		if (super.mousePressed(par1Minecraft, par2, par3)) {
+			float oldValue = sliderValue;
 			this.sliderValue = (float) (par2 - (this.xPosition + 4)) / (float) (this.width - 8);
 
 			if (this.sliderValue < 0.0F) {
@@ -85,7 +93,11 @@ public class GuiSlider2 extends GuiButton {
 				this.sliderValue = 1.0F;
 			}
 
-			this.displayString = (int)(this.sliderValue * this.sliderMax * 100.0F) + "%";
+			if(oldValue != sliderValue) {
+				onChange();
+			}
+
+			this.displayString = updateDisplayString();
 			this.dragging = true;
 			return true;
 		} else {
@@ -100,4 +112,17 @@ public class GuiSlider2 extends GuiButton {
 	public void mouseReleased(int par1, int par2) {
 		this.dragging = false;
 	}
+
+	protected String updateDisplayString() {
+		return (int)(this.sliderValue * this.sliderMax * 100.0F) + "%";
+	}
+
+	protected void onChange() {
+		
+	}
+
+	public boolean isSliderTouchEvents() {
+		return true;
+	}
+
 }

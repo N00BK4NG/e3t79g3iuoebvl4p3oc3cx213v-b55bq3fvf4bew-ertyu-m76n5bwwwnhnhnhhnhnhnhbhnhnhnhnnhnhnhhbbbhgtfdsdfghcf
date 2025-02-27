@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -59,5 +59,14 @@
 
 ~ 		for (int l = 0; l < amovingobjectposition.length; ++l) {
 ~ 			MovingObjectPosition movingobjectposition = amovingobjectposition[l];
+
+> INSERT  97 : 103  @  97
+
++ 
++ 	public boolean alfheim$useNeighborBrightness(final IBlockState blockState, final EnumFacing facing,
++ 			final IBlockAccess blockAccess, final BlockPos blockPos) {
++ 		return facing == (blockState.getValue(HALF) == EnumHalf.TOP ? EnumFacing.DOWN : EnumFacing.UP)
++ 				|| facing == blockState.getValue(FACING).getOpposite();
++ 	}
 
 > EOF

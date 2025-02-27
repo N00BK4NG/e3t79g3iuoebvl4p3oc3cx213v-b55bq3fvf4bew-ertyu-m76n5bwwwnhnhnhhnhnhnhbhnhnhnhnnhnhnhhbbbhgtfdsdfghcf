@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,6 +13,11 @@ package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+
 class DynamicLightInstance {
 
 	public final String lightName;
@@ -35,7 +38,7 @@ class DynamicLightInstance {
 	}
 
 	public void updateLight(double posX, double posY, double posZ, float red, float green, float blue) {
-		this.lastCacheHit = System.currentTimeMillis();
+		this.lastCacheHit = EagRuntime.steadyTimeMillis();
 		this.posX = posX;
 		this.posY = posY;
 		this.posZ = posZ;

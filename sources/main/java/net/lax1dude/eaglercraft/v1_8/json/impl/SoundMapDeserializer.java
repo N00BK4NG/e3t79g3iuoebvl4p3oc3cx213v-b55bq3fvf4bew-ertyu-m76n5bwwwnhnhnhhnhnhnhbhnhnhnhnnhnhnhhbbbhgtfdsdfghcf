@@ -1,17 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.json.impl;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import net.lax1dude.eaglercraft.v1_8.json.JSONTypeDeserializer;
-import net.lax1dude.eaglercraft.v1_8.json.JSONTypeProvider;
-import net.minecraft.client.audio.SoundHandler.SoundMap;
-import net.minecraft.client.audio.SoundList;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -26,11 +13,25 @@ import net.minecraft.client.audio.SoundList;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.json.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import net.lax1dude.eaglercraft.v1_8.json.JSONTypeDeserializer;
+import net.lax1dude.eaglercraft.v1_8.json.JSONTypeProvider;
+import net.minecraft.client.audio.SoundHandler.SoundMap;
+import net.minecraft.client.audio.SoundList;
+
 public class SoundMapDeserializer implements JSONTypeDeserializer<JSONObject, SoundMap> {
 
 	@Override
 	public SoundMap deserialize(JSONObject json) throws JSONException {
-		Map<String, SoundList> soundsMap = new HashMap();
+		Map<String, SoundList> soundsMap = new HashMap<>();
 		for(String str : json.keySet()) {
 			soundsMap.put(str, JSONTypeProvider.deserialize(json.getJSONObject(str), SoundList.class));
 		}

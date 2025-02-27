@@ -1,11 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins;
-
-import java.util.UUID;
-
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
-
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -19,16 +13,24 @@ import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins;
+
+import java.util.UUID;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayerData;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.util.SkinPacketVersionCache;
+
 public interface ISkinService {
 
 	void init(String uri, String driverClass, String driverPath, int keepObjectsDays, int keepProfilesDays,
 			int maxObjects, int maxProfiles);
 
-	void processGetOtherSkin(final UUID searchUUID, final ConnectedPlayer sender);
+	void processGetOtherSkin(final UUID searchUUID, final EaglerPlayerData sender);
 
-	void processGetOtherSkin(UUID searchUUID, String skinURL, ConnectedPlayer sender);
+	void processGetOtherSkin(UUID searchUUID, String skinURL, EaglerPlayerData sender);
 
-	void registerEaglercraftPlayer(UUID clientUUID, byte[] generatedPacket, int modelId);
+	void registerEaglercraftPlayer(UUID clientUUID, SkinPacketVersionCache generatedPacket, int modelId);
 
 	void unregisterPlayer(UUID clientUUID);
 
@@ -41,5 +43,9 @@ public interface ISkinService {
 	void flush();
 
 	void shutdown();
+
+	void processForceSkin(UUID playerUUID, EaglerPlayerData initialHandler);
+
+	SkinPacketVersionCache getSkin(UUID playerUUID);
 
 }

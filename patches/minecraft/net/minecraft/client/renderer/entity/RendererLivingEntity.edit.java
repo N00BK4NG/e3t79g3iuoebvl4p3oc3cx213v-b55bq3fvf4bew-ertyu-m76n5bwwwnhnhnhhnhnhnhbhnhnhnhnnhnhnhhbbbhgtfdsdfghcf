@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -126,9 +126,9 @@
 > CHANGE  9 : 16  @  9 : 65
 
 ~ 			GlStateManager.enableShaderBlendAdd();
-~ 			float f1 = 1.0F - (float) (i >> 24 & 255) / 255.0F;
-~ 			float f2 = (float) (i >> 16 & 255) / 255.0F;
-~ 			float f3 = (float) (i >> 8 & 255) / 255.0F;
+~ 			float f1 = 1.0F - (float) (i >>> 24 & 255) / 255.0F;
+~ 			float f2 = (float) (i >>> 16 & 255) / 255.0F;
+~ 			float f3 = (float) (i >>> 8 & 255) / 255.0F;
 ~ 			float f4 = (float) (i & 255) / 255.0F;
 ~ 			GlStateManager.setShaderBlendSrc(f1, f1, f1, 1.0F);
 ~ 			GlStateManager.setShaderBlendAdd(f2 * f1 + 0.4F, f3 * f1, f4 * f1, 0.0f);
@@ -147,7 +147,11 @@
 ~ 		for (int i = 0, l = this.layerRenderers.size(); i < l; ++i) {
 ~ 			LayerRenderer layerrenderer = this.layerRenderers.get(i);
 
-> INSERT  30 : 34  @  30
+> CHANGE  26 : 27  @  26 : 27
+
+~ 				String s = entitylivingbase.getDisplayNameProfanityFilter().getFormattedText();
+
+> INSERT  3 : 7  @  3
 
 + 					if (DeferredStateManager.isInDeferredPass()) {
 + 						NameTagRenderer.renderNameTag(entitylivingbase, null, d0, d1, d2, -69);

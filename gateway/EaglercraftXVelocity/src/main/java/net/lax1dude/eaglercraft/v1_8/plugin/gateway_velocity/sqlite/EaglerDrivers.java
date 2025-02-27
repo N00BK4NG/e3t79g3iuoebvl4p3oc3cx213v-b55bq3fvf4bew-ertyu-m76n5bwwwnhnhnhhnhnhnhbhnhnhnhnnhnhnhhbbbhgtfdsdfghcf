@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.sqlite;
 
 import java.io.File;
@@ -18,21 +34,6 @@ import java.util.Properties;
 
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
 
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class EaglerDrivers {
 
 	private static Driver initializeDriver(String address, String driverClass) {
@@ -45,7 +46,7 @@ public class EaglerDrivers {
 				if(!driver.exists()) {
 					try {
 						URL u = new URL("https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.45.0.0/sqlite-jdbc-3.45.0.0.jar");
-						EaglerXVelocity.logger().info("Downloading from maven: " + u.toString());
+						EaglerXVelocity.logger().info("Downloading from maven: {}", u);
 						copyURLToFile(u, driver);
 					} catch (Throwable ex) {
 						EaglerXVelocity.logger().error("Could not download sqlite-jdbc.jar from repo1.maven.org!");
@@ -67,7 +68,7 @@ public class EaglerDrivers {
 			driversJARs.put(address, classLoader);
 		}
 		
-		Class loadedDriver;
+		Class<?> loadedDriver;
 		try {
 			loadedDriver = classLoader.loadClass(driverClass);
 		}catch(ClassNotFoundException ex) {
@@ -93,8 +94,8 @@ public class EaglerDrivers {
 		return sqlDriver;
 	}
 
-	private static final Map<String, URLClassLoader> driversJARs = new HashMap();
-	private static final Map<String, Driver> driversDrivers = new HashMap();
+	private static final Map<String, URLClassLoader> driversJARs = new HashMap<>();
+	private static final Map<String, Driver> driversDrivers = new HashMap<>();
 
 	public static Connection connectToDatabase(String address, String driverClass, String driverPath, Properties props)
 			throws SQLException {

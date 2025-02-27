@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
 
 import java.io.ByteArrayInputStream;
@@ -14,24 +30,13 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import org.apache.commons.lang3.ArrayUtils;
+
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.sqlite.EaglerDrivers;
 
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class JDBCCacheProvider implements ICacheProvider {
 
 	public static JDBCCacheProvider initialize(String uri, String driverClass, String driverPath, int keepObjectsDays,
@@ -160,7 +165,7 @@ public class JDBCCacheProvider implements ICacheProvider {
 			throw new CacheException("SQL query failure while loading cached skin", ex);
 		}
 		if(queriedLength == 0) {
-			return new CacheLoadedSkin(uuid, queriedUrls, new byte[0]);
+			return new CacheLoadedSkin(uuid, queriedUrls, ArrayUtils.EMPTY_BYTE_ARRAY);
 		}else {
 			byte[] decompressed = new byte[queriedLength];
 			try {
@@ -305,8 +310,9 @@ public class JDBCCacheProvider implements ICacheProvider {
 	@Override
 	public void flush() {
 		long millis = System.currentTimeMillis();
-		if(millis - lastFlush > 1200000l) { // 30 minutes
-			lastFlush = millis;
+		long steadyMillis = EaglerXBungeeAPIHelper.steadyTimeMillis();
+		if(steadyMillis - lastFlush > 1200000l) { // 30 minutes
+			lastFlush = steadyMillis;
 			try {
 				Date expiryObjects = new Date(millis - keepObjectsDays * 86400000l);
 				Date expiryProfiles = new Date(millis - keepProfilesDays * 86400000l);

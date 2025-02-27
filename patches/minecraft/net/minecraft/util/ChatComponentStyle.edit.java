@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -22,5 +22,12 @@
 
 ~ 			for (int i = 0, l = this.siblings.size(); i < l; ++i) {
 ~ 				this.siblings.get(i).getChatStyle().setParentStyle(this.style);
+
+> INSERT  6 : 10  @  6
+
++ 	public ChatStyle getChatStyleIfPresent() {
++ 		return this.style;
++ 	}
++ 
 
 > EOF

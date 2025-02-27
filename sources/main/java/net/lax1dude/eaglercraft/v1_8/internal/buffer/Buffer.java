@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.buffer;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,6 +13,9 @@ package net.lax1dude.eaglercraft.v1_8.internal.buffer;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.buffer;
+
 public interface Buffer {
 
 	int capacity();
@@ -41,14 +42,14 @@ public interface Buffer {
 
 	boolean hasRemaining();
 
-	boolean isReadOnly();
-
 	boolean hasArray();
 
 	Object array();
 
-	int arrayOffset();
-
 	boolean isDirect();
+
+	static IndexOutOfBoundsException makeIOOBE(int idx) {
+		return new IndexOutOfBoundsException("Index out of range: " + idx);
+	}
 
 }

@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config;
-
-import java.util.Collection;
-
-import net.md_5.bungee.config.Configuration;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,13 @@ import net.md_5.bungee.config.Configuration;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config;
+
+import java.util.Collection;
+
+import net.md_5.bungee.config.Configuration;
+
 public class EaglerUpdateConfig {
 
 	static EaglerUpdateConfig loadConfig(Configuration config) {
@@ -27,7 +28,7 @@ public class EaglerUpdateConfig {
 		int certPacketDataRateLimit = config.getInt("cert_packet_data_rate_limit", 524288);
 		boolean enableEagcertFolder = config.getBoolean("enable_eagcert_folder", true);
 		boolean downloadLatestCerts = config.getBoolean("download_latest_certs", true);
-		int checkForUpdatesEvery = config.getInt("check_for_update_every", 900);
+		int checkForUpdatesEvery = config.getInt("check_for_update_every", 28800);
 		Collection<String> downloadCertURLs = (Collection<String>)config.getList("download_certs_from");
 		return new EaglerUpdateConfig(blockAllClientUpdates, discardLoginPacketCerts, certPacketDataRateLimit,
 				enableEagcertFolder, downloadLatestCerts, checkForUpdatesEvery, downloadCertURLs);

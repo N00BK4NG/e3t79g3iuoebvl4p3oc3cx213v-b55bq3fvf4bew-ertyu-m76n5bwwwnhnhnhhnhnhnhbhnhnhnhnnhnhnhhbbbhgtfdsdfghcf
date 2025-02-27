@@ -1,15 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.profile;
-
-import java.io.IOException;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
-import net.lax1dude.eaglercraft.v1_8.minecraft.GuiScreenGenericErrorMessage;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -24,6 +13,18 @@ import net.minecraft.client.resources.I18n;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.profile;
+
+import java.io.IOException;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.FileChooserResult;
+import net.lax1dude.eaglercraft.v1_8.minecraft.GuiScreenGenericErrorMessage;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
+
 public class GuiScreenImportExportProfile extends GuiScreen {
 
 	private GuiScreen back;
@@ -55,7 +56,7 @@ public class GuiScreenImportExportProfile extends GuiScreen {
 			waitingForFile = false;
 			FileChooserResult result = EagRuntime.getFileChooserResult();
 			if(result != null) {
-				mc.loadingScreen.eaglerShow(I18n.format("settingsBackup.importing.1"), "settingsBackup.importing.2");
+				mc.loadingScreen.eaglerShow(I18n.format("settingsBackup.importing.1"), I18n.format("settingsBackup.importing.2"));
 				ProfileImporter importer = new ProfileImporter(result.fileData);
 				try {
 					importer.readHeader();

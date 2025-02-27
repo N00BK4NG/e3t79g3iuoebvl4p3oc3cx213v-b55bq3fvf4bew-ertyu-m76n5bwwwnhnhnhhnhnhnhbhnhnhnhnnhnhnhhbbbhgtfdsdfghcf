@@ -1,10 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Pattern;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -19,6 +13,16 @@ import java.util.regex.Pattern;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+
 public class EagUtils {
 	
 	private static final String hex = "0123456789ABCDEF";
@@ -56,11 +60,14 @@ public class EagUtils {
 		return str.length() < off + 2 ? decodeHex(str.subSequence(off, 2)) : 0;
 	}
 	
+	public static void sleep(int millis) {
+		PlatformRuntime.sleep(millis);
+	}
+	
 	public static void sleep(long millis) {
-		try {
-			Thread.sleep(millis);
-		}catch(InterruptedException ex) {
-		}
+		int reduced = (int)millis;
+		if(reduced != millis) throw new IllegalArgumentException();
+		PlatformRuntime.sleep(reduced);
 	}
 	
 	public static String toASCIIEagler(String str) {
@@ -83,6 +90,19 @@ public class EagUtils {
 				throw new IllegalArgumentException("invalid ascii");
 			}
 		}
+	}
+
+	public static EaglercraftUUID makeClientBrandUUID(String name) {
+		return EaglercraftUUID.nameUUIDFromBytes(("EaglercraftXClient:" + name).getBytes(StandardCharsets.UTF_8));
+	}
+
+	public static EaglercraftUUID makeClientBrandUUIDLegacy(String name) {
+		return EaglercraftUUID.nameUUIDFromBytes(("EaglercraftXClientOld:" + name).getBytes(StandardCharsets.UTF_8));
+	}
+
+	public static void sleepPrint(String string) {
+		System.out.println(string);
+		PlatformRuntime.sleep(500);
 	}
 
 }

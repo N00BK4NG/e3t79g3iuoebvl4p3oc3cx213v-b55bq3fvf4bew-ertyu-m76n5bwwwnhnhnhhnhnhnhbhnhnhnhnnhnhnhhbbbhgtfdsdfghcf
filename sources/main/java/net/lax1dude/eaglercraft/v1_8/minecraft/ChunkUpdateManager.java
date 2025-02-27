@@ -1,14 +1,11 @@
 package net.lax1dude.eaglercraft.v1_8.minecraft;
 
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
 import java.util.LinkedList;
 import java.util.List;
 
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.EaglercraftGPU;
-import net.lax1dude.eaglercraft.v1_8.opengl.GlStateManager;
 import net.lax1dude.eaglercraft.v1_8.opengl.WorldRenderer;
 import net.lax1dude.eaglercraft.v1_8.opengl.WorldVertexBufferUploader;
 import net.minecraft.client.Minecraft;
@@ -24,7 +21,6 @@ public class ChunkUpdateManager {
 
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	private final WorldVertexBufferUploader worldVertexUploader;
 	private final RegionRenderCacheBuilder renderCache;
 
 	private int chunkUpdatesTotal = 0;
@@ -35,10 +31,9 @@ public class ChunkUpdateManager {
 	private int chunkUpdatesQueuedLast = 0;
 	private long chunkUpdatesTotalLastUpdate = 0l;
 	
-	private final List<ChunkCompileTaskGenerator> queue = new LinkedList();
+	private final List<ChunkCompileTaskGenerator> queue = new LinkedList<>();
 
 	public ChunkUpdateManager() {
-		worldVertexUploader = new WorldVertexBufferUploader();
 		renderCache = new RegionRenderCacheBuilder();
 	}
 	
@@ -83,7 +78,6 @@ public class ChunkUpdateManager {
 					generator.setStatus(ChunkCompileTaskGenerator.Status.DONE);
 				}
 			}
-			generator.getRenderChunk().setCompiledChunk(compiledchunk);
 		} else if (chunkcompiletaskgenerator$type == ChunkCompileTaskGenerator.Type.RESORT_TRANSPARENCY) {
 			if(!compiledchunk.isLayerEmpty(EnumWorldBlockLayer.TRANSLUCENT)) {
 				this.uploadChunk(EnumWorldBlockLayer.TRANSLUCENT, generator.getRegionRenderCacheBuilder()
@@ -95,7 +89,6 @@ public class ChunkUpdateManager {
 								.getWorldRendererByLayer(EnumWorldBlockLayer.REALISTIC_WATER),
 						generator.getRenderChunk(), compiledchunk);
 			}
-			generator.getRenderChunk().setCompiledChunk(compiledchunk);
 			generator.setStatus(ChunkCompileTaskGenerator.Status.DONE);
 		}
 	}
@@ -108,8 +101,8 @@ public class ChunkUpdateManager {
 			return false;
 		}else {
 			boolean flag = false;
-			long millis = System.currentTimeMillis();
-			List<ChunkCompileTaskGenerator> droppedUpdates = new LinkedList();
+			long millis = EagRuntime.steadyTimeMillis();
+			List<ChunkCompileTaskGenerator> droppedUpdates = new LinkedList<>();
 			while(!queue.isEmpty()) {
 				ChunkCompileTaskGenerator generator = queue.remove(0);
 				
@@ -125,7 +118,7 @@ public class ChunkUpdateManager {
 				
 				++chunkUpdatesTotal;
 				
-				if(timeout < System.nanoTime()) {
+				if(timeout < EagRuntime.nanoTime()) {
 					break;
 				}
 			}
@@ -176,7 +169,7 @@ public class ChunkUpdateManager {
 		if (chunkcompiletaskgenerator == null) {
 			return true;
 		}
-		chunkcompiletaskgenerator.goddamnFuckingTimeout = System.currentTimeMillis();
+		chunkcompiletaskgenerator.goddamnFuckingTimeout = EagRuntime.steadyTimeMillis();
 		if(queue.size() < 100) {
 			chunkcompiletaskgenerator.addFinishRunnable(new Runnable() {
 				@Override
@@ -202,11 +195,7 @@ public class ChunkUpdateManager {
 	}
 
 	private void uploadDisplayList(WorldRenderer chunkRenderer, int parInt1, RenderChunk parRenderChunk) {
-		EaglercraftGPU.glNewList(parInt1, GL_COMPILE);
-		GlStateManager.pushMatrix();
-		this.worldVertexUploader.func_181679_a(chunkRenderer);
-		GlStateManager.popMatrix();
-		EaglercraftGPU.glEndList();
+		WorldVertexBufferUploader.uploadDisplayList(parInt1, chunkRenderer);
 	}
 
 	public boolean isAlreadyQueued(RenderChunk update) {
@@ -219,7 +208,7 @@ public class ChunkUpdateManager {
 	}
 
 	public String getDebugInfo() {
-		long millis = System.currentTimeMillis();
+		long millis = EagRuntime.steadyTimeMillis();
 		
 		if(millis - chunkUpdatesTotalLastUpdate > 500l) {
 			chunkUpdatesTotalLastUpdate = millis;

@@ -1,20 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.voice;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
-import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
-import com.velocitypowered.api.proxy.server.RegisteredServer;
-import com.velocitypowered.api.proxy.server.ServerInfo;
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -29,17 +13,36 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVeloci
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.voice;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.api.proxy.server.ServerInfo;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.backend_rpc_protocol.pkt.server.SPacketRPCEventToggledVoice;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EnumVoiceState;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.event.EaglercraftVoiceStatusChangeEvent;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayerData;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.backend_rpc_protocol.EnumSubscribedEvent;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.GameMessagePacket;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.pkt.server.SPacketVoiceSignalAllowedEAG;
+
 public class VoiceService {
 
-	public static final ChannelIdentifier CHANNEL = new LegacyChannelIdentifier("EAG|Voice-1.8");
-
-	private final Map<String, VoiceServerImpl> serverMap = new HashMap();
-	private final byte[] disableVoicePacket;
+	private final Map<String, VoiceServerImpl> serverMap = new HashMap<>();
+	private final GameMessagePacket disableVoicePacket;
 
 	public VoiceService(EaglerVelocityConfig conf) {
-		this.disableVoicePacket = VoiceSignalPackets.makeVoiceSignalPacketAllowed(false, null);
+		this.disableVoicePacket = new SPacketVoiceSignalAllowedEAG(false, null);
 		String[] iceServers = conf.getICEServers().toArray(new String[conf.getICEServers().size()]);
-		byte[] iceServersPacket = VoiceSignalPackets.makeVoiceSignalPacketAllowed(true, iceServers);
+		SPacketVoiceSignalAllowedEAG iceServersPacket = new SPacketVoiceSignalAllowedEAG(true, iceServers);
 		Collection<RegisteredServer> servers = EaglerXVelocity.proxy().getAllServers();
 		for(RegisteredServer s : servers) {
 			ServerInfo inf = s.getServerInfo();
@@ -49,33 +52,37 @@ public class VoiceService {
 		}
 	}
 
-	public void handlePlayerLoggedIn(ConnectedPlayer player) {
+	public void handlePlayerLoggedIn(EaglerPlayerData player) {
 		
 	}
 
-	public void handlePlayerLoggedOut(ConnectedPlayer player) {
+	public void handlePlayerLoggedOut(EaglerPlayerData player) {
 		for(VoiceServerImpl svr : serverMap.values()) {
 			svr.handlePlayerLoggedOut(player);
 		}
 	}
 
-	public void handleServerConnected(ConnectedPlayer player, ServerInfo server) {
+	public void handleServerConnected(EaglerPlayerData player, ServerInfo server) {
 		VoiceServerImpl svr = serverMap.get(server.getName());
 		if(svr != null) {
 			svr.handlePlayerLoggedIn(player);
 		}else {
-			player.sendPluginMessage(CHANNEL, disableVoicePacket);
+			player.sendEaglerMessage(disableVoicePacket);
+			player.fireVoiceStateChange(EaglercraftVoiceStatusChangeEvent.EnumVoiceState.SERVER_DISABLE);
+			if(player.getRPCEventSubscribed(EnumSubscribedEvent.TOGGLE_VOICE)) {
+				player.getRPCSessionHandler().handleVoiceStateTransition(SPacketRPCEventToggledVoice.VOICE_STATE_SERVER_DISABLE);
+			}
 		}
 	}
 
-	public void handleServerDisconnected(ConnectedPlayer player, ServerInfo server) {
+	public void handleServerDisconnected(EaglerPlayerData player, ServerInfo server) {
 		VoiceServerImpl svr = serverMap.get(server.getName());
 		if(svr != null) {
 			svr.handlePlayerLoggedOut(player);
 		}
 	}
 
-	void handleVoiceSignalPacketTypeRequest(UUID player, ConnectedPlayer sender) {
+	public void handleVoiceSignalPacketTypeRequest(UUID player, EaglerPlayerData sender) {
 		if(sender.getConnectedServer() != null) {
 			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
 			if(svr != null) {
@@ -84,7 +91,7 @@ public class VoiceService {
 		}
 	}
 
-	void handleVoiceSignalPacketTypeConnect(ConnectedPlayer sender) {
+	public void handleVoiceSignalPacketTypeConnect(EaglerPlayerData sender) {
 		if(sender.getConnectedServer() != null) {
 			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
 			if(svr != null) {
@@ -93,7 +100,7 @@ public class VoiceService {
 		}
 	}
 
-	void handleVoiceSignalPacketTypeICE(UUID player, String str, ConnectedPlayer sender) {
+	public void handleVoiceSignalPacketTypeICE(UUID player, byte[] str, EaglerPlayerData sender) {
 		if(sender.getConnectedServer() != null) {
 			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
 			if(svr != null) {
@@ -102,7 +109,7 @@ public class VoiceService {
 		}
 	}
 
-	void handleVoiceSignalPacketTypeDesc(UUID player, String str, ConnectedPlayer sender) {
+	public void handleVoiceSignalPacketTypeDesc(UUID player, byte[] str, EaglerPlayerData sender) {
 		if(sender.getConnectedServer() != null) {
 			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
 			if(svr != null) {
@@ -111,12 +118,30 @@ public class VoiceService {
 		}
 	}
 
-	void handleVoiceSignalPacketTypeDisconnect(UUID player, ConnectedPlayer sender) {
+	public void handleVoiceSignalPacketTypeDisconnect(EaglerPlayerData sender) {
 		if(sender.getConnectedServer() != null) {
 			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
 			if(svr != null) {
-				svr.handleVoiceSignalPacketTypeDisconnect(player, sender);
+				svr.handleVoiceSignalPacketTypeDisconnect(sender);
 			}
+		}
+	}
+
+	public void handleVoiceSignalPacketTypeDisconnectPeer(UUID player, EaglerPlayerData sender) {
+		if(sender.getConnectedServer() != null) {
+			VoiceServerImpl svr = serverMap.get(sender.getConnectedServer().getServerInfo().getName());
+			if(svr != null) {
+				svr.handleVoiceSignalPacketTypeDisconnectPeer(player, sender);
+			}
+		}
+	}
+
+	public EnumVoiceState getPlayerVoiceState(UUID player, ServerInfo info) {
+		VoiceServerImpl svr = serverMap.get(info.getName());
+		if(svr != null) {
+			return svr.getPlayerVoiceState(player);
+		}else {
+			return EnumVoiceState.SERVER_DISABLE;
 		}
 	}
 

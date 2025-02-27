@@ -1,19 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program;
-
-import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-
-import java.util.Arrays;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader;
-import net.minecraft.util.ResourceLocation;
-
-/**
+/*
  * Copyright (c) 2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -28,12 +13,32 @@ import net.minecraft.util.ResourceLocation;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program;
+
+import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import java.util.Arrays;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.opengl.GLSLHeader;
+import net.minecraft.util.ResourceLocation;
+
 public class ShaderCompiler {
 
 	private static final Logger logger = LogManager.getLogger("DeferredPipelineCompiler");
 
 	public static IShaderGL compileShader(String name, int stage, ResourceLocation filename, String... compileFlags) throws ShaderCompileException {
-		return compileShader(name, stage, filename.toString(), ShaderSource.getSourceFor(filename), Arrays.asList(compileFlags));
+		String src = ShaderSource.getSourceFor(filename);
+		if(src == null) {
+			throw new ShaderMissingException(name, "File not found: " + filename);
+		}
+		return compileShader(name, stage, filename.toString(), src, Arrays.asList(compileFlags));
 	}
 
 	public static IShaderGL compileShader(String name, int stage, String filename, String source, String... compileFlags) throws ShaderCompileException {
@@ -41,13 +46,17 @@ public class ShaderCompiler {
 	}
 
 	public static IShaderGL compileShader(String name, int stage, ResourceLocation filename, List<String> compileFlags) throws ShaderCompileException {
-		return compileShader(name, stage, filename.toString(), ShaderSource.getSourceFor(filename), compileFlags);
+		String src = ShaderSource.getSourceFor(filename);
+		if(src == null) {
+			throw new ShaderMissingException(name, "File not found: " + filename);
+		}
+		return compileShader(name, stage, filename.toString(), src, compileFlags);
 	}
 
 	public static IShaderGL compileShader(String name, int stage, String filename, String source, List<String> compileFlags) throws ShaderCompileException {
 		logger.info("Compiling Shader: " + filename);
 		StringBuilder srcCat = new StringBuilder();
-		srcCat.append(FixedFunctionShader.FixedFunctionConstants.VERSION).append('\n');
+		srcCat.append(GLSLHeader.getHeader()).append('\n');
 		
 		if(compileFlags != null && compileFlags.size() > 0) {
 			for(int i = 0, l = compileFlags.size(); i < l; ++i) {

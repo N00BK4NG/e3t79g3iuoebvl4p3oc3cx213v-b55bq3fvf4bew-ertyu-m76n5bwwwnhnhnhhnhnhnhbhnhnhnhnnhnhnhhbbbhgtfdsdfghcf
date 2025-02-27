@@ -1,23 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.gui;
-
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
-import net.lax1dude.eaglercraft.v1_8.profile.EaglerProfile;
-import net.lax1dude.eaglercraft.v1_8.sp.lan.LANClientNetworkManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServer;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
-import net.lax1dude.eaglercraft.v1_8.sp.socket.NetHandlerSingleplayerLogin;
-import net.minecraft.client.LoadingScreenRenderer;
-import net.minecraft.client.gui.GuiDisconnected;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.network.EnumConnectionState;
-import net.minecraft.network.login.client.C00PacketLoginStart;
-import net.minecraft.util.ChatComponentText;
-
-import java.io.IOException;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -32,6 +13,30 @@ import java.io.IOException;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.gui;
+
+import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
+import net.lax1dude.eaglercraft.v1_8.profile.EaglerProfile;
+import net.lax1dude.eaglercraft.v1_8.socket.ConnectionHandshake;
+import net.lax1dude.eaglercraft.v1_8.sp.lan.LANClientNetworkManager;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServer;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
+import net.lax1dude.eaglercraft.v1_8.sp.socket.NetHandlerSingleplayerLogin;
+import net.minecraft.client.LoadingScreenRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiDisconnected;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.network.EnumConnectionState;
+import net.minecraft.network.login.client.C00PacketLoginStart;
+import net.minecraft.util.ChatComponentText;
+
+import java.io.IOException;
+
 public class GuiScreenLANConnecting extends GuiScreen {
 
 	private final GuiScreen parent;
@@ -54,6 +59,7 @@ public class GuiScreenLANConnecting extends GuiScreen {
 		this.parent = parent;
 		this.code = code;
 		this.relay = relay;
+		Minecraft.getMinecraft().setServerData(new ServerData("Shared World", "shared:" + relay.address, false));
 	}
 
 	public boolean doesGuiPauseGame() {
@@ -117,9 +123,15 @@ public class GuiScreenLANConnecting extends GuiScreen {
 				this.mc.clearTitles();
 				networkManager.setConnectionState(EnumConnectionState.LOGIN);
 				networkManager.setNetHandler(new NetHandlerSingleplayerLogin(networkManager, mc, parent));
-				networkManager.sendPacket(new C00PacketLoginStart(this.mc.getSession().getProfile(), EaglerProfile.getSkinPacket(), EaglerProfile.getCapePacket()));
+				networkManager.sendPacket(new C00PacketLoginStart(this.mc.getSession().getProfile(),
+						EaglerProfile.getSkinPacket(3), EaglerProfile.getCapePacket(),
+						ConnectionHandshake.getSPHandshakeProtocolData(), EaglercraftVersion.clientBrandUUID));
 			}
 		}
+	}
+
+	public boolean canCloseGui() {
+		return false;
 	}
 
 }

@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web;
-
-import java.util.HashSet;
-import java.util.Set;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,6 +13,12 @@ import java.util.Set;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public class HttpContentType {
 	
 	public final Set<String> extensions;
@@ -27,7 +28,7 @@ public class HttpContentType {
 	public final String cacheControlHeader;
 	public final long fileBrowserCacheTTL;
 	
-	public static final HttpContentType defaultType = new HttpContentType(new HashSet(), "application/octet-stream", null, 14400000l);
+	public static final HttpContentType defaultType = new HttpContentType(new HashSet<>(), "application/octet-stream", null, 14400000l);
 	
 	public HttpContentType(Set<String> extensions, String mimeType, String charset, long fileBrowserCacheTTL) {
 		this.extensions = extensions;

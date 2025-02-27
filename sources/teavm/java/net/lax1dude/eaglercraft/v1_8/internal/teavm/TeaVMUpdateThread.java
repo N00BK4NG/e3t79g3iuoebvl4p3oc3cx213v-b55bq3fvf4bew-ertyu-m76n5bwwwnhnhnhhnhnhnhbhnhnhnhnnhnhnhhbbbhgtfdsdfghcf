@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.internal.teavm;
 
 import java.nio.charset.StandardCharsets;
@@ -20,7 +36,6 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
 import com.google.common.collect.ListMultimap;
 
 import net.lax1dude.eaglercraft.v1_8.Base64;
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
 import net.lax1dude.eaglercraft.v1_8.EagUtils;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformApplication;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformAssets;
@@ -28,24 +43,11 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformUpdateSvc;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.lax1dude.eaglercraft.v1_8.update.UpdateCertificate;
+import net.lax1dude.eaglercraft.v1_8.update.UpdateDataObj;
 import net.lax1dude.eaglercraft.v1_8.update.UpdateProgressStruct;
+import net.lax1dude.eaglercraft.v1_8.update.UpdateResultObj;
 import net.lax1dude.eaglercraft.v1_8.update.UpdateService;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class TeaVMUpdateThread implements Runnable {
 
 	private static final Logger logger = LogManager.getLogger("TeaVMUpdateThread");
@@ -61,6 +63,7 @@ public class TeaVMUpdateThread implements Runnable {
 	@Override
 	public void run() {
 		boolean success = false;
+		boolean hasCompleted = false;
 		try {
 			logger.info("Starting update thread...");
 			updateProg.clear();
@@ -68,7 +71,7 @@ public class TeaVMUpdateThread implements Runnable {
 			updateProg.statusString1 = updateCert.bundleDisplayName + " - " + updateCert.bundleDisplayVersion;
 			updateProg.statusString2 = "Please Wait";
 
-			List<String> urlListA = new ArrayList();
+			List<String> urlListA = new ArrayList<>();
 			ListMultimap<String,String> downloadSources = updateCert.getSourceMultimap();
 
 			List<String> ls = downloadSources.get("list");
@@ -115,7 +118,7 @@ public class TeaVMUpdateThread implements Runnable {
 				}
 			}
 			
-			List<String> urlListB = new ArrayList();
+			List<String> urlListB = new ArrayList<>();
 			ls = downloadSources.get("use-proxy");
 			for(int k = 0, l = ls.size(); k < l; ++k) {
 				String str1 = ls.get(k);
@@ -137,7 +140,7 @@ public class TeaVMUpdateThread implements Runnable {
 				if(b == null) {
 					updateProg.progressBar = 1.0f;
 					updateProg.statusString3 = "FAILED!";
-					EagUtils.sleep(300l);
+					EagUtils.sleep(300);
 					updateProg.progressBar = -1.0f;
 					updateProg.statusString3 = null;
 					continue;
@@ -147,13 +150,13 @@ public class TeaVMUpdateThread implements Runnable {
 				logger.info("Verifying downloaded file...");
 				if(updateCert.isBundleDataValid(b)) {
 					logger.info("Success! Signature is valid!");
-					downloadSignedOffline(updateCert, b);
+					PlatformUpdateSvc.setUpdateResultTeaVM(UpdateResultObj.createSuccess(new UpdateDataObj(updateCert, b)));
 					success = true;
 					return;
 				}
 				updateProg.statusString2 = "Signature Invalid!";
 				logger.error("File signature is invalid: {}", url);
-				EagUtils.sleep(1000l);
+				EagUtils.sleep(1000);
 			}
 			
 			updateProg.progressBar = -1.0f;
@@ -162,11 +165,17 @@ public class TeaVMUpdateThread implements Runnable {
 		}catch(Throwable t) {
 			logger.error("Uncaught exception downloading updates!");
 			logger.error(t);
+			hasCompleted = true;
+			PlatformUpdateSvc.setUpdateResultTeaVM(UpdateResultObj.createFailure(t.toString()));
 		}finally {
 			PlatformUpdateSvc.updateThread = null;
 			updateProg.isBusy = false;
 			if(!success) {
-				logger.error("Failed to download updates! No valid URL was found for {}", updateCert.bundleDisplayVersion);
+				String str = "Failed to download updates! No valid URL was found for " + updateCert.bundleDisplayVersion;
+				logger.error(str);
+				if(!hasCompleted) {
+					PlatformUpdateSvc.setUpdateResultTeaVM(UpdateResultObj.createFailure(str));
+				}
 				Window.alert("ERROR: Failed to download updates!\n\nIf you are on a device with restricted internet access, try a different device or connect to a different WiFi network\n\nCheck the debug console for more info");
 			}else {
 				UpdateService.dismiss(updateCert);
@@ -254,7 +263,7 @@ public class TeaVMUpdateThread implements Runnable {
 	}
 
 	public static byte[] generateSignedOffline(UpdateCertificate cert, byte[] data) {
-		return generateSignedOffline(cert.rawCertData, data, EagRuntime.fixDateFormat(new SimpleDateFormat("MM/dd/yyyy")).format(new Date(cert.sigTimestamp)));
+		return generateSignedOffline(cert.rawCertData, data, (new SimpleDateFormat("MM/dd/yyyy")).format(new Date(cert.sigTimestamp)));
 	}
 
 	public static byte[] generateSignedOffline(byte[] cert, byte[] data, String date) {

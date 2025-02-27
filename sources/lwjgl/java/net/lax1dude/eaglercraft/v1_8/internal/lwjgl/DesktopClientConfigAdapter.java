@@ -1,17 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.json.JSONObject;
-
-import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
-import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
-import net.lax1dude.eaglercraft.v1_8.internal.IClientConfigAdapter;
-import net.lax1dude.eaglercraft.v1_8.internal.IClientConfigAdapterHooks;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayEntry;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -26,11 +13,26 @@ import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayEntry;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.json.JSONObject;
+
+import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
+import net.lax1dude.eaglercraft.v1_8.EaglercraftVersion;
+import net.lax1dude.eaglercraft.v1_8.internal.IClientConfigAdapter;
+import net.lax1dude.eaglercraft.v1_8.internal.IClientConfigAdapterHooks;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayEntry;
+
 public class DesktopClientConfigAdapter implements IClientConfigAdapter {
 
 	public static final IClientConfigAdapter instance = new DesktopClientConfigAdapter();
 
-	public final List<DefaultServer> defaultServers = new ArrayList();
+	public final List<DefaultServer> defaultServers = new ArrayList<>();
 
 	private final DesktopClientConfigAdapterHooks hooks = new DesktopClientConfigAdapterHooks();
 
@@ -51,17 +53,17 @@ public class DesktopClientConfigAdapter implements IClientConfigAdapter {
 
 	@Override
 	public String getWorldsDB() {
-		return "desktop";
+		return "worlds";
 	}
 
 	@Override
 	public String getResourcePacksDB() {
-		return "desktop";
+		return "resourcePacks";
 	}
 
 	@Override
 	public JSONObject getIntegratedServerOpts() {
-		return new JSONObject("{\"container\":null,\"worldsDB\":\"desktop\"}");
+		return new JSONObject("{\"container\":null,\"worldsDB\":\"worlds\"}");
 	}
 
 	private final List<RelayEntry> relays = new ArrayList<>();
@@ -78,8 +80,13 @@ public class DesktopClientConfigAdapter implements IClientConfigAdapter {
 	}
 
 	@Override
+	public boolean isCheckGLErrors() {
+		return false;
+	}
+
+	@Override
 	public boolean isCheckShaderGLErrors() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -148,6 +155,56 @@ public class DesktopClientConfigAdapter implements IClientConfigAdapter {
 	}
 
 	@Override
+	public boolean isEnableServerCookies() {
+		return true;
+	}
+
+	@Override
+	public boolean isAllowServerRedirects() {
+		return true;
+	}
+
+	@Override
+	public boolean isOpenDebugConsoleOnLaunch() {
+		return false;
+	}
+
+	@Override
+	public boolean isForceWebViewSupport() {
+		return false;
+	}
+
+	@Override
+	public boolean isEnableWebViewCSP() {
+		return true;
+	}
+
+	@Override
+	public boolean isAllowBootMenu() {
+		return false;
+	}
+
+	@Override
+	public boolean isForceProfanityFilter() {
+		return false;
+	}
+
+	@Override
+	public boolean isEaglerNoDelay() {
+		return false;
+	}
+
+	@Override
+	public boolean isRamdiskMode() {
+		return false;
+	}
+
+	@Override
+	public boolean isEnforceVSync() {
+		return false;
+	}
+
+	@Override
 	public IClientConfigAdapterHooks getHooks() {
 		return hooks;
 	}
@@ -163,6 +220,18 @@ public class DesktopClientConfigAdapter implements IClientConfigAdapter {
 		public String callLocalStorageLoadHook(String key) {
 			return null;
 		}
-		
+
+		@Override
+		public void callCrashReportHook(String crashReport, Consumer<String> customMessageCB) {
+			
+		}
+
+		@Override
+		public void callScreenChangedHook(String screenName, int scaledWidth, int scaledHeight, int realWidth,
+				int realHeight, int scaleFactor) {
+			
+		}
+
 	}
+
 }

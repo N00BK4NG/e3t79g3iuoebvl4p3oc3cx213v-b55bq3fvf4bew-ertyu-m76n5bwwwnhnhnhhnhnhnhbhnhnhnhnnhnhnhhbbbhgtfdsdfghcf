@@ -1,60 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.slf4j.Logger;
-
-import com.google.inject.Inject;
-import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
-import com.velocitypowered.api.plugin.Plugin;
-import com.velocitypowered.api.plugin.annotation.DataDirectory;
-import com.velocitypowered.api.proxy.ProxyServer;
-import com.velocitypowered.proxy.VelocityServer;
-import com.velocitypowered.proxy.network.ConnectionManager;
-import com.velocitypowered.proxy.network.TransportType;
-
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFactory;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.ServerSocketChannel;
-import io.netty.channel.socket.SocketChannel;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth.DefaultAuthSystem;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandConfirmCode;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandDomain;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandEaglerPurge;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandEaglerRegister;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandRatelimit;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.EaglerCommand;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerAuthConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListenerConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.handlers.EaglerPacketEventListener;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPipeline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.web.HttpWebServer;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.shit.CompatWarning;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.BinaryHttpClient;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.CapeServiceOffline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.ISkinService;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.SkinService;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.SkinServiceOffline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.voice.VoiceService;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -69,6 +13,71 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.voice.VoiceService;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.slf4j.Logger;
+
+import com.google.inject.Inject;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.network.ConnectionManager;
+import com.velocitypowered.proxy.network.TransportType;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFactory;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.SocketChannel;
+import net.lax1dude.eaglercraft.v1_8.plugin.backend_rpc_protocol.EaglerBackendRPCProtocol;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth.DefaultAuthSystem;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandClientBrand;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandConfirmCode;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandDomain;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandEaglerPurge;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandEaglerRegister;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.CommandRatelimit;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command.EaglerCommand;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerAuthConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerListenerConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.handlers.EaglerPacketEventListener;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPipeline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerUpdateSvc;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.web.HttpWebServer;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.shit.CompatWarning;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.BinaryHttpClient;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.CapeServiceOffline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.ISkinService;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.SkinService;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.skins.SkinServiceOffline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.voice.VoiceService;
+import net.lax1dude.eaglercraft.v1_8.socket.protocol.GamePluginMessageProtocol;
+
 @Plugin(
 		id = EaglerXVelocityVersion.PLUGIN_ID,
 		name = EaglerXVelocityVersion.NAME,
@@ -102,6 +111,7 @@ public class EaglerXVelocity {
 	private Timer closeInactiveConnections;
 	private Timer skinServiceTasks = null;
 	private Timer authServiceTasks = null;
+	private Timer updateServiceTasks = null;
 	private final ChannelFutureListener newChannelListener;
 	private ISkinService skinService;
 	private CapeServiceOffline capeService;
@@ -116,16 +126,16 @@ public class EaglerXVelocity {
 		dataDirAsPath = dataDirIn;
 		dataDir = dataDirIn.toFile();
 		
-		openChannels = new LinkedList();
+		openChannels = new LinkedList<>();
 		newChannelListener = new ChannelFutureListener() {
 			@Override
 			public void operationComplete(ChannelFuture ch) throws Exception {
 				synchronized(openChannels) { // synchronize whole block to preserve logging order
 					if(ch.isSuccess()) {
-						EaglerXVelocity.logger().info("Eaglercraft is listening on: {}", ch.channel().attr(EaglerPipeline.LOCAL_ADDRESS).get().toString());
+						EaglerXVelocity.logger().info("Eaglercraft is listening on: {}", ch.channel().attr(EaglerPipeline.LOCAL_ADDRESS).get());
 						openChannels.add(ch.channel());
 					}else {
-						EaglerXVelocity.logger().error("Eaglercraft could not bind port: {}", ch.channel().attr(EaglerPipeline.LOCAL_ADDRESS).get().toString());
+						EaglerXVelocity.logger().error("Eaglercraft could not bind port: {}", ch.channel().attr(EaglerPipeline.LOCAL_ADDRESS).get());
 						EaglerXVelocity.logger().error("Reason: {}", ch.cause().toString());
 					}
 				}
@@ -162,11 +172,17 @@ public class EaglerXVelocity {
 		} catch(Throwable t) {
 			throw new RuntimeException("Accessing private fields failed!", t);
 		}
+		Map<String, String> templateGlobals = EaglerXVelocityAPIHelper.getTemplateGlobals();
+		templateGlobals.put("plugin_name", EaglerXVelocityVersion.NAME);
+		templateGlobals.put("plugin_version", EaglerXVelocityVersion.VERSION);
+		templateGlobals.put("plugin_authors", String.join(", ", EaglerXVelocityVersion.AUTHORS));
+		templateGlobals.put("plugin_description", EaglerXVelocityVersion.DESCRIPTION);
 		reloadConfig();
 		proxy.getEventManager().register(this, new EaglerPacketEventListener(this));
 		EaglerCommand.register(this, new CommandRatelimit());
 		EaglerCommand.register(this, new CommandConfirmCode());
 		EaglerCommand.register(this, new CommandDomain());
+		EaglerCommand.register(this, new CommandClientBrand());
 		EaglerAuthConfig authConf = conf.getAuthConfig();
 		conf.setCracked(!proxy.getConfiguration().isOnlineMode() || !authConf.isEnableAuthentication());
 		if(authConf.isEnableAuthentication() && authConf.isUseBuiltInAuthentication()) {
@@ -178,9 +194,14 @@ public class EaglerXVelocity {
 				EaglerCommand.register(this, new CommandEaglerPurge(authConf.getEaglerCommandName()));
 			}
 		}
-		proxy.getChannelRegistrar().register(SkinService.CHANNEL, CapeServiceOffline.CHANNEL,
-				EaglerPipeline.UPDATE_CERT_CHANNEL, VoiceService.CHANNEL,
-				EaglerPacketEventListener.FNAW_SKIN_ENABLE_CHANNEL, EaglerPacketEventListener.GET_DOMAIN_CHANNEL);
+		for(String str : GamePluginMessageProtocol.getAllChannels()) {
+			proxy.getChannelRegistrar().register(new LegacyChannelIdentifier(str));
+		}
+		proxy.getChannelRegistrar().register(new LegacyChannelIdentifier(EaglerBackendRPCProtocol.CHANNEL_NAME));
+		proxy.getChannelRegistrar().register(new LegacyChannelIdentifier(EaglerBackendRPCProtocol.CHANNEL_NAME_READY));
+		proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(EaglerBackendRPCProtocol.CHANNEL_NAME_MODERN));
+		proxy.getChannelRegistrar().register(MinecraftChannelIdentifier.from(EaglerBackendRPCProtocol.CHANNEL_NAME_READY_MODERN));
+		proxy.getChannelRegistrar().register(EaglerPacketEventListener.GET_DOMAIN_CHANNEL);
 
 		if(closeInactiveConnections != null) {
 			closeInactiveConnections.cancel();
@@ -253,11 +274,32 @@ public class EaglerXVelocity {
 		}else {
 			logger.info("Voice chat disabled, add \"allow_voice: true\" to your listeners to enable");
 		}
+		if(updateServiceTasks != null) {
+			updateServiceTasks.cancel();
+			updateServiceTasks = null;
+		}
+		if(!conf.getUpdateConfig().isBlockAllClientUpdates()) {
+			updateServiceTasks = new Timer(EaglerXVelocityVersion.ID + ": Update Service Tasks");
+			updateServiceTasks.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					try {
+						EaglerUpdateSvc.updateTick();
+					}catch(Throwable t) {
+						logger.error("Error ticking update service!", t);
+					}
+				}
+			}, 0l, 5000l);
+		}
 	}
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent e) {
 		stopListeners();
+		if(updateServiceTasks != null) {
+			updateServiceTasks.cancel();
+			updateServiceTasks = null;
+		}
 		if(closeInactiveConnections != null) {
 			closeInactiveConnections.cancel();
 			closeInactiveConnections = null;
@@ -266,10 +308,18 @@ public class EaglerXVelocity {
 			skinServiceTasks.cancel();
 			skinServiceTasks = null;
 		}
-		skinService.shutdown();
-		skinService = null;
-		capeService.shutdown();
-		capeService = null;
+		if(updateServiceTasks != null) {
+			updateServiceTasks.cancel();
+			updateServiceTasks = null;
+		}
+		if(skinService != null) {
+			skinService.shutdown();
+			skinService = null;
+		}
+		if(capeService != null) {
+			capeService.shutdown();
+			capeService = null;
+		}
 		if(defaultAuthSystem != null) {
 			defaultAuthSystem.destroy();
 			defaultAuthSystem = null;
@@ -334,7 +384,7 @@ public class EaglerXVelocity {
 		synchronized(openChannels) {
 			for(Channel c : openChannels) {
 				c.close().syncUninterruptibly();
-				EaglerXVelocity.logger().info("Eaglercraft listener closed: " + c.attr(EaglerPipeline.LOCAL_ADDRESS).get().toString());
+				EaglerXVelocity.logger().info("Eaglercraft listener closed: " + c.attr(EaglerPipeline.LOCAL_ADDRESS).get());
 			}
 			openChannels.clear();
 		}

@@ -1,30 +1,36 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
-> CHANGE  3 : 9  @  3 : 5
+> CHANGE  3 : 10  @  3 : 5
 
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftRandom;
 ~ import net.lax1dude.eaglercraft.v1_8.EaglercraftUUID;
 ~ import net.lax1dude.eaglercraft.v1_8.HString;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.DynamicLightManager;
 ~ import net.lax1dude.eaglercraft.v1_8.opengl.ext.dynamiclights.DynamicLightsStateManager;
+~ import net.lax1dude.eaglercraft.v1_8.profanity_filter.ProfanityFilter;
 ~ 
 
 > INSERT  1 : 2  @  1
 
 + 
 
-> INSERT  8 : 9  @  8
+> INSERT  8 : 10  @  8
 
++ import net.minecraft.client.Minecraft;
 + import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 
 > DELETE  6  @  6 : 9
 
-> CHANGE  74 : 75  @  74 : 75
+> CHANGE  31 : 32  @  31 : 32
+
+~ 	private static int nextEntityID = 1;
+
+> CHANGE  42 : 43  @  42 : 43
 
 ~ 	protected EaglercraftRandom rand;
 
@@ -36,7 +42,17 @@
 
 ~ 		this.rand = new EaglercraftRandom();
 
-> CHANGE  294 : 296  @  294 : 295
+> DELETE  100  @  100 : 101
+
+> DELETE  11  @  11 : 12
+
+> DELETE  32  @  32 : 34
+
+> DELETE  35  @  35 : 36
+
+> DELETE  44  @  44 : 45
+
+> CHANGE  66 : 68  @  66 : 67
 
 ~ 			List<AxisAlignedBB> list1 = this.worldObj.getCollidingBoundingBoxes(this,
 ~ 					this.getEntityBoundingBox().addCoord(x, y, z));
@@ -95,7 +111,11 @@
 ~ 				for (int i = 0, l = list.size(); i < l; ++i) {
 ~ 					y = list.get(i).calculateYOffset(this.getEntityBoundingBox(), y);
 
-> CHANGE  347 : 353  @  347 : 348
+> DELETE  11  @  11 : 13
+
+> DELETE  93  @  93 : 95
+
+> CHANGE  239 : 245  @  239 : 240
 
 ~ 		int i = 0;
 ~ 		if (DynamicLightsStateManager.isDynamicLightsRender()) {
@@ -131,19 +151,90 @@
 ~ 		for (int i = 0; i < numbers.length; ++i) {
 ~ 			nbttaglist.appendTag(new NBTTagFloat(numbers[i]));
 
-> CHANGE  172 : 173  @  172 : 173
+> CHANGE  33 : 34  @  33 : 35
+
+~ 			BlockPos blockpos$mutableblockpos = new BlockPos(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+
+> CHANGE  137 : 138  @  137 : 138
 
 ~ 			for (AxisAlignedBB axisalignedbb : (List<AxisAlignedBB>) list) {
 
-> CHANGE  256 : 257  @  256 : 257
+> INSERT  229 : 242  @  229
+
++ 	public String getNameProfanityFilter() {
++ 		if (this.hasCustomName()) {
++ 			return this.getCustomNameTagProfanityFilter();
++ 		} else {
++ 			String s = EntityList.getEntityString(this);
++ 			if (s == null) {
++ 				s = "generic";
++ 			}
++ 
++ 			return StatCollector.translateToLocal("entity." + s + ".name");
++ 		}
++ 	}
++ 
+
+> CHANGE  27 : 28  @  27 : 28
 
 ~ 		return HString.format("%s[\'%s\'/%d, l=\'%s\', x=%.2f, y=%.2f, z=%.2f]",
 
-> CHANGE  121 : 122  @  121 : 122
+> DELETE  26  @  26 : 27
+
+> DELETE  12  @  12 : 13
+
+> DELETE  1  @  1 : 2
+
+> DELETE  12  @  12 : 13
+
+> DELETE  2  @  2 : 3
+
+> CHANGE  40 : 41  @  40 : 41
+
+~ 		category.addCrashSection("Entity\'s Exact location", HString.format("%.2f, %.2f, %.2f",
+
+> CHANGE  4 : 5  @  4 : 5
+
+~ 		category.addCrashSection("Entity\'s Momentum", HString.format("%.2f, %.2f, %.2f", new Object[] {
+
+> CHANGE  17 : 18  @  17 : 18
 
 ~ 	public EaglercraftUUID getUniqueID() {
 
-> INSERT  151 : 205  @  151
+> INSERT  14 : 21  @  14
+
++ 	public IChatComponent getDisplayNameProfanityFilter() {
++ 		ChatComponentText chatcomponenttext = new ChatComponentText(this.getNameProfanityFilter());
++ 		chatcomponenttext.getChatStyle().setChatHoverEvent(this.getHoverEvent());
++ 		chatcomponenttext.getChatStyle().setInsertion(this.getUniqueID().toString());
++ 		return chatcomponenttext;
++ 	}
++ 
+
+> INSERT  8 : 28  @  8
+
++ 	private String lastNameTagForFilter = null;
++ 	private String lastFilteredNameTagForFilter = null;
++ 
++ 	public String getCustomNameTagProfanityFilter() {
++ 		if (Minecraft.getMinecraft().isEnableProfanityFilter()) {
++ 			String str = getCustomNameTag();
++ 			if (str != null) {
++ 				if (!str.equals(lastNameTagForFilter)) {
++ 					lastNameTagForFilter = str;
++ 					lastFilteredNameTagForFilter = ProfanityFilter.getInstance().profanityFilterString(str);
++ 				}
++ 				return lastFilteredNameTagForFilter;
++ 			} else {
++ 				return null;
++ 			}
++ 		} else {
++ 			return getCustomNameTag();
++ 		}
++ 	}
++ 
+
+> INSERT  129 : 183  @  129
 
 + 
 + 	public void renderDynamicLightsEagler(float partialTicks, boolean isInFrustum) {

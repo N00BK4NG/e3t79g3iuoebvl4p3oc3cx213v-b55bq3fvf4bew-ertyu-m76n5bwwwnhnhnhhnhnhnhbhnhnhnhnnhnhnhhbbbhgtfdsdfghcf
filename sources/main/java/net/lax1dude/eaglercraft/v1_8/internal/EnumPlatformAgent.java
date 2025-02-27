@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,6 +13,9 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
 public enum EnumPlatformAgent {
 	DESKTOP("LWJGL3"), CHROME("Chrome"), EDGE("Edge"), IE("IE"),
 	FIREFOX("Firefox"), SAFARI("Safari"), OPERA("Opera"), WEBKIT("WebKit"),
@@ -35,12 +36,15 @@ public enum EnumPlatformAgent {
 	}
 	
 	public static EnumPlatformAgent getFromUA(String ua) {
+		if(ua == null) {
+			return UNKNOWN;
+		}
 		ua = " " + ua.toLowerCase();
 		if(ua.contains(" edg/")) {
 			return EDGE;
 		}else if(ua.contains(" opr/")) {
 			return OPERA;
-		}else if(ua.contains(" chrome/")) {
+		}else if(ua.contains(" chrome/") || ua.contains(" chromium/")) {
 			return CHROME;
 		}else if(ua.contains(" firefox/")) {
 			return FIREFOX;

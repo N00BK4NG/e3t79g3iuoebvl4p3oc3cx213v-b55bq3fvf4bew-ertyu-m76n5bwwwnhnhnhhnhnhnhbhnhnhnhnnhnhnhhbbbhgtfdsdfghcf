@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,16 +13,19 @@ package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.skins;
+
 public class SkinRescaler {
 
 	public static void convertToBytes(int[] imageIn, byte[] imageOut) {
 		for(int i = 0, j, k; i < imageIn.length; ++i) {
 			j = i << 2;
 			k = imageIn[i];
-			imageOut[j] = (byte)(k >> 24);
+			imageOut[j] = (byte)(k >>> 24);
 			imageOut[j + 1] = (byte)(k & 0xFF);
-			imageOut[j + 2] = (byte)(k >> 8);
-			imageOut[j + 3] = (byte)(k >> 16);
+			imageOut[j + 2] = (byte)(k >>> 8);
+			imageOut[j + 3] = (byte)(k >>> 16);
 		}
 	}
 
@@ -65,10 +66,10 @@ public class SkinRescaler {
 					j = (dstY + y) * imgDstWidth + dstX + x;
 				}
 				j = j << 2;
-				imageOut[j] = (byte)(i >> 24);
+				imageOut[j] = (byte)(i >>> 24);
 				imageOut[j + 1] = (byte)(i & 0xFF);
-				imageOut[j + 2] = (byte)(i >> 8);
-				imageOut[j + 3] = (byte)(i >> 16);
+				imageOut[j + 2] = (byte)(i >>> 8);
+				imageOut[j + 3] = (byte)(i >>> 16);
 			}
 		}
 	}

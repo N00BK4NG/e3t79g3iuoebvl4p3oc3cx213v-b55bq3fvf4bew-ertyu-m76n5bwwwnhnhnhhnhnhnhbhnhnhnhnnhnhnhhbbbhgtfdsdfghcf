@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server;
 
 import java.io.ByteArrayOutputStream;
@@ -24,29 +40,15 @@ import com.velocitypowered.api.proxy.Player;
 
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocityVersion;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.auth.SHA1Digest;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerUpdateConfig;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayerData.ClientCertificateHolder;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class EaglerUpdateSvc {
 
-	private static final List<ClientCertificateHolder> certs = new ArrayList();
-	private static final Map<String,CachedClientCertificate> certsCache = new HashMap();
+	private static final List<ClientCertificateHolder> certs = new ArrayList<>();
+	private static final Map<String,CachedClientCertificate> certsCache = new HashMap<>();
 
 	private static class CachedClientCertificate {
 		private final ClientCertificateHolder cert;
@@ -62,7 +64,7 @@ public class EaglerUpdateSvc {
 
 	public static void updateTick() {
 		Logger log = EaglerXVelocity.logger();
-		long millis = System.currentTimeMillis();
+		long millis = EaglerXVelocityAPIHelper.steadyTimeMillis();
 		EaglerUpdateConfig conf = EaglerXVelocity.getEagler().getConfig().getUpdateConfig();
 		if(conf.isDownloadLatestCerts() && millis - lastDownload > (long)conf.getCheckForUpdatesEvery() * 1000l) {
 			lastDownload = millis;
@@ -73,7 +75,7 @@ public class EaglerUpdateSvc {
 				log.error("Uncaught exception downloading certificates!");
 				t.printStackTrace();
 			}
-			millis = System.currentTimeMillis();
+			millis = EaglerXVelocityAPIHelper.steadyTimeMillis();
 		}
 		if(conf.isEnableEagcertFolder() && millis - lastEnumerate > 5000l) {
 			lastEnumerate = millis;
@@ -96,7 +98,7 @@ public class EaglerUpdateSvc {
 				return;
 			}
 		}
-		Set<String> filenames = new HashSet();
+		Set<String> filenames = new HashSet<>();
 		for(String str : conf.getDownloadCertURLs()) {
 			try {
 				URL url = new URL(str);
@@ -176,7 +178,7 @@ public class EaglerUpdateSvc {
 		}
 		boolean dirty = false;
 		File[] dirList = eagcert.listFiles();
-		Set<String> existingFiles = new HashSet();
+		Set<String> existingFiles = new HashSet<>();
 		for(int i = 0; i < dirList.length; ++i) {
 			File f = dirList[i];
 			String n = f.getName();

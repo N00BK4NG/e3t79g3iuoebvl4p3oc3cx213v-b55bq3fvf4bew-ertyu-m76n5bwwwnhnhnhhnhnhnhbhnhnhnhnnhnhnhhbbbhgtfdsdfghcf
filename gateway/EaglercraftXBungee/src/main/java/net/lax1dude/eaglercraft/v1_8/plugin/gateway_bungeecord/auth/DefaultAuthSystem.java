@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.auth;
 
 import java.io.ByteArrayInputStream;
@@ -24,6 +40,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.ArrayUtils;
 
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
 import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event.EaglercraftHandleAuthPasswordEvent;
@@ -42,21 +59,6 @@ import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.connection.LoginResult;
 import net.md_5.bungee.protocol.Property;
 
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class DefaultAuthSystem {
 
 	public static class AuthSystemException extends RuntimeException {
@@ -249,7 +251,7 @@ public class DefaultAuthSystem {
 		this.checkRegistrationByName = databaseConnection.prepareStatement("SELECT Version, MojangUUID, MojangTextures, HashBase, HashSalt, Registered, RegisteredIP, LastLogin, LastLoginIP FROM eaglercraft_accounts WHERE MojangUsername = ?");
 		this.setLastLogin = databaseConnection.prepareStatement("UPDATE eaglercraft_accounts SET LastLogin = ?, LastLoginIP = ? WHERE MojangUUID = ?");
 		this.updateTextures = databaseConnection.prepareStatement("UPDATE eaglercraft_accounts SET MojangTextures = ? WHERE MojangUUID = ?");
-		this.authLoadingCache = new AuthLoadingCache(new AccountLoader(), 120000l);
+		this.authLoadingCache = new AuthLoadingCache<>(new AccountLoader(), 120000l);
 		this.secureRandom = new SecureRandom();
 	}
 
@@ -473,7 +475,7 @@ public class DefaultAuthSystem {
 				Property prop = props[i];
 				if("textures".equals(prop.getName())) {
 					byte[] texturesData = Base64.decodeBase64(prop.getValue());
-					byte[] signatureData = prop.getSignature() == null ? new byte[0] : Base64.decodeBase64(prop.getSignature());
+					byte[] signatureData = prop.getSignature() == null ? ArrayUtils.EMPTY_BYTE_ARRAY : Base64.decodeBase64(prop.getSignature());
 					ByteArrayOutputStream bao = new ByteArrayOutputStream();
 					DataOutputStream dao = new DataOutputStream(bao);
 					dao.writeInt(texturesData.length);

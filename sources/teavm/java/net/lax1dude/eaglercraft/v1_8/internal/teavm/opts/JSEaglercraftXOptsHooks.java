@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.teavm.opts;
-
-import org.teavm.jso.JSBody;
-import org.teavm.jso.JSObject;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,6 +13,12 @@ import org.teavm.jso.JSObject;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal.teavm.opts;
+
+import org.teavm.jso.JSBody;
+import org.teavm.jso.JSObject;
+
 public abstract class JSEaglercraftXOptsHooks implements JSObject {
 
 	@JSBody(script = "return (typeof this.localStorageSaved === \"function\") ? this.localStorageSaved : null;")
@@ -25,5 +26,11 @@ public abstract class JSEaglercraftXOptsHooks implements JSObject {
 
 	@JSBody(script = "return (typeof this.localStorageLoaded === \"function\") ? this.localStorageLoaded : null;")
 	public native JSObject getLocalStorageLoadedHook();
+
+	@JSBody(script = "return (typeof this.crashReportShow === \"function\") ? this.crashReportShow : null;")
+	public native JSObject getCrashReportHook();
+
+	@JSBody(script = "return (typeof this.screenChanged === \"function\") ? this.screenChanged : null;")
+	public native JSObject getScreenChangedHook();
 
 }

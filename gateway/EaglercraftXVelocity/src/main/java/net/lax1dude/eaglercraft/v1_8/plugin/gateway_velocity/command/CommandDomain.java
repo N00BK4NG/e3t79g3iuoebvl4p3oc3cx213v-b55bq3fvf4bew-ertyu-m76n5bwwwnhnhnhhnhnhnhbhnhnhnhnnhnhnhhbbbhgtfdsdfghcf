@@ -1,17 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command;
-
-import java.util.Optional;
-
-import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.proxy.Player;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPipeline;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayerData;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -26,6 +13,20 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayer
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.command;
+
+import java.util.Optional;
+
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPipeline;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.EaglerPlayerData;
+
 public class CommandDomain extends EaglerCommand {
 
 	public CommandDomain() {
@@ -47,8 +48,9 @@ public class CommandDomain extends EaglerCommand {
 				var1.sendMessage(Component.text("That user is not using Eaglercraft", NamedTextColor.RED));
 				return;
 			}
-			if(eagPlayer.origin != null) {
-				var1.sendMessage(Component.text("Domain of " + var2[0] + " is '" + eagPlayer.origin + "'", NamedTextColor.BLUE));
+			String origin = eagPlayer.getOrigin();
+			if(origin != null) {
+				var1.sendMessage(Component.text("Domain of " + var2[0] + " is '" + origin + "'", NamedTextColor.BLUE));
 			}else {
 				var1.sendMessage(Component.text("That user's browser did not send an origin header", NamedTextColor.RED));
 			}

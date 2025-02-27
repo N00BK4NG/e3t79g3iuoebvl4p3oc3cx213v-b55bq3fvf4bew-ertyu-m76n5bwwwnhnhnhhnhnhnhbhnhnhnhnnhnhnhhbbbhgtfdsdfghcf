@@ -1,4 +1,4 @@
-# 144 files to delete:
+# 148 files to delete:
 net/minecraft/client/renderer/VertexBufferUploader.java
 net/minecraft/realms/DisconnectedRealmsScreen.java
 net/minecraft/client/stream/Metadata.java
@@ -45,6 +45,7 @@ net/minecraft/network/NettyEncryptingDecoder.java
 net/minecraft/server/integrated/IntegratedPlayerList.java
 net/minecraft/client/renderer/WorldVertexBufferUploader.java
 net/minecraft/network/PingResponseHandler.java
+net/minecraft/profiler/Profiler.java
 net/minecraft/client/stream/NullStream.java
 net/minecraft/network/NetworkSystem.java
 net/minecraft/client/shader/Shader.java
@@ -94,10 +95,12 @@ net/minecraft/realms/Tezzelator.java
 net/minecraft/command/server/CommandSaveOff.java
 net/minecraft/realms/RealmsLevelSummary.java
 net/minecraft/realms/RealmsServerAddress.java
+net/minecraft/util/LongHashMap.java
 net/minecraft/realms/RealmsAnvilLevelStorageSource.java
 net/minecraft/realms/RealmsSliderButton.java
 net/minecraft/world/storage/ThreadedFileIOBase.java
 net/minecraft/client/renderer/vertex/VertexBuffer.java
+net/minecraft/world/MinecraftException.java
 net/minecraft/network/rcon/RConConsoleSource.java
 net/minecraft/world/chunk/storage/AnvilSaveHandler.java
 net/minecraft/realms/RealmsVertexFormatElement.java
@@ -138,6 +141,7 @@ net/minecraft/command/server/CommandStop.java
 net/minecraft/realms/RealmsSharedConstants.java
 net/minecraft/server/management/UserList.java
 net/minecraft/realms/RealmsSimpleScrolledSelectionList.java
+net/minecraft/util/IntHashMap.java
 net/minecraft/client/resources/FolderResourcePack.java
 net/minecraft/client/stream/MetadataCombat.java
 net/minecraft/client/network/LanServerDetector.java

@@ -1,15 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.internal;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import net.lax1dude.eaglercraft.v1_8.internal.IPCPacketData;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
-import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.CrashScreenPopup;
-import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.DesktopIntegratedServer;
-import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.MemoryConnection;
-
-/**
+/*
  * Copyright (c) 2023-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -24,11 +13,23 @@ import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.MemoryConnection;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.internal;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import net.lax1dude.eaglercraft.v1_8.internal.IPCPacketData;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.CrashScreenPopup;
+import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.DesktopIntegratedServer;
+import net.lax1dude.eaglercraft.v1_8.sp.server.internal.lwjgl.MemoryConnection;
+
 public class ClientPlatformSingleplayer {
 
 	private static CrashScreenPopup crashOverlay = null;
 
-	public static void startIntegratedServer() {
+	public static void startIntegratedServer(boolean forceSingleThread) {
 		DesktopIntegratedServer.startIntegratedServer();
 	}
 
@@ -52,7 +53,7 @@ public class ClientPlatformSingleplayer {
 			if(MemoryConnection.serverToClientQueue.size() == 0) {
 				return null;
 			}else {
-				List<IPCPacketData> ret = new ArrayList(MemoryConnection.serverToClientQueue);
+				List<IPCPacketData> ret = new ArrayList<>(MemoryConnection.serverToClientQueue);
 				MemoryConnection.serverToClientQueue.clear();
 				return ret;
 			}
@@ -69,6 +70,14 @@ public class ClientPlatformSingleplayer {
 
 	public static boolean isRunningSingleThreadMode() {
 		return false;
+	}
+
+	public static boolean isSingleThreadModeSupported() {
+		return false;
+	}
+
+	public static void updateSingleThreadMode() {
+		
 	}
 
 	public static void showCrashReportOverlay(String report, int x, int y, int w, int h) {

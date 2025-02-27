@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal.buffer;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,55 +13,63 @@ package net.lax1dude.eaglercraft.v1_8.internal.buffer;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
-public interface IntBuffer extends Buffer {
 
-	IntBuffer slice();
+package net.lax1dude.eaglercraft.v1_8.internal.buffer;
 
-	IntBuffer duplicate();
+public abstract class IntBuffer implements Buffer {
 
-	IntBuffer asReadOnlyBuffer();
+	public abstract IntBuffer duplicate();
 
-	int get();
+	public abstract int get();
 
-	IntBuffer put(int b);
+	public abstract IntBuffer put(int b);
 
-	int get(int index);
+	public abstract int get(int index);
 
-	IntBuffer put(int index, int b);
+	public abstract IntBuffer put(int index, int b);
 
-	int getElement(int index);
+	public abstract int getElement(int index);
 
-	void putElement(int index, int value);
+	public abstract void putElement(int index, int value);
 
-	IntBuffer get(int[] dst, int offset, int length);
+	public abstract IntBuffer get(int[] dst, int offset, int length);
 
-	IntBuffer get(int[] dst);
+	public abstract IntBuffer get(int[] dst);
 
-	IntBuffer put(IntBuffer src);
+	public abstract IntBuffer put(IntBuffer src);
 
-	IntBuffer put(int[] src, int offset, int length);
+	public abstract IntBuffer put(int[] src, int offset, int length);
 
-	IntBuffer put(int[] src);
+	public abstract IntBuffer put(int[] src);
 
-	int getArrayOffset();
+	public abstract boolean isDirect();
 
-	IntBuffer compact();
+	public abstract IntBuffer mark();
 
-	boolean isDirect();
+	public abstract IntBuffer reset();
 
-	IntBuffer mark();
+	public abstract IntBuffer clear();
 
-	IntBuffer reset();
+	public abstract IntBuffer flip();
 
-	IntBuffer clear();
+	public abstract IntBuffer rewind();
 
-	IntBuffer flip();
+	public abstract IntBuffer limit(int newLimit);
 
-	IntBuffer rewind();
+	public abstract int limit();
 
-	IntBuffer limit(int newLimit);
+	public abstract IntBuffer position(int newPosition);
 
-	IntBuffer position(int newPosition);
-	
+	public abstract int position();
+
+	public abstract int remaining();
+
+	public abstract boolean hasRemaining();
+
+	public abstract int capacity();
+
+	public abstract boolean hasArray();
+
+	public abstract int[] array();
+
 }
-

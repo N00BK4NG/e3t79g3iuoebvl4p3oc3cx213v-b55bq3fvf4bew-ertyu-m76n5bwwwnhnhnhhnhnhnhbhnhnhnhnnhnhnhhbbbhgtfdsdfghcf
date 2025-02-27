@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.opengl;
 
 import java.io.DataInputStream;
@@ -20,26 +36,11 @@ import net.minecraft.util.ResourceLocation;
 import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
 import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class EaglerMeshLoader implements IResourceManagerReloadListener {
 
 	private static final Logger logger = LogManager.getLogger("EaglerMeshLoader");
 
-	private static final Map<ResourceLocation, HighPolyMesh> meshCache = new HashMap();
+	private static final Map<ResourceLocation, HighPolyMesh> meshCache = new HashMap<>();
 
 	public static HighPolyMesh getEaglerMesh(ResourceLocation meshLoc) {
 		if(meshLoc.cachedPointerType == ResourceLocation.CACHED_POINTER_EAGLER_MESH) {
@@ -49,6 +50,7 @@ public class EaglerMeshLoader implements IResourceManagerReloadListener {
 		if(theMesh == null) {
 			theMesh = new HighPolyMesh();
 			reloadMesh(meshLoc, theMesh, Minecraft.getMinecraft().getResourceManager());
+			meshCache.put(meshLoc, theMesh);
 		}
 		meshLoc.cachedPointerType = ResourceLocation.CACHED_POINTER_EAGLER_MESH;
 		meshLoc.cachedPointer = theMesh;
@@ -104,48 +106,48 @@ public class EaglerMeshLoader implements IResourceManagerReloadListener {
 			}
 
 			if(meshStruct.vertexArray == null) {
-				meshStruct.vertexArray = _wglGenVertexArrays();
+				meshStruct.vertexArray = EaglercraftGPU.createGLVertexArray();
 			}
 			if(meshStruct.vertexBuffer == null) {
-				meshStruct.vertexBuffer = _wglGenBuffers();
+				meshStruct.vertexBuffer = EaglercraftGPU.createGLArrayBuffer();
 			}
 			if(meshStruct.indexBuffer == null) {
-				meshStruct.indexBuffer = _wglGenBuffers();
+				meshStruct.indexBuffer = EaglercraftGPU.createGLElementArrayBuffer();
 			}
 			
 			up1.position(0).limit(intsOfVertex);
 			
-			EaglercraftGPU.bindGLArrayBuffer(meshStruct.vertexBuffer);
+			EaglercraftGPU.bindVAOGLArrayBufferNow(meshStruct.vertexBuffer);
 			_wglBufferData(GL_ARRAY_BUFFER, up1, GL_STATIC_DRAW);
 			
-			EaglercraftGPU.bindGLBufferArray(meshStruct.vertexArray);
+			EaglercraftGPU.bindGLVertexArray(meshStruct.vertexArray);
 			
 			up1.position(intsOfVertex).limit(intsTotal);
 			
-			_wglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshStruct.indexBuffer);
+			EaglercraftGPU.bindVAOGLElementArrayBufferNow(meshStruct.indexBuffer);
 			_wglBufferData(GL_ELEMENT_ARRAY_BUFFER, up1, GL_STATIC_DRAW);
 			
-			_wglEnableVertexAttribArray(0);
-			_wglVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
+			EaglercraftGPU.enableVertexAttribArray(0);
+			EaglercraftGPU.vertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
 			
 			if(meshStruct.hasTexture) {
-				_wglEnableVertexAttribArray(1);
-				_wglVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 16);
+				EaglercraftGPU.enableVertexAttribArray(1);
+				EaglercraftGPU.vertexAttribPointer(1, 2, GL_FLOAT, false, stride, 16);
 			}
 			
-			_wglEnableVertexAttribArray(meshStruct.hasTexture ? 2 : 1);
-			_wglVertexAttribPointer(meshStruct.hasTexture ? 2 : 1, 4, GL_BYTE, true, stride, 12);
+			EaglercraftGPU.enableVertexAttribArray(meshStruct.hasTexture ? 2 : 1);
+			EaglercraftGPU.vertexAttribPointer(meshStruct.hasTexture ? 2 : 1, 4, GL_BYTE, true, stride, 12);
 		}catch(Throwable ex) {
 			if(meshStruct.vertexArray != null) {
-				_wglDeleteVertexArrays(meshStruct.vertexArray);
+				EaglercraftGPU.destroyGLVertexArray(meshStruct.vertexArray);
 				meshStruct.vertexArray = null;
 			}
 			if(meshStruct.vertexBuffer != null) {
-				_wglDeleteBuffers(meshStruct.vertexBuffer);
+				EaglercraftGPU.destroyGLArrayBuffer(meshStruct.vertexBuffer);
 				meshStruct.vertexBuffer = null;
 			}
 			if(meshStruct.indexBuffer != null) {
-				_wglDeleteBuffers(meshStruct.indexBuffer);
+				EaglercraftGPU.destroyGLElementArrayBuffer(meshStruct.indexBuffer);
 				meshStruct.indexBuffer = null;
 			}
 			

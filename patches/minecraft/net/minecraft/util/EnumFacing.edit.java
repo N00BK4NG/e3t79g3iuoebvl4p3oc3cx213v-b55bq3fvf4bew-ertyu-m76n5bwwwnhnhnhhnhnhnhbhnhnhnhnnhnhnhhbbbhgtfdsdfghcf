@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -19,7 +19,11 @@
 + 	public static final EnumFacing[] _VALUES = values();
 + 
 
-> CHANGE  162 : 164  @  162 : 164
+> CHANGE  8 : 9  @  8 : 9
+
+~ 	public static final EnumFacing[] HORIZONTALS = new EnumFacing[4];
+
+> CHANGE  153 : 155  @  153 : 155
 
 ~ 	public static EnumFacing random(EaglercraftRandom rand) {
 ~ 		return _VALUES[rand.nextInt(_VALUES.length)];

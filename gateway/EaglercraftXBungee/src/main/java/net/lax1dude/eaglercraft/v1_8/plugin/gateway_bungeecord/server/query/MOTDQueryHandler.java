@@ -1,21 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.query;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query.EaglerQuerySimpleHandler;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query.MOTDConnection;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.MOTDCacheConfiguration;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -30,6 +13,25 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.query;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.EaglerXBungeeAPIHelper;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query.EaglerQuerySimpleHandler;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.query.MOTDConnection;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.MOTDCacheConfiguration;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+
 public class MOTDQueryHandler extends EaglerQuerySimpleHandler implements MOTDConnection {
 
 	private long creationTime = 0l;
@@ -47,7 +49,7 @@ public class MOTDQueryHandler extends EaglerQuerySimpleHandler implements MOTDCo
 
 	@Override
 	protected void begin(String queryType) {
-		creationTime = System.currentTimeMillis();
+		creationTime = EaglerXBungeeAPIHelper.steadyTimeMillis();
 		subType = queryType;
 		returnType = "MOTD";
 		EaglerListenerConfig listener = getListener();
@@ -60,7 +62,7 @@ public class MOTDQueryHandler extends EaglerQuerySimpleHandler implements MOTDCo
 		}
 		maxPlayers = listener.getMaxPlayers();
 		onlinePlayers = ProxyServer.getInstance().getOnlineCount();
-		players = new ArrayList();
+		players = new ArrayList<>();
 		for(ProxiedPlayer pp : ProxyServer.getInstance().getPlayers()) {
 			players.add(pp.getDisplayName());
 			if(players.size() >= 9) {
@@ -140,10 +142,10 @@ public class MOTDQueryHandler extends EaglerQuerySimpleHandler implements MOTDCo
 				byte[] iconPixels = new byte[16384];
 				for(int i = 0, j; i < 4096; ++i) {
 					j = i << 2;
-					iconPixels[j] = (byte)((bitmap[i] >> 16) & 0xFF);
-					iconPixels[j + 1] = (byte)((bitmap[i] >> 8) & 0xFF);
+					iconPixels[j] = (byte)(bitmap[i] >>> 16);
+					iconPixels[j + 1] = (byte)(bitmap[i] >>> 8);
 					iconPixels[j + 2] = (byte)(bitmap[i] & 0xFF);
-					iconPixels[j + 3] = (byte)((bitmap[i] >> 24) & 0xFF);
+					iconPixels[j + 3] = (byte)(bitmap[i] >>> 24);
 				}
 				sendBinaryResponse(iconPixels);
 				iconDirty = false;

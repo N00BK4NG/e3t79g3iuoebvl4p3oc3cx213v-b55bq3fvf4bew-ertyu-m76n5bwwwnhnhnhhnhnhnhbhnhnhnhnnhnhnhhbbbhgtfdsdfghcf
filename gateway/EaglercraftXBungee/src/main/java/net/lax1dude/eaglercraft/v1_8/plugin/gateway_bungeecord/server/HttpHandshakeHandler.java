@@ -1,35 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
-import io.netty.util.ReferenceCountUtil;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerRateLimiter;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.RateLimitStatus;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpMemoryCache;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpWebServer;
-
-/**
+/*
  * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -44,11 +13,50 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpWe
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.haproxy.HAProxyMessage;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
+import io.netty.util.ReferenceCountUtil;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.EaglerXBungee;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.api.event.EaglercraftWebSocketOpenEvent;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerListenerConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.EaglerRateLimiter;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.config.RateLimitStatus;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpMemoryCache;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_bungeecord.server.web.HttpWebServer;
+import net.md_5.bungee.BungeeCord;
+import net.md_5.bungee.api.event.ClientConnectEvent;
+
 public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 	
 	private static final byte[] error429Bytes = "<h3>429 Too Many Requests<br /><small>(Try again later)</small></h3>".getBytes(StandardCharsets.UTF_8);
 	
 	private final EaglerListenerConfig conf;
+	private boolean logExceptions;
+	private boolean healthCheck;
+	private InetSocketAddress haproxyRemoteAddr;
 	
 	public HttpHandshakeHandler(EaglerListenerConfig conf) {
 		this.conf = conf;
@@ -57,18 +65,31 @@ public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 	public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
 		try {
 			if (msg instanceof HttpRequest) {
+				logExceptions = true;
 				EaglerConnectionInstance pingTracker = ctx.channel().attr(EaglerPipeline.CONNECTION_INSTANCE).get();
 				HttpRequest req = (HttpRequest) msg;
 					HttpHeaders headers = req.headers();
 					
 					String rateLimitHost = null;
 					
+					SocketAddress addr;
 					if(conf.isForwardIp()) {
 						String str = headers.get(conf.getForwardIpHeader());
 						if(str != null) {
 							rateLimitHost = str.split(",", 2)[0];
 							try {
-								ctx.channel().attr(EaglerPipeline.REAL_ADDRESS).set(InetAddress.getByName(rateLimitHost));
+								InetAddress inetAddr = InetAddress.getByName(rateLimitHost);
+								if(haproxyRemoteAddr != null) {
+									addr = new InetSocketAddress(inetAddr, haproxyRemoteAddr.getPort());
+								}else {
+									addr = ctx.channel().remoteAddress();
+									if(addr instanceof InetSocketAddress) {
+										addr = new InetSocketAddress(inetAddr, ((InetSocketAddress)addr).getPort());
+									}else {
+										addr = new InetSocketAddress(inetAddr, 0);
+									}
+								}
+								ctx.channel().attr(EaglerPipeline.REAL_ADDRESS).set(inetAddr);
 							}catch(UnknownHostException ex) {
 								EaglerXBungee.logger().warning("[" + ctx.channel().remoteAddress() + "]: Connected with an invalid '" + conf.getForwardIpHeader() + "' header, disconnecting...");
 								ctx.close();
@@ -79,8 +100,11 @@ public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 							ctx.close();
 							return;
 						}
+					}else if(haproxyRemoteAddr != null) {
+						addr = haproxyRemoteAddr;
+						ctx.channel().attr(EaglerPipeline.REAL_ADDRESS).set(haproxyRemoteAddr.getAddress());
 					}else {
-						SocketAddress addr = ctx.channel().remoteAddress();
+						addr = ctx.channel().remoteAddress();
 						if(addr instanceof InetSocketAddress) {
 							rateLimitHost = ((InetSocketAddress) addr).getAddress().getHostAddress();
 						}
@@ -98,17 +122,31 @@ public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 						return;
 					}
 					
+					ClientConnectEvent evt = BungeeCord.getInstance().getPluginManager().callEvent(new ClientConnectEvent(addr, conf));
+					if(evt.isCancelled()) {
+						ctx.close();
+						return;
+					}
+					
 					if(headers.get(HttpHeaderNames.CONNECTION) != null && headers.get(HttpHeaderNames.CONNECTION).toLowerCase().contains("upgrade") &&
 							"websocket".equalsIgnoreCase(headers.get(HttpHeaderNames.UPGRADE))) {
-						
+
 						String origin = headers.get(HttpHeaderNames.ORIGIN);
 						if(origin != null) {
 							ctx.channel().attr(EaglerPipeline.ORIGIN).set(origin);
 						}
-						
-						//TODO: origin blacklist
+						String userAgent = headers.get(HttpHeaderNames.USER_AGENT);
+						if(userAgent != null) {
+							ctx.channel().attr(EaglerPipeline.USER_AGENT).set(userAgent);
+						}
 						
 						if(ipRateLimit == RateLimitStatus.OK) {
+							EaglercraftWebSocketOpenEvent evt2 = new EaglercraftWebSocketOpenEvent(ctx.channel(), conf, rateLimitHost, origin, userAgent);
+							BungeeCord.getInstance().getPluginManager().callEvent(evt2);
+							if(evt2.isCancelled()) {
+								ctx.close();
+								return;
+							}
 							ctx.channel().attr(EaglerPipeline.HOST).set(headers.get(HttpHeaderNames.HOST));
 							ctx.pipeline().replace(this, "HttpWebSocketHandler", new HttpWebSocketHandler(conf));
 						}
@@ -164,6 +202,19 @@ public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 								.addListener(ChannelFutureListener.CLOSE);
 						}
 					}
+			}else if(msg instanceof HAProxyMessage) {
+				logExceptions = true;
+				HAProxyMessage proxy = (HAProxyMessage) msg;
+				if(proxy.sourceAddress() != null) {
+					if(!conf.isForwardIp()) {
+						try {
+							haproxyRemoteAddr = new InetSocketAddress(proxy.sourceAddress(), proxy.sourcePort());
+						}catch(IllegalArgumentException t) {
+						}
+					}
+				}else {
+					healthCheck = true;
+				}
 			}else {
 				ctx.close();
 			}
@@ -174,13 +225,11 @@ public class HttpHandshakeHandler extends ChannelInboundHandlerAdapter {
 	
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		if (ctx.channel().isActive()) {
-			EaglerXBungee.logger().log(Level.WARNING, "[Pre][" + ctx.channel().remoteAddress() + "]: Exception Caught: " + cause.toString(), cause);
+			if(logExceptions && !healthCheck) {
+				EaglerXBungee.logger().log(Level.WARNING, "[Pre][" + ctx.channel().remoteAddress() + "]: Exception Caught: " + cause.toString(), cause);
+			}
 			ctx.close();
 		}
-	}
-	
-	private static String formatAddressFor404(String str) {
-		return "<span style=\"font-family:monospace;font-weight:bold;background-color:#EEEEEE;padding:3px 4px;\">" + str.replace("<", "&lt;").replace(">", "&gt;") + "</span>";
 	}
 	
 	public void channelInactive(ChannelHandlerContext ctx) {

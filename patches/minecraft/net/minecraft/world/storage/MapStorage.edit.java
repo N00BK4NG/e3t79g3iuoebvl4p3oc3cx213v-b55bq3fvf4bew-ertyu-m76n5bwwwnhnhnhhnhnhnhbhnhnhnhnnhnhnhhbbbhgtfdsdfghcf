@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -28,7 +28,7 @@
 + 		WorldSavedData createInstance(String mapFileName);
 + 	}
 + 
-+ 	public static final Map<Class<? extends WorldSavedData>, MapStorageProvider> storageProviders = new HashMap();
++ 	public static final Map<Class<? extends WorldSavedData>, MapStorageProvider> storageProviders = new HashMap<>();
 + 
 + 	static {
 + 		storageProviders.put(MapData.class, MapData::new);

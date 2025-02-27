@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.internal.teavm;
 
 import java.util.LinkedList;
@@ -13,24 +29,10 @@ import org.teavm.jso.dom.html.HTMLDocument;
 import org.teavm.jso.dom.html.HTMLElement;
 
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformApplication;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class DebugConsoleWindow {
 
 	private static class LogMessage {
@@ -48,29 +50,57 @@ public class DebugConsoleWindow {
 	private static final int bufferSpoolSize = 256;
 	private static final int windowMaxMessages = 2048;
 
-	private static final List<LogMessage> messageBuffer = new LinkedList();
+	private static final List<LogMessage> messageBuffer = new LinkedList<>();
 
 	public static Window parent = null;
 	public static Window logger = null;
 	private static HTMLDocument loggerDoc = null;
 	private static HTMLBodyElement loggerBody = null;
 	private static HTMLElement loggerMessageContainer = null;
+	private static EventListener<?> unload = null;
+	private static String unloadName = null;
 
 	public static void initialize(Window parentWindow) {
 		parent = parentWindow;
-		parent.addEventListener("unload", new EventListener<Event>() {
-			@Override
-			public void handleEvent(Event evt) {
-				destroyWindow();
-			}
-		});
-		if("true".equals(parent.getLocalStorage().getItem(PlatformRuntime.getClientConfigAdapter().getLocalStorageNamespace() + ".showDebugConsole"))) {
+		if (PlatformRuntime.getClientConfigAdapter().isOpenDebugConsoleOnLaunch() || debugConsoleLocalStorageGet()) {
 			showDebugConsole0();
 		}
 	}
 
+	public static void removeEventListeners() {
+		if(unloadName != null && unload != null) {
+			try {
+				parent.removeEventListener(unloadName, unload);
+			}catch(Throwable t) {
+			}
+		}
+		unload = null;
+		unloadName = null;
+	}
+
+	private static void debugConsoleLocalStorageSet(boolean val) {
+		try {
+			if(parent.getLocalStorage() != null) {
+				parent.getLocalStorage().setItem(PlatformRuntime.getClientConfigAdapter().getLocalStorageNamespace() + ".showDebugConsole", Boolean.toString(val));
+			}
+		}catch(Throwable t) {
+		}
+	}
+
+	private static boolean debugConsoleLocalStorageGet() {
+		try {
+			if(parent.getLocalStorage() != null) {
+				return Boolean.valueOf(parent.getLocalStorage().getItem(PlatformRuntime.getClientConfigAdapter().getLocalStorageNamespace() + ".showDebugConsole"));
+			}else {
+				return false;
+			}
+		}catch(Throwable t) {
+			return false;
+		}
+	}
+
 	public static void showDebugConsole() {
-		parent.getLocalStorage().setItem(PlatformRuntime.getClientConfigAdapter().getLocalStorageNamespace() + ".showDebugConsole", "true");
+		debugConsoleLocalStorageSet(true);
 		showDebugConsole0();
 	}
 
@@ -79,12 +109,27 @@ public class DebugConsoleWindow {
 
 	private static void showDebugConsole0() {
 		if(logger == null) {
-			int w = (int)(1000 * parent.getDevicePixelRatio());
-			int h = (int)(400 * parent.getDevicePixelRatio());
+			try {
+				parent.addEventListener(
+						unloadName = ((TeaVMClientConfigAdapter) PlatformRuntime.getClientConfigAdapter())
+								.isFixDebugConsoleUnloadListenerTeaVM() ? "beforeunload" : "unload",
+						unload = new EventListener<Event>() {
+							@Override
+							public void handleEvent(Event evt) {
+								destroyWindow();
+							}
+						});
+			}catch(Throwable t) {
+			}
+			float s = PlatformInput.getDPI();
+			int w = (int)(1000 * s);
+			int h = (int)(400 * s);
 			int x = (parent.getScreen().getWidth() - w) / 2;
 			int y = (parent.getScreen().getHeight() - h) / 2;
 			logger = parent.open("", "_blank", "top=" + y + ",left=" + x + ",width=" + w + ",height=" + h + ",menubar=0,status=0,titlebar=0,toolbar=0");
-			if(logger == null) {
+			if(logger == null || TeaVMUtils.isNotTruthy(logger)) {
+				logger = null;
+				debugConsoleLocalStorageSet(false);
 				LogManager.getLogger("DebugConsoleWindow").error("Logger popup was blocked!");
 				Window.alert("ERROR: Popup blocked!\n\nPlease make sure you have popups enabled for this site!");
 				return;
@@ -108,7 +153,8 @@ public class DebugConsoleWindow {
 				public void handleEvent(Event evt) {
 					if(logger != null) {
 						logger = null;
-						parent.getLocalStorage().setItem("_eaglercraftX.showDebugConsole", "false");
+						debugConsoleLocalStorageSet(false);
+						removeEventListeners();
 					}
 				}
 			};
@@ -135,10 +181,12 @@ public class DebugConsoleWindow {
 	}
 
 	private static void appendLogMessageAndScroll(String text, String color) {
-		boolean b = isScrollToEnd(logger, loggerDoc);
-		appendLogMessage(text, color);
-		if(b) {
-			scrollToEnd0(logger, loggerDoc);
+		if(logger != null) {
+			boolean b = isScrollToEnd(logger, loggerDoc);
+			appendLogMessage(text, color);
+			if(b) {
+				scrollToEnd0(logger, loggerDoc);
+			}
 		}
 	}
 
@@ -163,7 +211,11 @@ public class DebugConsoleWindow {
 		if(logger != null) {
 			Window w = logger;
 			logger = null;
-			w.close();
+			try {
+				w.close();
+			}catch(Throwable t) {
+			}
+			removeEventListeners();
 		}
 	}
 

@@ -1,21 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.lan;
-
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServer;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayWorldsQuery;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacket07LocalWorlds;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -30,17 +13,37 @@ import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.IPacket07LocalWorlds;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.lan;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQueryDispatch;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServer;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayWorldsQuery;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.RelayPacket07LocalWorlds;
+
 public class LANServerList {
 	
-	private final List<LanServer> lanServersList = new LinkedList();
-	private final Map<String, RelayWorldsQuery> lanServersQueryList = new LinkedHashMap();
-	private final Set<String> deadURIs = new HashSet();
+	private final List<LanServer> lanServersList = new LinkedList<>();
+	private final Map<String, RelayWorldsQuery> lanServersQueryList = new LinkedHashMap<>();
+	private final Set<String> deadURIs = new HashSet<>();
 	
 	private long lastRefresh = 0l;
 	private int refreshCounter = 0;
 	
 	public boolean update() {
-		long millis = System.currentTimeMillis();
+		long millis = EagRuntime.steadyTimeMillis();
 		if(millis - lastRefresh > 20000l) {
 			if(++refreshCounter < 10) {
 				refresh();
@@ -54,6 +57,7 @@ public class LANServerList {
 				Entry<String,RelayWorldsQuery> etr = itr.next();
 				String uri = etr.getKey();
 				RelayWorldsQuery q = etr.getValue();
+				q.update();
 				if(!q.isQueryOpen()) {
 					itr.remove();
 					if(q.isQueryFailed()) {
@@ -75,9 +79,9 @@ public class LANServerList {
 							}
 						}
 						if(rl != null) {
-							Iterator<IPacket07LocalWorlds.LocalWorld> itr3 = q.getWorlds().iterator();
+							Iterator<RelayPacket07LocalWorlds.LocalWorld> itr3 = q.getWorlds().iterator();
 							yee: while(itr3.hasNext()) {
-								IPacket07LocalWorlds.LocalWorld l = itr3.next();
+								RelayPacket07LocalWorlds.LocalWorld l = itr3.next();
 								itr2 = lanServersList.iterator();
 								while(itr2.hasNext()) {
 									LanServer l2 = itr2.next();
@@ -116,12 +120,12 @@ public class LANServerList {
 	}
 
 	private void refresh() {
-		lastRefresh = System.currentTimeMillis();
+		lastRefresh = EagRuntime.steadyTimeMillis();
 		if(PlatformWebRTC.supported()) {
 			for(int i = 0, l = RelayManager.relayManager.count(); i < l; ++i) {
 				RelayServer srv = RelayManager.relayManager.get(i);
 				if(!lanServersQueryList.containsKey(srv.address) && !deadURIs.contains(srv.address)) {
-					lanServersQueryList.put(srv.address, PlatformWebRTC.openRelayWorldsQuery(srv.address));
+					lanServersQueryList.put(srv.address, RelayQueryDispatch.openRelayWorldsQuery(srv.address));
 				}
 			}
 		}

@@ -1,6 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-/**
+/*
  * Copyright (c) 2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -15,10 +13,19 @@ package net.lax1dude.eaglercraft.v1_8.internal;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import java.util.function.Consumer;
+
 public interface IClientConfigAdapterHooks {
 
 	void callLocalStorageSavedHook(String key, String base64);
 
 	String callLocalStorageLoadHook(String key);
+
+	void callCrashReportHook(String crashReport, Consumer<String> customMessageCB);
+
+	void callScreenChangedHook(String screenName, int scaledWidth, int scaledHeight, int realWidth, int realHeight, int scaleFactor);
 
 }

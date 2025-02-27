@@ -1,20 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.opengl;
-
-import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
-import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
-
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
-import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
-import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.opengl.FixedFunctionShader.FixedFunctionConstants;
-import net.lax1dude.eaglercraft.v1_8.vector.Matrix3f;
-
-/**
- * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2025 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -28,18 +13,39 @@ import net.lax1dude.eaglercraft.v1_8.vector.Matrix3f;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl;
+
+import static net.lax1dude.eaglercraft.v1_8.opengl.RealOpenGLEnums.*;
+
+import java.util.List;
+
+import static net.lax1dude.eaglercraft.v1_8.internal.PlatformOpenGL.*;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.IProgramGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IShaderGL;
+import net.lax1dude.eaglercraft.v1_8.internal.IUniformGL;
+import net.lax1dude.eaglercraft.v1_8.internal.buffer.FloatBuffer;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.opengl.VSHInputLayoutParser.ShaderInput;
+import net.lax1dude.eaglercraft.v1_8.vector.Matrix3f;
+
 public class SpriteLevelMixer {
 
 	private static final Logger LOGGER = LogManager.getLogger("SpriteLevelMixer");
 
 	public static final String fragmentShaderPath = "/assets/eagler/glsl/texture_mix.fsh";
+	public static final String fragmentShaderPrecision = "precision lowp int;\nprecision highp float;\nprecision highp sampler2D;\n";
 
 	private static IProgramGL shaderProgram = null;
 
 	private static IUniformGL u_textureLod1f = null;
 	private static IUniformGL u_blendFactor4f = null;
 	private static IUniformGL u_blendBias4f = null;
-	private static IUniformGL u_matrixTransform = null;
+	private static IUniformGL u_srcCoords4f = null;
+	private static IUniformGL u_dstCoords4f = null;
 
 	private static FloatBuffer matrixCopyBuffer = null;
 
@@ -55,21 +61,20 @@ public class SpriteLevelMixer {
 	private static float biasColorB = 0.0f;
 	private static float biasColorA = 0.0f;
 
-	private static boolean matrixChanged = true;
-	private static final Matrix3f transformMatrix = new Matrix3f();
+	private static float srcViewW = 100.0f;
+	private static float srcViewH = 100.0f;
+
+	private static float dstViewW = 50.0f;
+	private static float dstViewH = 50.0f;
 
 	private static final Matrix3f identityMatrix = new Matrix3f();
 
-	static void initialize() {
-
-		String fragmentSource = EagRuntime.getResourceString(fragmentShaderPath);
-		if(fragmentSource == null) {
-			throw new RuntimeException("SpriteLevelMixer shader \"" + fragmentShaderPath + "\" is missing!");
-		}
+	static void initialize(IShaderGL vertexShader, List<ShaderInput> vshSourceLayout) {
+		String fragmentSource = EagRuntime.getRequiredResourceString(fragmentShaderPath);
 
 		IShaderGL frag = _wglCreateShader(GL_FRAGMENT_SHADER);
 
-		_wglShaderSource(frag, FixedFunctionConstants.VERSION + "\n" + fragmentSource);
+		_wglShaderSource(frag, GLSLHeader.getFragmentHeaderCompat(fragmentSource, fragmentShaderPrecision));
 		_wglCompileShader(frag);
 
 		if(_wglGetShaderi(frag, GL_COMPILE_STATUS) != GL_TRUE) {
@@ -86,12 +91,16 @@ public class SpriteLevelMixer {
 
 		shaderProgram = _wglCreateProgram();
 
-		_wglAttachShader(shaderProgram, DrawUtils.vshLocal);
+		_wglAttachShader(shaderProgram, vertexShader);
 		_wglAttachShader(shaderProgram, frag);
+
+		if(EaglercraftGPU.checkOpenGLESVersion() == 200) {
+			VSHInputLayoutParser.applyLayout(shaderProgram, vshSourceLayout);
+		}
 
 		_wglLinkProgram(shaderProgram);
 
-		_wglDetachShader(shaderProgram, DrawUtils.vshLocal);
+		_wglDetachShader(shaderProgram, vertexShader);
 		_wglDetachShader(shaderProgram, frag);
 
 		_wglDeleteShader(frag);
@@ -115,7 +124,8 @@ public class SpriteLevelMixer {
 		u_textureLod1f = _wglGetUniformLocation(shaderProgram, "u_textureLod1f");
 		u_blendFactor4f = _wglGetUniformLocation(shaderProgram, "u_blendFactor4f");
 		u_blendBias4f = _wglGetUniformLocation(shaderProgram, "u_blendBias4f");
-		u_matrixTransform = _wglGetUniformLocation(shaderProgram, "u_matrixTransform");
+		u_srcCoords4f = _wglGetUniformLocation(shaderProgram, "u_srcCoords4f");
+		u_dstCoords4f = _wglGetUniformLocation(shaderProgram, "u_dstCoords4f");
 
 		_wglUniform1i(_wglGetUniformLocation(shaderProgram, "u_inputTexture"), 0);
 
@@ -141,21 +151,34 @@ public class SpriteLevelMixer {
 		}
 	}
 
-	public static void setIdentityMatrix() {
-		setMatrix3f(identityMatrix);
+	public static void srcSize(int w, int h) {
+		srcViewW = w;
+		srcViewH = h;
 	}
 
-	public static void setMatrix3f(Matrix3f matrix) {
-		if(!matrix.equals(transformMatrix)) {
-			matrixChanged = true;
-			transformMatrix.load(matrix);
-		}
+	public static void dstSize(int w, int h) {
+		dstViewW = w * 0.5f;
+		dstViewH = h * 0.5f;
 	}
 
-	public static void drawSprite(float level) {
+	public static void srcDstSize(int w, int h) {
+		srcViewW = w;
+		srcViewH = h;
+		dstViewW = w * 0.5f;
+		dstViewH = h * 0.5f;
+	}
+
+	public static void drawSprite(int lvl, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY, int dstW, int dstH) {
 		EaglercraftGPU.bindGLShaderProgram(shaderProgram);
 		
-		_wglUniform1f(u_textureLod1f, level);
+		if(EaglercraftGPU.checkTextureLODCapable()) {
+			_wglUniform1f(u_textureLod1f, lvl);
+		}else {
+			if(lvl != 0) {
+				LOGGER.error("Tried to copy from mipmap level {}, but this GPU does not support textureLod!", lvl);
+			}
+			_wglUniform1f(u_textureLod1f, 0.0f);
+		}
 		
 		if(blendColorChanged) {
 			_wglUniform4f(u_blendFactor4f, blendColorR, blendColorG, blendColorB, blendColorA);
@@ -167,15 +190,27 @@ public class SpriteLevelMixer {
 			biasColorChanged = false;
 		}
 		
-		if(matrixChanged) {
-			matrixCopyBuffer.clear();
-			transformMatrix.store(matrixCopyBuffer);
-			matrixCopyBuffer.flip();
-			_wglUniformMatrix3fv(u_matrixTransform, false, matrixCopyBuffer);
-			matrixChanged = false;
-		}
+		_wglUniform4f(u_srcCoords4f, (float)srcX / srcViewW, (float)srcY / srcViewH, (float)srcW / srcViewW, (float)srcH / srcViewH);
+		_wglUniform4f(u_dstCoords4f, (float) dstX / dstViewW - 1.0f, (float) dstY / dstViewH - 1.0f,
+				(float) dstW / dstViewW, (float) dstH / dstViewH);
 		
 		DrawUtils.drawStandardQuad2D();
+	}
+
+	public static void destroy() {
+		if(matrixCopyBuffer != null) {
+			EagRuntime.freeFloatBuffer(matrixCopyBuffer);
+			matrixCopyBuffer = null;
+		}
+		if(shaderProgram != null) {
+			_wglDeleteProgram(shaderProgram);
+			shaderProgram = null;
+		}
+		u_textureLod1f = null;
+		u_blendFactor4f = null;
+		u_blendBias4f = null;
+		u_srcCoords4f = null;
+		u_dstCoords4f = null;
 	}
 
 }

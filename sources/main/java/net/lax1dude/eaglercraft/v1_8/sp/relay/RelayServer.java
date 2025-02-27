@@ -1,11 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.sp.relay;
-
-import net.lax1dude.eaglercraft.v1_8.EagUtils;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQuery.VersionMismatch;
-import net.minecraft.client.Minecraft;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -20,6 +13,15 @@ import net.minecraft.client.Minecraft;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.sp.relay;
+
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.EagUtils;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformWebRTC;
+import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQuery.VersionMismatch;
+import net.minecraft.client.Minecraft;
+
 public class RelayServer {
 	
 	public final String address;
@@ -80,7 +82,7 @@ public class RelayServer {
 	public void pingBlocking() {
 		ping();
 		while(getPing() < 0l) {
-			EagUtils.sleep(250l);
+			EagUtils.sleep(250);
 			update();
 		}
 	}
@@ -88,7 +90,7 @@ public class RelayServer {
 	public void ping() {
 		if(PlatformWebRTC.supported()) {
 			close();
-			query = PlatformWebRTC.openRelayQuery(address);
+			query = RelayQueryDispatch.openRelayQuery(address);
 			queriedVersion = -1;
 			queriedComment = null;
 			queriedVendor = null;
@@ -105,23 +107,26 @@ public class RelayServer {
 	}
 	
 	public void update() {
-		if(query != null && !query.isQueryOpen()) {
-			if(query.isQueryFailed()) {
-				queriedVersion = -1;
-				queriedComment = null;
-				queriedVendor = null;
-				queriedCompatible = VersionMismatch.UNKNOWN;
-				ping = 0l;
-			}else {
-				queriedVersion = query.getVersion();
-				queriedComment = query.getComment();
-				queriedVendor = query.getBrand();
-				ping = query.getPing();
-				queriedCompatible = query.getCompatible();
-				workingPing = ping;
+		if(query != null) {
+			query.update();
+			if(!query.isQueryOpen()) {
+				if(query.isQueryFailed()) {
+					queriedVersion = -1;
+					queriedComment = null;
+					queriedVendor = null;
+					queriedCompatible = VersionMismatch.UNKNOWN;
+					ping = 0l;
+				}else {
+					queriedVersion = query.getVersion();
+					queriedComment = query.getComment();
+					queriedVendor = query.getBrand();
+					ping = query.getPing();
+					queriedCompatible = query.getCompatible();
+					workingPing = ping;
+				}
+				lastPing = EagRuntime.steadyTimeMillis();
+				query = null;
 			}
-			lastPing = System.currentTimeMillis();
-			query = null;
 		}
 	}
 	
@@ -138,7 +143,7 @@ public class RelayServer {
 	}
 	
 	public RelayServerSocket openSocket() {
-		return PlatformWebRTC.openRelayConnection(address, Minecraft.getMinecraft().gameSettings.relayTimeout * 1000);
+		return RelayQueryDispatch.openRelayConnection(address, Minecraft.getMinecraft().gameSettings.relayTimeout * 1000);
 	}
 	
 }

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -11,9 +11,13 @@
 
 + import java.util.Collection;
 
-> INSERT  6 : 20  @  6
+> DELETE  1  @  1 : 2
+
+> INSERT  4 : 20  @  4
 
 + 
++ import com.carrotsearch.hppc.IntIndexedContainer;
++ import com.carrotsearch.hppc.cursors.IntCursor;
 + import com.google.common.collect.Lists;
 + import com.google.common.collect.Maps;
 + 
@@ -30,7 +34,12 @@
 
 > DELETE  2  @  2 : 8
 
-> DELETE  9  @  9 : 11
+> CHANGE  9 : 13  @  9 : 11
+
+~ import net.optifine.BetterGrass;
+~ import net.optifine.ConnectedTextures;
+~ import net.optifine.CustomItems;
+~ import net.optifine.util.CounterInt;
 
 > INSERT  1 : 3  @  1
 
@@ -43,7 +52,7 @@
 ~ 	private final Map<String, EaglerTextureAtlasSprite> mapRegisteredSprites;
 ~ 	private final Map<String, EaglerTextureAtlasSprite> mapUploadedSprites;
 
-> CHANGE  3 : 10  @  3 : 4
+> CHANGE  3 : 12  @  3 : 4
 
 ~ 	private final EaglerTextureAtlasSprite missingImage;
 ~ 	private final EaglerTextureAtlasSpritePBR missingImagePBR;
@@ -52,6 +61,8 @@
 ~ 	private boolean isEaglerPBRMode = false;
 ~ 	public int eaglerPBRMaterialTexture = -1;
 ~ 	private boolean hasAllocatedEaglerPBRMaterialTexture = false;
+~ 	private boolean isGLES2 = false;
+~ 	private CounterInt counterIndexInMap;
 
 > INSERT  1 : 7  @  1
 
@@ -67,8 +78,15 @@
 ~ 		this.missingImage = new EaglerTextureAtlasSprite("missingno");
 ~ 		this.missingImagePBR = new EaglerTextureAtlasSpritePBR("missingno");
 
-> INSERT  11 : 27  @  11
+> INSERT  2 : 4  @  2
 
++ 		this.isGLES2 = EaglercraftGPU.checkOpenGLESVersion() == 200;
++ 		this.counterIndexInMap = new CounterInt(0);
+
+> INSERT  9 : 28  @  9
+
++ 		int idx = this.counterIndexInMap.nextValue();
++ 		this.missingImage.setIndexInMap(idx);
 + 		this.missingImagePBR.setIconWidth(16);
 + 		this.missingImagePBR.setIconHeight(16);
 + 		int[][][] aint2 = new int[3][this.mipmapLevels + 1][];
@@ -85,6 +103,7 @@
 + 		aint2[2][0] = missingMaterial;
 + 		this.missingImagePBR.setFramesTextureDataPBR(new List[] { Lists.newArrayList(new int[][][] { aint2[0] }),
 + 				Lists.newArrayList(new int[][][] { aint2[1] }), Lists.newArrayList(new int[][][] { aint2[2] }) });
++ 		this.missingImagePBR.setIndexInMap(idx);
 
 > DELETE  6  @  6 : 7
 
@@ -92,7 +111,11 @@
 
 + 		destroyAnimationCaches();
 
-> INSERT  7 : 27  @  7
+> INSERT  1 : 2  @  1
+
++ 		this.counterIndexInMap.reset();
+
+> INSERT  6 : 26  @  6
 
 + 	public void deleteGlTexture() {
 + 		super.deleteGlTexture();
@@ -115,7 +138,13 @@
 + 	}
 + 
 
-> INSERT  8 : 44  @  8
+> INSERT  1 : 4  @  1
+
++ 		ConnectedTextures.updateIcons(this);
++ 		CustomItems.updateIcons(this);
++ 		BetterGrass.updateIcons(this);
+
+> INSERT  7 : 43  @  7
 
 + 		if (copyColorFramebuffer != null) {
 + 			for (int l = 0; l < copyColorFramebuffer.length; ++l) {
@@ -154,11 +183,12 @@
 + 		}
 + 
 
-> CHANGE  1 : 2  @  1 : 2
+> CHANGE  1 : 3  @  1 : 2
 
 ~ 			EaglerTextureAtlasSprite textureatlassprite = (EaglerTextureAtlasSprite) entry.getValue();
+~ 			textureatlassprite.updateIndexInMap(this.counterIndexInMap);
 
-> INSERT  3 : 108  @  3
+> INSERT  3 : 106  @  3
 
 + 			if (isEaglerPBRMode) {
 + 				try {
@@ -179,7 +209,7 @@
 + 					}
 + 					if (abufferedimageMaterial[0] == null) {
 + 						abufferedimageMaterial[0] = PBRTextureMapUtils.generateMaterialTextureFor(
-+ 								((EaglerTextureAtlasSprite) (entry.getValue())).getIconName());
++ 								textureatlassprite.getIconName(), textureatlassprite.optifineBaseTextureName);
 + 						dontAnimateMaterial = true;
 + 					}
 + 					PBRTextureMapUtils.unifySizes(0, abufferedimageColor, abufferedimageNormal, abufferedimageMaterial);
@@ -187,7 +217,7 @@
 + 					TextureMetadataSection texturemetadatasection = (TextureMetadataSection) iresource
 + 							.getMetadata("texture");
 + 					if (texturemetadatasection != null) {
-+ 						List list = texturemetadatasection.getListMipmaps();
++ 						IntIndexedContainer list = texturemetadatasection.getListMipmaps();
 + 						if (!list.isEmpty()) {
 + 							int l = abufferedimageColor[0].width;
 + 							int i1 = abufferedimageColor[0].height;
@@ -196,11 +226,8 @@
 + 										"Unable to load extra miplevels, source-texture is not power of two");
 + 							}
 + 						}
-+ 
-+ 						Iterator iterator = list.iterator();
-+ 
-+ 						while (iterator.hasNext()) {
-+ 							int i2 = ((Integer) iterator.next()).intValue();
++ 						for (IntCursor cur : list) {
++ 							int i2 = cur.value;
 + 							if (i2 > 0 && i2 < abufferedimageColor.length - 1 && abufferedimageColor[i2] == null) {
 + 								ResourceLocation resourcelocation2 = this.completeResourceLocation(resourcelocation,
 + 										i2);
@@ -218,7 +245,8 @@
 + 									}
 + 									if (abufferedimageMaterial[i2] == null) {
 + 										abufferedimageMaterial[i2] = PBRTextureMapUtils.generateMaterialTextureFor(
-+ 												((EaglerTextureAtlasSprite) (entry.getValue())).getIconName());
++ 												textureatlassprite.getIconName(),
++ 												textureatlassprite.optifineBaseTextureName);
 + 									}
 + 									PBRTextureMapUtils.unifySizes(i2, abufferedimageColor, abufferedimageNormal,
 + 											abufferedimageMaterial);
@@ -270,12 +298,21 @@
 
 ~ 				ImageData[] abufferedimage = new ImageData[1 + this.mipmapLevels];
 
-> CHANGE  6 : 8  @  6 : 8
+> CHANGE  4 : 5  @  4 : 5
+
+~ 					IntIndexedContainer list = texturemetadatasection.getListMipmaps();
+
+> CHANGE  1 : 3  @  1 : 3
 
 ~ 						int l = abufferedimage[0].width;
 ~ 						int i1 = abufferedimage[0].height;
 
-> CHANGE  18 : 20  @  18 : 19
+> CHANGE  6 : 8  @  6 : 10
+
+~ 					for (IntCursor cur : list) {
+~ 						int i2 = cur.value;
+
+> CHANGE  8 : 10  @  8 : 9
 
 ~ 										new Object[] { Integer.valueOf(i2), resourcelocation2 });
 ~ 								logger.error(ioexception);
@@ -308,8 +345,9 @@
 
 + 		regenerateIfNotAllocated();
 
-> INSERT  2 : 23  @  2
+> INSERT  2 : 24  @  2
 
++ 
 + 		if (isEaglerPBRMode) {
 + 			if (hasAllocatedEaglerPBRMaterialTexture) {
 + 				EaglercraftGPU.regenerateTexture(eaglerPBRMaterialTexture);
@@ -366,13 +404,30 @@
 
 + 		_wglBindFramebuffer(_GL_FRAMEBUFFER, null);
 
-> CHANGE  5 : 7  @  5 : 7
+> CHANGE  3 : 12  @  3 : 8
 
-~ 						HString.format("%s/%s%s", new Object[] { this.basePath, location.getResourcePath(), ".png" }))
-~ 				: new ResourceLocation(location.getResourceDomain(), HString.format("%s/mipmaps/%s.%d%s",
+~ 		return isAbsoluteLocation(location)
+~ 				? new ResourceLocation(location.getResourceDomain(), location.getResourcePath() + ".png")
+~ 				: (parInt1 == 0
+~ 						? new ResourceLocation(location.getResourceDomain(),
+~ 								HString.format("%s/%s%s",
+~ 										new Object[] { this.basePath, location.getResourcePath(), ".png" }))
+~ 						: new ResourceLocation(location.getResourceDomain(),
+~ 								HString.format("%s/mipmaps/%s.%d%s", new Object[] { this.basePath,
+~ 										location.getResourcePath(), Integer.valueOf(parInt1), ".png" })));
 
-> CHANGE  3 : 5  @  3 : 5
+> CHANGE  2 : 14  @  2 : 4
 
+~ 	private boolean isAbsoluteLocation(ResourceLocation p_isAbsoluteLocation_1_) {
+~ 		String s = p_isAbsoluteLocation_1_.getResourcePath();
+~ 		return this.isAbsoluteLocationPath(s);
+~ 	}
+~ 
+~ 	private boolean isAbsoluteLocationPath(String p_isAbsoluteLocationPath_1_) {
+~ 		String s = p_isAbsoluteLocationPath_1_.toLowerCase();
+~ 		return s.startsWith("mcpatcher/") || s.startsWith("optifine/");
+~ 	}
+~ 
 ~ 	public EaglerTextureAtlasSprite getAtlasSprite(String iconName) {
 ~ 		EaglerTextureAtlasSprite textureatlassprite = (EaglerTextureAtlasSprite) this.mapUploadedSprites.get(iconName);
 
@@ -380,12 +435,26 @@
 
 ~ 			textureatlassprite = isEaglerPBRMode ? missingImagePBR : missingImage;
 
-> CHANGE  6 : 14  @  6 : 7
+> CHANGE  6 : 28  @  6 : 7
 
 ~ 		if (isEaglerPBRMode) {
-~ 			for (int i = 0, l = this.listAnimatedSprites.size(); i < l; ++i) {
-~ 				this.listAnimatedSprites.get(i).updateAnimationPBR(copyColorFramebuffer, copyMaterialFramebuffer,
-~ 						height);
+~ 			for (int j = 0, l = this.listAnimatedSprites.size(); j < l; ++j) {
+~ 				this.listAnimatedSprites.get(j).updateAnimationPBR();
+~ 			}
+~ 			for (int i = 0; i < copyColorFramebuffer.length; ++i) {
+~ 				int w = width >> i;
+~ 				int h = height >> i;
+~ 				_wglBindFramebuffer(_GL_FRAMEBUFFER, copyColorFramebuffer[i]);
+~ 				GlStateManager.viewport(0, 0, w, h);
+~ 				for (int j = 0, l = this.listAnimatedSprites.size(); j < l; ++j) {
+~ 					this.listAnimatedSprites.get(j).copyAnimationFramePBR(0, w, h, i);
+~ 				}
+~ 				_wglBindFramebuffer(_GL_FRAMEBUFFER, copyMaterialFramebuffer[i]);
+~ 				h <<= 1;
+~ 				GlStateManager.viewport(0, 0, w, h);
+~ 				for (int j = 0, l = this.listAnimatedSprites.size(); j < l; ++j) {
+~ 					this.listAnimatedSprites.get(j).copyAnimationFramePBR(1, w, h, i);
+~ 				}
 ~ 			}
 ~ 			_wglBindFramebuffer(_GL_FRAMEBUFFER, null);
 ~ 			return;
@@ -393,14 +462,24 @@
 
 > CHANGE  1 : 3  @  1 : 3
 
-~ 		for (int i = 0, l = this.listAnimatedSprites.size(); i < l; ++i) {
-~ 			this.listAnimatedSprites.get(i).updateAnimation(copyColorFramebuffer);
+~ 		for (int j = 0, l = this.listAnimatedSprites.size(); j < l; ++j) {
+~ 			this.listAnimatedSprites.get(j).updateAnimation();
 
-> INSERT  2 : 3  @  2
+> INSERT  2 : 13  @  2
 
++ 		for (int i = 0; i < copyColorFramebuffer.length; ++i) {
++ 			int w = width >> i;
++ 			int h = height >> i;
++ 			_wglBindFramebuffer(_GL_FRAMEBUFFER, copyColorFramebuffer[i]);
++ 			GlStateManager.viewport(0, 0, w, h);
++ 			for (int j = 0, l = this.listAnimatedSprites.size(); j < l; ++j) {
++ 				this.listAnimatedSprites.get(j).copyAnimationFrame(w, h, i);
++ 			}
++ 		}
++ 
 + 		_wglBindFramebuffer(_GL_FRAMEBUFFER, null);
 
-> CHANGE  2 : 9  @  2 : 3
+> CHANGE  2 : 13  @  2 : 3
 
 ~ 	private void destroyAnimationCaches() {
 ~ 		for (int i = 0, l = this.listAnimatedSprites.size(); i < l; ++i) {
@@ -409,26 +488,44 @@
 ~ 	}
 ~ 
 ~ 	public EaglerTextureAtlasSprite registerSprite(ResourceLocation location) {
+~ 		return registerSprite(location, null);
+~ 	}
+~ 
+~ 	public EaglerTextureAtlasSprite registerSprite(ResourceLocation location, String locationOptifineBase) {
 
 > CHANGE  3 : 5  @  3 : 4
 
 ~ 			EaglerTextureAtlasSprite textureatlassprite = (EaglerTextureAtlasSprite) this.mapRegisteredSprites
-~ 					.get(location);
+~ 					.get(location.toString());
 
-> CHANGE  1 : 6  @  1 : 2
+> CHANGE  1 : 7  @  1 : 2
 
 ~ 				if (isEaglerPBRMode) {
 ~ 					textureatlassprite = EaglerTextureAtlasSpritePBR.makeAtlasSprite(location);
 ~ 				} else {
 ~ 					textureatlassprite = EaglerTextureAtlasSprite.makeAtlasSprite(location);
 ~ 				}
+~ 				textureatlassprite.optifineBaseTextureName = locationOptifineBase;
 
-> CHANGE  15 : 17  @  15 : 17
+> INSERT  1 : 2  @  1
+
++ 				textureatlassprite.updateIndexInMap(this.counterIndexInMap);
+
+> CHANGE  11 : 17  @  11 : 12
+
+~ 		if (!isGLES2) {
+~ 			this.mipmapLevels = mipmapLevelsIn;
+~ 		} else {
+~ 			this.mipmapLevels = 0; // Due to limitations in OpenGL ES 2.0 texture completeness, its easier to just
+~ 									// make this zero
+~ 		}
+
+> CHANGE  2 : 4  @  2 : 4
 
 ~ 	public EaglerTextureAtlasSprite getMissingSprite() {
 ~ 		return isEaglerPBRMode ? missingImagePBR : missingImage;
 
-> INSERT  1 : 23  @  1
+> INSERT  1 : 36  @  1
 
 + 
 + 	public int getWidth() {
@@ -444,13 +541,26 @@
 + 	}
 + 
 + 	public void setBlurMipmapDirect0(boolean parFlag, boolean parFlag2) {
-+ 		super.setBlurMipmapDirect0(parFlag, parFlag2);
-+ 		if (isEaglerPBRMode && eaglerPBRMaterialTexture != -1) {
-+ 			GlStateManager.setActiveTexture(33986);
-+ 			GlStateManager.bindTexture(eaglerPBRMaterialTexture);
++ 		if (isGLES2) {
++ 			super.setBlurMipmapDirect0(parFlag, false);
++ 		} else {
 + 			super.setBlurMipmapDirect0(parFlag, parFlag2);
-+ 			GlStateManager.setActiveTexture(33984);
++ 			if (isEaglerPBRMode && eaglerPBRMaterialTexture != -1) {
++ 				GlStateManager.setActiveTexture(33986);
++ 				GlStateManager.bindTexture(eaglerPBRMaterialTexture);
++ 				super.setBlurMipmapDirect0(parFlag, parFlag2);
++ 				GlStateManager.setActiveTexture(33984);
++ 			}
 + 		}
++ 	}
++ 
++ 	public EaglerTextureAtlasSprite getSpriteSafe(String iconName) {
++ 		ResourceLocation resourcelocation = new ResourceLocation(iconName);
++ 		return this.mapRegisteredSprites.get(resourcelocation.toString());
++ 	}
++ 
++ 	public int getCountRegisteredSprites() {
++ 		return this.counterIndexInMap.getValue();
 + 	}
 
 > EOF

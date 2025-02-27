@@ -1,16 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.query;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.google.gson.JsonObject;
-
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocityVersion;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
-import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.HttpServerQueryHandler;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -25,14 +13,29 @@ import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.HttpServerQu
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.query;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.google.gson.JsonObject;
+
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocity;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.EaglerXVelocityVersion;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.api.EaglerXVelocityAPIHelper;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.config.EaglerVelocityConfig;
+import net.lax1dude.eaglercraft.v1_8.plugin.gateway_velocity.server.HttpServerQueryHandler;
+
 public class QueryManager {
 
-	private static final Map<String, Class<? extends HttpServerQueryHandler>> queryTypes = new HashMap();
+	private static final Map<String, Class<? extends HttpServerQueryHandler>> queryTypes = new HashMap<>();
 
 	static {
 		queryTypes.put("motd", MOTDQueryHandler.class);
 		queryTypes.put("motd.cache", MOTDQueryHandler.class);
 		queryTypes.put("version", VersionQueryHandler.class);
+		queryTypes.put("revoke_session_token", RevokeSessionQueryHandler.class);
 	}
 
 	public static HttpServerQueryHandler createQueryHandler(String type) {
@@ -77,7 +80,7 @@ public class QueryManager {
 		json.addProperty("brand", "lax1dude");
 		json.addProperty("vers", EaglerXVelocityVersion.ID + "/" + EaglerXVelocityVersion.VERSION);
 		json.addProperty("cracked", conf.isCracked());
-		json.addProperty("time", System.currentTimeMillis());
+		json.addProperty("time", EaglerXVelocityAPIHelper.steadyTimeMillis());
 		json.addProperty("uuid", conf.getServerUUID().toString());
 		return json;
 	}

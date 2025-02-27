@@ -2,6 +2,7 @@ server_name: 'EaglercraftXVelocity Server'
 server_uuid: ${random_uuid}
 websocket_connection_timeout: 15000
 websocket_handshake_timeout: 5000
+builtin_http_server_timeout: 10000
 http_websocket_compression_level: 6
 download_vanilla_skins_to_clients: true
 valid_skin_download_urls:
@@ -23,3 +24,5 @@ enable_is_eagler_player_property: true
 disable_voice_chat_on_servers: []
 disable_fnaw_skins_everywhere: false
 disable_fnaw_skins_on_servers: []
+enable_backend_rpc_api: false
+use_modernized_channel_names: false

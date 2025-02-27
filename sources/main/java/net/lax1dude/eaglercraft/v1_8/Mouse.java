@@ -1,9 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
-
-/**
+/*
  * Copyright (c) 2022-2024 lax1dude, ayunami2000. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -18,6 +13,13 @@ import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import net.lax1dude.eaglercraft.v1_8.internal.EnumCursorType;
+import net.lax1dude.eaglercraft.v1_8.internal.EnumFireMouseEvent;
+import net.lax1dude.eaglercraft.v1_8.internal.PlatformInput;
+
 public class Mouse {
 
 	public static int getEventDWheel() {
@@ -90,6 +92,22 @@ public class Mouse {
 
 	public static boolean isMouseGrabbed() {
 		return PlatformInput.isMouseGrabbed();
+	}
+
+	public static boolean isMouseGrabSupported() {
+		return PlatformInput.mouseGrabSupported();
+	}
+
+	public static void fireMoveEvent(EnumFireMouseEvent eventType, int posX, int posY) {
+		PlatformInput.mouseFireMoveEvent(eventType, posX, posY);
+	}
+
+	public static void fireButtonEvent(EnumFireMouseEvent eventType, int posX, int posY, int button) {
+		PlatformInput.mouseFireButtonEvent(eventType, posX, posY, button);
+	}
+
+	public static void fireWheelEvent(EnumFireMouseEvent eventType, int posX, int posY, float wheel) {
+		PlatformInput.mouseFireWheelEvent(eventType, posX, posY, wheel);
 	}
 
 	private static int customCursorCounter = 0;

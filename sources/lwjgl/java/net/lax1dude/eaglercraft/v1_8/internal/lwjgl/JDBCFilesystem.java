@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.internal.lwjgl;
 
 import java.sql.Connection;
@@ -13,8 +29,8 @@ import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem.IFilesystemProvider;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformRuntime;
+import net.lax1dude.eaglercraft.v1_8.internal.IEaglerFilesystem;
 import net.lax1dude.eaglercraft.v1_8.internal.PlatformFilesystem;
 import net.lax1dude.eaglercraft.v1_8.internal.VFSFilenameIterator;
 import net.lax1dude.eaglercraft.v1_8.internal.buffer.ByteBuffer;
@@ -23,30 +39,16 @@ import net.lax1dude.eaglercraft.v1_8.internal.vfs2.VFSIterator2;
 import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
 import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
-public class JDBCFilesystem implements IFilesystemProvider {
+public class JDBCFilesystem implements IEaglerFilesystem {
 
 	public static final Logger logger = LogManager.getLogger("JDBCFilesystem");
 
 	private boolean newFilesystem = true;
 
 	private static volatile boolean cleanupThreadStarted = false;
-	private static final Collection<JDBCFilesystem> jdbcFilesystems = new LinkedList();
+	private static final Collection<JDBCFilesystem> jdbcFilesystems = new LinkedList<>();
 
+	private final String dbName;
 	private final String jdbcUri;
 	private final String jdbcDriver;
 
@@ -64,8 +66,8 @@ public class JDBCFilesystem implements IFilesystemProvider {
 
 	private final Object mutex = new Object();
 
-	public static IFilesystemProvider initialize(String jdbcUri, String jdbcDriver) {
-		Class driver;
+	public static IEaglerFilesystem initialize(String dbName, String jdbcUri, String jdbcDriver) {
+		Class<?> driver;
 		try {
 			driver = Class.forName(jdbcDriver);
 		} catch (ClassNotFoundException e) {
@@ -87,8 +89,8 @@ public class JDBCFilesystem implements IFilesystemProvider {
 		for(Entry<Object, Object> etr : System.getProperties().entrySet()) {
 			if(etr.getKey() instanceof String) {
 				String str = (String)etr.getKey();
-				if(str.startsWith("eagler.jdbc.opts.")) {
-					props.put(str.substring(17), etr.getValue());
+				if(str.startsWith("eagler.jdbc." + dbName + ".opts.")) {
+					props.put(str.substring(18 + dbName.length()), etr.getValue());
 				}
 			}
 		}
@@ -104,7 +106,7 @@ public class JDBCFilesystem implements IFilesystemProvider {
 			throw new EaglerFileSystemException("Failed to connect to database: \"" + jdbcUri + "\"", ex);
 		}
 		try {
-			return new JDBCFilesystem(conn, jdbcUri, jdbcDriver);
+			return new JDBCFilesystem(dbName, conn, jdbcUri, jdbcDriver);
 		} catch (SQLException ex) {
 			try {
 				conn.close();
@@ -114,7 +116,8 @@ public class JDBCFilesystem implements IFilesystemProvider {
 		}
 	}
 
-	private JDBCFilesystem(Connection conn, String jdbcUri, String jdbcDriver) throws SQLException {
+	private JDBCFilesystem(String dbName, Connection conn, String jdbcUri, String jdbcDriver) throws SQLException {
+		this.dbName = dbName;
 		this.conn = conn;
 		this.jdbcUri = jdbcUri;
 		this.jdbcDriver = jdbcDriver;
@@ -152,6 +155,16 @@ public class JDBCFilesystem implements IFilesystemProvider {
 		}
 	}
 
+	@Override
+	public String getFilesystemName() {
+		return dbName;
+	}
+
+	@Override
+	public String getInternalDBName() {
+		return "desktopruntime:" + jdbcUri;
+	}
+
 	public boolean isNewFilesystem() {
 		return newFilesystem;
 	}
@@ -172,7 +185,8 @@ public class JDBCFilesystem implements IFilesystemProvider {
 		}
 	}
 
-	public void shutdown() {
+	@Override
+	public void closeHandle() {
 		shutdown0();
 		synchronized(jdbcFilesystems) {
 			jdbcFilesystems.remove(this);
@@ -436,6 +450,11 @@ public class JDBCFilesystem implements IFilesystemProvider {
 		}catch(SQLException ex) {
 			throw new EaglerFileSystemException("JDBC exception thrown while executing iterate!", ex);
 		}
+	}
+
+	@Override
+	public boolean isRamdisk() {
+		return false;
 	}
 
 }

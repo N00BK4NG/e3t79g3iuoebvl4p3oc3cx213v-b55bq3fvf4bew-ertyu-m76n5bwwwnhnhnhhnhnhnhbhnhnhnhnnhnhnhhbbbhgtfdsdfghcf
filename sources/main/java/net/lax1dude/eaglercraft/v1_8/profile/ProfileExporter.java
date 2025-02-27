@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.profile;
 
 import java.io.IOException;
@@ -23,21 +39,6 @@ import net.minecraft.client.multiplayer.ServerList;
 
 import static net.lax1dude.eaglercraft.v1_8.sp.server.export.EPKCompiler.*;
 
-/**
- * Copyright (c) 2024 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class ProfileExporter {
 
 	private static final Logger logger = LogManager.getLogger("ProfileExporter");
@@ -59,7 +60,7 @@ public class ProfileExporter {
 				+ (doExportServers ? "servers " : "") + (doExportResourcePacks ? "resourcePacks" : "") + "\n\n")
 				.getBytes(StandardCharsets.UTF_8);
 
-		osb.write((comment.length >> 8) & 255);
+		osb.write((comment.length >>> 8) & 255);
 		osb.write(comment.length & 255);
 		osb.write(comment);
 		
@@ -164,9 +165,9 @@ public class ProfileExporter {
 		
 		byte[] ret = osb.toByteArray();
 
-		ret[lengthIntegerOffset] = (byte)((fileCount >> 24) & 0xFF);
-		ret[lengthIntegerOffset + 1] = (byte)((fileCount >> 16) & 0xFF);
-		ret[lengthIntegerOffset + 2] = (byte)((fileCount >> 8) & 0xFF);
+		ret[lengthIntegerOffset] = (byte)((fileCount >>> 24) & 0xFF);
+		ret[lengthIntegerOffset + 1] = (byte)((fileCount >>> 16) & 0xFF);
+		ret[lengthIntegerOffset + 2] = (byte)((fileCount >>> 8) & 0xFF);
 		ret[lengthIntegerOffset + 3] = (byte)(fileCount & 0xFF);
 		
 		logger.info("Export complete!");

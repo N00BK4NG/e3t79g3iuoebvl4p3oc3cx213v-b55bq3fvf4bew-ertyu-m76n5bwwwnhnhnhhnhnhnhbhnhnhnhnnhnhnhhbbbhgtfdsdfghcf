@@ -1,12 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.minecraft;
-
-import net.lax1dude.eaglercraft.v1_8.opengl.InstancedParticleRenderer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.EntityFX;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.MathHelper;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -21,6 +13,15 @@ import net.minecraft.util.MathHelper;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.minecraft;
+
+import net.lax1dude.eaglercraft.v1_8.opengl.InstancedParticleRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.EntityFX;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
+
 public class AcceleratedEffectRenderer implements IAcceleratedParticleEngine {
 
 	private float partialTicks;
@@ -72,14 +73,14 @@ public class AcceleratedEffectRenderer implements IAcceleratedParticleEngine {
 	public void drawParticle(float posX, float posY, float posZ, int particleIndexX, int particleIndexY,
 			int lightMapData, int texSize, float particleSize, float r, float g, float b, float a) {
 		InstancedParticleRenderer.appendParticle(posX, posY, posZ, particleIndexX, particleIndexY, lightMapData & 0xFF,
-				(lightMapData >> 16) & 0xFF, (int)(particleSize * 16.0f), texSize, r, g, b, a);
+				(lightMapData >>> 16) & 0xFF, (int)(particleSize * 16.0f), texSize, r, g, b, a);
 	}
 
 	@Override
 	public void drawParticle(float posX, float posY, float posZ, int particleIndexX, int particleIndexY,
 			int lightMapData, int texSize, float particleSize, int rgba) {
 		InstancedParticleRenderer.appendParticle(posX, posY, posZ, particleIndexX, particleIndexY, lightMapData & 0xFF,
-				(lightMapData >> 16) & 0xFF, (int)(particleSize * 16.0f), texSize, rgba);
+				(lightMapData >>> 16) & 0xFF, (int)(particleSize * 16.0f), texSize, rgba);
 	}
 
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2023 lax1dude. All Rights Reserved.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ */
+
 package net.lax1dude.eaglercraft.v1_8.opengl.ext.deferred.program;
 
 import java.io.BufferedReader;
@@ -15,21 +31,6 @@ import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
-/**
- * Copyright (c) 2023 lax1dude. All Rights Reserved.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * 
- */
 public class ShaderSource {
 
 	private static final Logger logger = LogManager.getLogger("ShaderSource");
@@ -54,6 +55,7 @@ public class ShaderSource {
 	public static final ResourceLocation realistic_water_render_fsh = new ResourceLocation("eagler:glsl/deferred/realistic_water_render.fsh");
 	public static final ResourceLocation realistic_water_control_fsh = new ResourceLocation("eagler:glsl/deferred/realistic_water_control.fsh");
 	public static final ResourceLocation realistic_water_normals_fsh = new ResourceLocation("eagler:glsl/deferred/realistic_water_normals.fsh");
+	public static final ResourceLocation realistic_water_normals_mix_fsh = new ResourceLocation("eagler:glsl/deferred/realistic_water_normals_mix.fsh");
 	public static final ResourceLocation realistic_water_noise_fsh = new ResourceLocation("eagler:glsl/deferred/realistic_water_noise.fsh");
 	public static final ResourceLocation gbuffer_debug_view_fsh = new ResourceLocation("eagler:glsl/deferred/gbuffer_debug_view.fsh");
 	public static final ResourceLocation ssao_generate_fsh = new ResourceLocation("eagler:glsl/deferred/ssao_generate.fsh");
@@ -91,13 +93,14 @@ public class ShaderSource {
 	public static final ResourceLocation reproject_ssr_fsh = new ResourceLocation("eagler:glsl/deferred/reproject_ssr.fsh");
 	public static final ResourceLocation post_fxaa_fsh = new ResourceLocation("eagler:glsl/deferred/post_fxaa.fsh");
 	public static final ResourceLocation hand_depth_mask_fsh = new ResourceLocation("eagler:glsl/deferred/hand_depth_mask.fsh");
+	public static final ResourceLocation subsurface_scattering_fsh = new ResourceLocation("eagler:glsl/deferred/subsurface_scattering.fsh");
 
 	public static final ResourceLocation core_dynamiclights_vsh = new ResourceLocation("eagler:glsl/dynamiclights/core_dynamiclights.vsh");
 	public static final ResourceLocation core_dynamiclights_fsh = new ResourceLocation("eagler:glsl/dynamiclights/core_dynamiclights.fsh");
 	public static final ResourceLocation accel_particle_dynamiclights_vsh = new ResourceLocation("eagler:glsl/dynamiclights/accel_particle_dynamiclights.vsh");
 	public static final ResourceLocation accel_particle_dynamiclights_fsh = new ResourceLocation("eagler:glsl/dynamiclights/accel_particle_dynamiclights.fsh");
 
-	private static final Map<ResourceLocation, String> sourceCache = new HashMap();
+	private static final Map<ResourceLocation, String> sourceCache = new HashMap<>();
 
 	private static boolean isHighP = false;
 

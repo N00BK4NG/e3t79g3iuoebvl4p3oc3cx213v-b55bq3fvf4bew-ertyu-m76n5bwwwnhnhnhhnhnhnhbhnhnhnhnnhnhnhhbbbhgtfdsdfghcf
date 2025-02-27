@@ -1,7 +1,5 @@
-package net.lax1dude.eaglercraft.v1_8.opengl;
-
-/**
- * Copyright (c) 2022-2023 lax1dude, ayunami2000. All Rights Reserved.
+/*
+ * Copyright (c) 2022-2023 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -15,6 +13,9 @@ package net.lax1dude.eaglercraft.v1_8.opengl;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8.opengl;
+
 public class RealOpenGLEnums {
 
 	public static final int GL_ACCUM = 256;

@@ -1,39 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8.internal;
-
-import dev.onvoid.webrtc.*;
-import dev.onvoid.webrtc.internal.NativeLoader;
-import net.lax1dude.eaglercraft.v1_8.EagRuntime;
-import net.lax1dude.eaglercraft.v1_8.EagUtils;
-import net.lax1dude.eaglercraft.v1_8.EaglerInputStream;
-import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
-import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
-import net.lax1dude.eaglercraft.v1_8.sp.lan.LANPeerEvent;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayManager;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayQuery;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayServerSocket;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.RelayWorldsQuery;
-import net.lax1dude.eaglercraft.v1_8.sp.relay.pkt.*;
-import net.lax1dude.eaglercraft.v1_8.update.UpdateService;
-
-import org.apache.commons.lang3.SystemUtils;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONWriter;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.file.Paths;
-import java.util.*;
-
-/**
+/*
  * Copyright (c) 2022-2024 ayunami2000. All Rights Reserved.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -48,14 +13,50 @@ import java.util.*;
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+package net.lax1dude.eaglercraft.v1_8.internal;
+
+import dev.onvoid.webrtc.*;
+import dev.onvoid.webrtc.internal.NativeLoader;
+import net.lax1dude.eaglercraft.v1_8.EagRuntime;
+import net.lax1dude.eaglercraft.v1_8.log4j.LogManager;
+import net.lax1dude.eaglercraft.v1_8.log4j.Logger;
+import net.lax1dude.eaglercraft.v1_8.sp.internal.ClientPlatformSingleplayer;
+import net.lax1dude.eaglercraft.v1_8.sp.lan.LANPeerEvent;
+
+import org.apache.commons.lang3.SystemUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONWriter;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
+
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.file.Paths;
+import java.util.*;
+
 public class PlatformWebRTC {
 
 	private static final Logger logger = LogManager.getLogger("PlatformWebRTC");
 
 	private static final Object lock1 = new Object();
 	private static final Object lock2 = new Object();
-	private static final Object lock3 = new Object();
-	private static final Object lock4 = new Object();
+
+	private static final List<ScheduledRunnable> scheduledRunnables = new LinkedList<>();
+
+	private static class ScheduledRunnable {
+		
+		private final long runAt;
+		private final Runnable runnable;
+		
+		private ScheduledRunnable(long runAt, Runnable runnable) {
+			this.runAt = runAt;
+			this.runnable = runnable;
+		}
+		
+	}
 
 	public static PeerConnectionFactory pcFactory;
 
@@ -72,14 +73,53 @@ public class PlatformWebRTC {
 				Runtime.getRuntime().addShutdownHook(new Thread(() -> pcFactory.dispose()));
 				supported = true;
 			} catch (Exception e) {
-				EagRuntime.debugPrintStackTrace(e);
+				logger.error("Failed to load WebRTC native library!");
+				logger.error(e);
 				supported = false;
 			}
 		}
 		return supported;
 	}
 
-	private static final Map<String, RTCDataChannel> fuckTeaVM = new HashMap<>();
+	private static final Comparator<ScheduledRunnable> sortTasks = (r1, r2) -> {
+		return (int)(r1.runAt - r2.runAt);
+	};
+
+	public static void runScheduledTasks() {
+		List<ScheduledRunnable> toRun = null;
+		synchronized(scheduledRunnables) {
+			if(scheduledRunnables.isEmpty()) return;
+			long millis = PlatformRuntime.steadyTimeMillis();
+			Iterator<ScheduledRunnable> itr = scheduledRunnables.iterator();
+			while(itr.hasNext()) {
+				ScheduledRunnable r = itr.next();
+				if(r.runAt < millis) {
+					itr.remove();
+					if(toRun == null) {
+						toRun = new ArrayList<>(1);
+					}
+					toRun.add(r);
+				}
+			}
+		}
+		if(toRun != null) {
+			Collections.sort(toRun, sortTasks);
+			for(int i = 0, l = toRun.size(); i < l; ++i) {
+				try {
+					toRun.get(i).runnable.run();
+				}catch(Throwable t) {
+					logger.error("Caught exception running scheduled WebRTC task!");
+					logger.error(t);
+				}
+			}
+		}
+	}
+
+	static void scheduleTask(long runAfter, Runnable runnable) {
+		synchronized(scheduledRunnables) {
+			scheduledRunnables.add(new ScheduledRunnable(PlatformRuntime.steadyTimeMillis() + runAfter, runnable));
+		}
+	}
 
 	public static class LANClient {
 		public static final byte READYSTATE_INIT_FAILED = -2;
@@ -123,15 +163,22 @@ public class PlatformWebRTC {
 							synchronized (lock1) {
 								if (iceCandidate.sdp != null && !iceCandidate.sdp.isEmpty()) {
 									if (iceCandidates.isEmpty()) {
-										new Thread(() -> {
-											EagUtils.sleep(3000);
+										final int[] candidateState = new int[2];
+										final Runnable[] runnable = new Runnable[1];
+										scheduleTask(2000l, runnable[0] = () -> {
 											synchronized (lock1) {
 												if (peerConnection != null && peerConnection.getConnectionState() != RTCPeerConnectionState.DISCONNECTED) {
+													int trial = ++candidateState[1];
+													if(candidateState[0] != iceCandidates.size() && trial < 3) {
+														candidateState[0] = iceCandidates.size();
+														scheduleTask(2000l, runnable[0]);
+														return;
+													}
 													clientICECandidate = JSONWriter.valueToString(iceCandidates);
 													iceCandidates.clear();
 												}
 											}
-										}).start();
+										});
 									}
 									Map<String, String> m = new HashMap<>();
 									m.put("sdpMLineIndex", "" + iceCandidate.sdpMLineIndex);
@@ -203,20 +250,25 @@ public class PlatformWebRTC {
 				@Override
 				public void onStateChange() {
 					if (dataChannel != null && dataChannel.getState() == RTCDataChannelState.OPEN) {
-						new Thread(() -> {
-							while (true) {
+						final Runnable[] retry = new Runnable[1];
+						final int[] loopCount = new int[1];
+						scheduleTask(-1l, retry[0] = () -> {
+							f: {
 								synchronized (lock1) {
 									if (iceCandidates.isEmpty()) {
-										break;
+										break f;
 									}
 								}
-								EagUtils.sleep(1);
+								if(++loopCount[0] < 5) {
+									scheduleTask(1000l, retry[0]);
+								}
+								return;
 							}
 							synchronized (lock2) {
 								clientDataChannelClosed = false;
 								clientDataChannelOpen = true;
 							}
-						}).start();
+						});
 					}
 				}
 
@@ -324,6 +376,8 @@ public class PlatformWebRTC {
 		public LANServer client;
 		public String peerId;
 		public RTCPeerConnection peerConnection;
+		public RTCDataChannel dataChannel;
+		public String ipcChannel;
 
 		public LANPeer(LANServer client, String peerId, RTCPeerConnection peerConnection) {
 			this.client = client;
@@ -332,10 +386,9 @@ public class PlatformWebRTC {
 		}
 
 		public void disconnect() {
-			synchronized (fuckTeaVM) {
-				if (fuckTeaVM.get(peerId) != null) {
-					fuckTeaVM.remove(peerId).close();
-				}
+			if(dataChannel != null) {
+				dataChannel.close();
+				dataChannel = null;
 			}
 			peerConnection.close();
 			peerConnection = null;
@@ -361,15 +414,11 @@ public class PlatformWebRTC {
 											synchronized (serverLANEventBuffer) {
 												serverLANEventBuffer.put(peerId, e);
 											}
-											if (client.peerStateDesc != PEERSTATE_SUCCESS)
-												client.peerStateDesc = PEERSTATE_SUCCESS;
 										}
 
 										@Override
 										public void onFailure(String s) {
 											logger.error("Failed to set local description for \"{}\"! {}", peerId, s);
-											if (client.peerStateDesc == PEERSTATE_LOADING)
-												client.peerStateDesc = PEERSTATE_FAILED;
 											client.signalRemoteDisconnect(peerId);
 										}
 									});
@@ -378,8 +427,6 @@ public class PlatformWebRTC {
 								@Override
 								public void onFailure(String s) {
 									logger.error("Failed to create answer for \"{}\"! {}", peerId, s);
-									if (client.peerStateDesc == PEERSTATE_LOADING)
-										client.peerStateDesc = PEERSTATE_FAILED;
 									client.signalRemoteDisconnect(peerId);
 								}
 							});
@@ -389,13 +436,11 @@ public class PlatformWebRTC {
 					@Override
 					public void onFailure(String s) {
 						logger.error("Failed to set remote description for \"{}\"! {}", peerId, s);
-						if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
 						client.signalRemoteDisconnect(peerId);
 					}
 				});
 			} catch (Throwable err) {
 				logger.error("Failed to parse remote description for \"{}\"! {}", peerId, err.getMessage());
-				if (client.peerStateDesc == PEERSTATE_LOADING) client.peerStateDesc = PEERSTATE_FAILED;
 				client.signalRemoteDisconnect(peerId);
 			}
 		}
@@ -407,11 +452,27 @@ public class PlatformWebRTC {
 					JSONObject candidate = jsonArray.getJSONObject(i);
 					peerConnection.addIceCandidate(new RTCIceCandidate(null, candidate.getInt("sdpMLineIndex"), candidate.getString("candidate")));
 				}
-				if (client.peerStateIce != PEERSTATE_SUCCESS) client.peerStateIce = PEERSTATE_SUCCESS;
 			} catch (Throwable err) {
 				logger.error("Failed to parse ice candidate for \"{}\"! {}", peerId, err.getMessage());
-				if (client.peerStateIce == PEERSTATE_LOADING) client.peerStateIce = PEERSTATE_FAILED;
 				client.signalRemoteDisconnect(peerId);
+			}
+		}
+
+		public void mapIPC(String ipcChannel) {
+			if(this.ipcChannel == null) {
+				if(ipcChannel != null) {
+					this.ipcChannel = ipcChannel;
+					synchronized(this.client.ipcMapList) {
+						this.client.ipcMapList.put(ipcChannel, this);
+					}
+				}
+			}else {
+				if(ipcChannel == null) {
+					synchronized(this.client.ipcMapList) {
+						this.client.ipcMapList.remove(this.ipcChannel);
+					}
+					this.ipcChannel = null;
+				}
 			}
 		}
 	}
@@ -419,11 +480,8 @@ public class PlatformWebRTC {
 	public static class LANServer {
 		public Set<Map<String, String>> iceServers = new HashSet<>();
 		public Map<String, LANPeer> peerList = new HashMap<>();
-		public byte peerState = PEERSTATE_LOADING;
-		public byte peerStateConnect = PEERSTATE_LOADING;
-		public byte peerStateInitial = PEERSTATE_LOADING;
-		public byte peerStateDesc = PEERSTATE_LOADING;
-		public byte peerStateIce = PEERSTATE_LOADING;
+		public Map<String, LANPeer> ipcMapList = new HashMap<>();
+		private final Object lock3 = new Object();
 
 		public void setIceServers(String[] urls) {
 			iceServers.clear();
@@ -444,28 +502,29 @@ public class PlatformWebRTC {
 		}
 
 		public void sendPacketToRemoteClient(String peerId, RTCDataChannelBuffer buffer) {
-			LANPeer thePeer = this.peerList.get(peerId);
+			LANPeer thePeer;
+			synchronized(peerList) {
+				thePeer = peerList.get(peerId);
+			}
 			if (thePeer != null) {
-				boolean b = false;
-				synchronized (fuckTeaVM) {
-					if (fuckTeaVM.get(thePeer.peerId) != null && fuckTeaVM.get(thePeer.peerId).getState() == RTCDataChannelState.OPEN) {
-						try {
-							fuckTeaVM.get(thePeer.peerId).send(buffer);
-						} catch (Throwable e) {
-							b = true;
-						}
-					} else {
-						b = true;
-					}
-				}
-				if (b) {
-					signalRemoteDisconnect(peerId);
-				}
+				sendPacketToRemoteClient(thePeer, buffer);
 			}
 		}
 
-		public void resetPeerStates() {
-			peerState = peerStateConnect = peerStateInitial = peerStateDesc = peerStateIce = PEERSTATE_LOADING;
+		public void sendPacketToRemoteClient(LANPeer thePeer, RTCDataChannelBuffer buffer) {
+			boolean b = false;
+			if(thePeer.dataChannel != null && thePeer.dataChannel.getState() == RTCDataChannelState.OPEN) {
+				try {
+					thePeer.dataChannel.send(buffer);
+				} catch (Exception e) {
+					b = true;
+				}
+			} else {
+				b = true;
+			}
+			if (b) {
+				signalRemoteDisconnect(thePeer.peerId);
+			}
 		}
 
 		public void signalRemoteConnect(String peerId) {
@@ -479,17 +538,25 @@ public class PlatformWebRTC {
 					iceServer.password = server.getOrDefault("credential", null);
 					rtcConfig.iceServers.add(iceServer);
 				}
-				RTCPeerConnection[] peerConnection = new RTCPeerConnection[1];
+				final RTCPeerConnection[] peerConnection = new RTCPeerConnection[1];
+				final LANPeer[] peerInstance = new LANPeer[1];
 				peerConnection[0] = pcFactory.createPeerConnection(rtcConfig, new PeerConnectionObserver() {
 					@Override
 					public void onIceCandidate(RTCIceCandidate iceCandidate) {
 						synchronized (lock3) {
 							if (iceCandidate.sdp != null && !iceCandidate.sdp.isEmpty()) {
 								if (iceCandidates.isEmpty()) {
-									new Thread(() -> {
-										EagUtils.sleep(3000);
+									final int[] candidateState = new int[2];
+									final Runnable[] runnable = new Runnable[1];
+									scheduleTask(2000l, runnable[0] = () -> {
 										synchronized (lock3) {
 											if (peerConnection[0] != null && peerConnection[0].getConnectionState() != RTCPeerConnectionState.DISCONNECTED) {
+												int trial = ++candidateState[1];
+												if(candidateState[0] != iceCandidates.size() && trial < 3) {
+													candidateState[0] = iceCandidates.size();
+													scheduleTask(2000l, runnable[0]);
+													return;
+												}
 												LANPeerEvent.LANPeerICECandidateEvent e = new LANPeerEvent.LANPeerICECandidateEvent(peerId, JSONWriter.valueToString(iceCandidates));
 												synchronized (serverLANEventBuffer) {
 													serverLANEventBuffer.put(peerId, e);
@@ -497,7 +564,7 @@ public class PlatformWebRTC {
 												iceCandidates.clear();
 											}
 										}
-									}).start();
+									});
 								}
 								Map<String, String> m = new HashMap<>();
 								m.put("sdpMLineIndex", "" + iceCandidate.sdpMLineIndex);
@@ -509,19 +576,26 @@ public class PlatformWebRTC {
 
 					@Override
 					public void onDataChannel(RTCDataChannel dataChannel) {
-						new Thread(() -> {
-							while (true) {
+						final Runnable[] retry = new Runnable[1];
+						final int[] loopCount = new int[1];
+						scheduleTask(-1l, retry[0] = () -> {
+							f: {
 								synchronized (lock3) {
 									if (iceCandidates.isEmpty()) {
-										break;
+										break f;
 									}
 								}
-								EagUtils.sleep(1);
+								if(++loopCount[0] < 5) {
+									scheduleTask(1000l, retry[0]);
+								}
+								return;
 							}
 							if (dataChannel == null) return;
-							synchronized (fuckTeaVM) {
-								fuckTeaVM.put(peerId, dataChannel);
+							if(peerInstance[0].dataChannel != null) {
+								dataChannel.close();
+								return;
 							}
+							peerInstance[0].dataChannel = dataChannel;
 							synchronized (serverLANEventBuffer) {
 								serverLANEventBuffer.put(peerId, new LANPeerEvent.LANPeerDataChannelEvent(peerId));
 							}
@@ -541,46 +615,53 @@ public class PlatformWebRTC {
 									if (!buffer.binary) return;
 									byte[] data = new byte[buffer.data.remaining()];
 									buffer.data.get(data);
-									LANPeerEvent.LANPeerPacketEvent e = new LANPeerEvent.LANPeerPacketEvent(peerId, data);
-									synchronized (serverLANEventBuffer) {
-										serverLANEventBuffer.put(peerId, e);
+									LANPeer peer = peerInstance[0];
+									if(peer.ipcChannel != null) {
+										ClientPlatformSingleplayer.sendPacket(new IPCPacketData(peer.ipcChannel, data));
+									}else {
+										LANPeerEvent.LANPeerPacketEvent e = new LANPeerEvent.LANPeerPacketEvent(peerId, data);
+										synchronized (serverLANEventBuffer) {
+											serverLANEventBuffer.put(peerId, e);
+										}
 									}
 								}
 							});
-						}).start();
+						});
 					}
 
 					@Override
 					public void onConnectionChange(RTCPeerConnectionState connectionState) {
-						if (connectionState == RTCPeerConnectionState.DISCONNECTED) {
-							LANServer.this.signalRemoteDisconnect(peerId);
-						} else if (connectionState == RTCPeerConnectionState.CONNECTED) {
-							if (LANServer.this.peerState != PEERSTATE_SUCCESS)
-								LANServer.this.peerState = PEERSTATE_SUCCESS;
-						} else if (connectionState == RTCPeerConnectionState.FAILED) {
-							if (LANServer.this.peerState == PEERSTATE_LOADING)
-								LANServer.this.peerState = PEERSTATE_FAILED;
+						if (connectionState == RTCPeerConnectionState.DISCONNECTED || connectionState == RTCPeerConnectionState.FAILED) {
 							LANServer.this.signalRemoteDisconnect(peerId);
 						}
 					}
 				});
-				LANPeer peerInstance = new LANPeer(this, peerId, peerConnection[0]);
-				peerList.put(peerId, peerInstance);
-				if (peerStateConnect != PEERSTATE_SUCCESS) peerStateConnect = PEERSTATE_SUCCESS;
+				peerInstance[0] = new LANPeer(this, peerId, peerConnection[0]);
+				synchronized(peerList) {
+					peerList.put(peerId, peerInstance[0]);
+				}
 			} catch (Throwable e) {
-				if (peerStateConnect == PEERSTATE_LOADING) peerStateConnect = PEERSTATE_FAILED;
+				logger.error("Failed to create peer for \"{}\"", peerId);
+				logger.error(e);
+				signalRemoteDisconnect(peerId);
 			}
 		}
 
 		public void signalRemoteDescription(String peerId, String descJSON) {
-			LANPeer thePeer = peerList.get(peerId);
+			LANPeer thePeer;
+			synchronized(peerList) {
+				thePeer = peerList.get(peerId);
+			}
 			if (thePeer != null) {
 				thePeer.setRemoteDescription(descJSON);
 			}
 		}
 
 		public void signalRemoteICECandidate(String peerId, String candidate) {
-			LANPeer thePeer = peerList.get(peerId);
+			LANPeer thePeer;
+			synchronized(peerList) {
+				thePeer = peerList.get(peerId);
+			}
 			if (thePeer != null) {
 				thePeer.addICECandidate(candidate);
 			}
@@ -588,7 +669,12 @@ public class PlatformWebRTC {
 
 		public void signalRemoteDisconnect(String peerId) {
 			if (peerId == null || peerId.isEmpty()) {
-				for (LANPeer thePeer : peerList.values()) {
+				List<LANPeer> cpy;
+				synchronized(peerList) {
+					cpy = new ArrayList<>(peerList.values());
+					peerList.clear();
+				}
+				for (LANPeer thePeer : cpy) {
 					if (thePeer != null) {
 						try {
 							thePeer.disconnect();
@@ -599,21 +685,21 @@ public class PlatformWebRTC {
 						}
 					}
 				}
-				peerList.clear();
-				synchronized (fuckTeaVM) {
-					fuckTeaVM.clear();
-				}
 				return;
 			}
-			LANPeer thePeer = peerList.get(peerId);
+			LANPeer thePeer;
+			synchronized(peerList) {
+				thePeer = peerList.remove(peerId);
+			}
 			if (thePeer != null) {
-				peerList.remove(peerId);
+				if(thePeer.ipcChannel != null) {
+					synchronized(ipcMapList) {
+						ipcMapList.remove(thePeer.ipcChannel);
+					}
+				}
 				try {
 					thePeer.disconnect();
 				} catch (Throwable ignored) {
-				}
-				synchronized (fuckTeaVM) {
-					fuckTeaVM.remove(peerId);
 				}
 				synchronized (serverLANEventBuffer) {
 					serverLANEventBuffer.put(thePeer.peerId, new LANPeerEvent.LANPeerDisconnectEvent(peerId));
@@ -621,800 +707,21 @@ public class PlatformWebRTC {
 			}
 		}
 
+		public void serverPeerMapIPC(String peer, String ipcChannel) {
+			LANPeer peerr;
+			synchronized(peerList) {
+				peerr = peerList.get(peer);
+			}
+			if(peerr != null) {
+				peerr.mapIPC(ipcChannel);
+			}
+		}
+
 		public int countPeers() {
-			return peerList.size();
-		}
-	}
-
-	private static final Map<String,Long> relayQueryLimited = new HashMap<>();
-	private static final Map<String,Long> relayQueryBlocked = new HashMap<>();
-
-	private static class RelayQueryImpl implements RelayQuery {
-
-		private final WebSocketClient sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData = false;
-
-		private int vers = -1;
-		private String comment = "<no comment>";
-		private String brand = "<no brand>";
-
-		private long connectionOpenedAt;
-		private long connectionPingStart = -1;
-		private long connectionPingTimer = -1;
-
-		private RateLimit rateLimitStatus = RateLimit.NONE;
-
-		private VersionMismatch versError = VersionMismatch.UNKNOWN;
-
-		private RelayQueryImpl(String uri) {
-			this.uri = uri;
-			WebSocketClient s;
-			try {
-				connectionOpenedAt = System.currentTimeMillis();
-				s = new WebSocketClient(new URI(uri)) {
-					@Override
-					public void onOpen(ServerHandshake serverHandshake) {
-						try {
-							connectionPingStart = System.currentTimeMillis();
-							sock.send(IPacket.writePacket(new IPacket00Handshake(0x03, RelayManager.preferredRelayVersion, "")));
-						} catch (IOException e) {
-							logger.error(e.toString());
-							sock.close();
-							failed = true;
-						}
-					}
-
-					@Override
-					public void onMessage(String s) {
-						//
-					}
-
-					@Override
-					public void onMessage(ByteBuffer bb) {
-						if(bb != null) {
-							hasRecievedAnyData = true;
-							byte[] arr = new byte[bb.remaining()];
-							bb.get(arr);
-							if(arr.length == 2 && arr[0] == (byte)0xFC) {
-								long millis = System.currentTimeMillis();
-								if(arr[1] == (byte)0x00 || arr[1] == (byte)0x01) {
-									rateLimitStatus = RateLimit.BLOCKED;
-									relayQueryLimited.put(RelayQueryImpl.this.uri, millis);
-								}else if(arr[1] == (byte)0x02) {
-									rateLimitStatus = RateLimit.NOW_LOCKED;
-									relayQueryLimited.put(RelayQueryImpl.this.uri, millis);
-									relayQueryBlocked.put(RelayQueryImpl.this.uri, millis);
-								}else {
-									rateLimitStatus = RateLimit.LOCKED;
-									relayQueryBlocked.put(RelayQueryImpl.this.uri, millis);
-								}
-								failed = true;
-								open = false;
-								sock.close();
-							}else {
-								if(open) {
-									try {
-										IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)));
-										if(pkt instanceof IPacket69Pong) {
-											IPacket69Pong ipkt = (IPacket69Pong)pkt;
-											versError = VersionMismatch.COMPATIBLE;
-											if(connectionPingTimer == -1) {
-												connectionPingTimer = System.currentTimeMillis() - connectionPingStart;
-											}
-											vers = ipkt.protcolVersion;
-											comment = ipkt.comment;
-											brand = ipkt.brand;
-											open = false;
-											failed = false;
-											sock.close();
-										}else if(pkt instanceof IPacket70SpecialUpdate) {
-											IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-											if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-												UpdateService.addCertificateToSet(ipkt.updatePacket);
-											}
-										}else if(pkt instanceof IPacketFFErrorCode) {
-											IPacketFFErrorCode ipkt = (IPacketFFErrorCode)pkt;
-											if(ipkt.code == IPacketFFErrorCode.TYPE_PROTOCOL_VERSION) {
-												String s1 = ipkt.desc.toLowerCase();
-												if(s1.contains("outdated client") || s1.contains("client outdated")) {
-													versError = VersionMismatch.CLIENT_OUTDATED;
-												}else if(s1.contains("outdated server") || s1.contains("server outdated") ||
-														s1.contains("outdated relay") || s1.contains("server relay")) {
-													versError = VersionMismatch.RELAY_OUTDATED;
-												}else {
-													versError = VersionMismatch.UNKNOWN;
-												}
-											}
-											logger.error("{}\": Recieved query error code {}: {}", uri, ipkt.code, ipkt.desc);
-											open = false;
-											failed = true;
-											sock.close();
-										}else {
-											throw new IOException("Unexpected packet '" + pkt.getClass().getSimpleName() + "'");
-										}
-									} catch (IOException e) {
-										logger.error("Relay Query Error: {}", e.toString());
-										EagRuntime.debugPrintStackTrace(e);
-										open = false;
-										failed = true;
-										sock.close();
-									}
-								}
-							}
-						}
-					}
-
-					@Override
-					public void onClose(int i, String s, boolean b) {
-						open = false;
-						if(!hasRecievedAnyData) {
-							failed = true;
-							Long l = relayQueryBlocked.get(uri);
-							if(l != null) {
-								if(System.currentTimeMillis() - l.longValue() < 400000l) {
-									rateLimitStatus = RateLimit.LOCKED;
-									return;
-								}
-							}
-							l = relayQueryLimited.get(uri);
-							if(l != null) {
-								if(System.currentTimeMillis() - l.longValue() < 900000l) {
-									rateLimitStatus = RateLimit.BLOCKED;
-									return;
-								}
-							}
-						}
-					}
-
-					@Override
-					public void onError(Exception e) {
-						EagRuntime.debugPrintStackTrace(e);
-					}
-				};
-				s.connect();
-				open = true;
-				failed = false;
-			}catch(Throwable t) {
-				connectionOpenedAt = 0l;
-				sock = null;
-				open = false;
-				failed = true;
-				return;
-			}
-			sock = s;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return failed;
-		}
-
-		@Override
-		public RateLimit isQueryRateLimit() {
-			return rateLimitStatus;
-		}
-
-		@Override
-		public void close() {
-			if(sock != null && open) {
-				sock.close();
-			}
-			open = false;
-		}
-
-		@Override
-		public int getVersion() {
-			return vers;
-		}
-
-		@Override
-		public String getComment() {
-			return comment;
-		}
-
-		@Override
-		public String getBrand() {
-			return brand;
-		}
-
-		@Override
-		public long getPing() {
-			return connectionPingTimer < 1 ? 1 : connectionPingTimer;
-		}
-
-		@Override
-		public VersionMismatch getCompatible() {
-			return versError;
-		}
-
-	}
-
-	private static class RelayQueryRatelimitDummy implements RelayQuery {
-
-		private final RateLimit type;
-
-		private RelayQueryRatelimitDummy(RateLimit type) {
-			this.type = type;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return true;
-		}
-
-		@Override
-		public RateLimit isQueryRateLimit() {
-			return type;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public int getVersion() {
-			return RelayManager.preferredRelayVersion;
-		}
-
-		@Override
-		public String getComment() {
-			return "this query was rate limited";
-		}
-
-		@Override
-		public String getBrand() {
-			return "lax1dude";
-		}
-
-		@Override
-		public long getPing() {
-			return 0l;
-		}
-
-		@Override
-		public VersionMismatch getCompatible() {
-			return VersionMismatch.COMPATIBLE;
-		}
-
-	}
-
-	public static RelayQuery openRelayQuery(String addr) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayQueryRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayQueryRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayQueryImpl(addr);
-	}
-
-	private static class RelayWorldsQueryImpl implements RelayWorldsQuery {
-
-		private final WebSocketClient sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData = false;
-		private RelayQuery.RateLimit rateLimitStatus = RelayQuery.RateLimit.NONE;
-
-		private RelayQuery.VersionMismatch versError = RelayQuery.VersionMismatch.UNKNOWN;
-
-		private List<IPacket07LocalWorlds.LocalWorld> worlds = null;
-
-		private RelayWorldsQueryImpl(String uri) {
-			this.uri = uri;
-			WebSocketClient s;
-			try {
-				s = new WebSocketClient(new URI(uri)) {
-					@Override
-					public void onOpen(ServerHandshake serverHandshake) {
-						try {
-							sock.send(IPacket.writePacket(new IPacket00Handshake(0x04, RelayManager.preferredRelayVersion, "")));
-						} catch (IOException e) {
-							logger.error(e.toString());
-							sock.close();
-							open = false;
-							failed = true;
-						}
-					}
-
-					@Override
-					public void onMessage(String s) {
-						//
-					}
-
-					@Override
-					public void onMessage(ByteBuffer bb) {
-						if(bb != null) {
-							hasRecievedAnyData = true;
-							byte[] arr = new byte[bb.remaining()];
-							bb.get(arr);
-							if(arr.length == 2 && arr[0] == (byte)0xFC) {
-								long millis = System.currentTimeMillis();
-								if(arr[1] == (byte)0x00 || arr[1] == (byte)0x01) {
-									rateLimitStatus = RelayQuery.RateLimit.BLOCKED;
-									relayQueryLimited.put(RelayWorldsQueryImpl.this.uri, millis);
-								}else if(arr[1] == (byte)0x02) {
-									rateLimitStatus = RelayQuery.RateLimit.NOW_LOCKED;
-									relayQueryLimited.put(RelayWorldsQueryImpl.this.uri, millis);
-									relayQueryBlocked.put(RelayWorldsQueryImpl.this.uri, millis);
-								}else {
-									rateLimitStatus = RelayQuery.RateLimit.LOCKED;
-									relayQueryBlocked.put(RelayWorldsQueryImpl.this.uri, millis);
-								}
-								open = false;
-								failed = true;
-								sock.close();
-							}else {
-								if(open) {
-									try {
-										IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)));
-										if(pkt instanceof IPacket07LocalWorlds) {
-											worlds = ((IPacket07LocalWorlds)pkt).worldsList;
-											sock.close();
-											open = false;
-											failed = false;
-										}else if(pkt instanceof IPacket70SpecialUpdate) {
-											IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-											if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-												UpdateService.addCertificateToSet(ipkt.updatePacket);
-											}
-										}else if(pkt instanceof IPacketFFErrorCode) {
-											IPacketFFErrorCode ipkt = (IPacketFFErrorCode)pkt;
-											if(ipkt.code == IPacketFFErrorCode.TYPE_PROTOCOL_VERSION) {
-												String s1 = ipkt.desc.toLowerCase();
-												if(s1.contains("outdated client") || s1.contains("client outdated")) {
-													versError = RelayQuery.VersionMismatch.CLIENT_OUTDATED;
-												}else if(s1.contains("outdated server") || s1.contains("server outdated") ||
-														s1.contains("outdated relay") || s1.contains("server relay")) {
-													versError = RelayQuery.VersionMismatch.RELAY_OUTDATED;
-												}else {
-													versError = RelayQuery.VersionMismatch.UNKNOWN;
-												}
-											}
-											logger.error("{}: Recieved query error code {}: {}", uri, ipkt.code, ipkt.desc);
-											open = false;
-											failed = true;
-											sock.close();
-										}else {
-											throw new IOException("Unexpected packet '" + pkt.getClass().getSimpleName() + "'");
-										}
-									} catch (IOException e) {
-										logger.error("Relay World Query Error: {}", e.toString());
-										EagRuntime.debugPrintStackTrace(e);
-										open = false;
-										failed = true;
-										sock.close();
-									}
-								}
-							}
-						}
-					}
-
-					@Override
-					public void onClose(int i, String s, boolean b) {
-						open = false;
-						if(!hasRecievedAnyData) {
-							failed = true;
-							Long l = relayQueryBlocked.get(uri);
-							if(l != null) {
-								if(System.currentTimeMillis() - l.longValue() < 400000l) {
-									rateLimitStatus = RelayQuery.RateLimit.LOCKED;
-									return;
-								}
-							}
-							l = relayQueryLimited.get(uri);
-							if(l != null) {
-								if(System.currentTimeMillis() - l.longValue() < 900000l) {
-									rateLimitStatus = RelayQuery.RateLimit.BLOCKED;
-									return;
-								}
-							}
-						}
-					}
-
-					@Override
-					public void onError(Exception e) {
-						EagRuntime.debugPrintStackTrace(e);
-					}
-				};
-				s.connect();
-				open = true;
-				failed = false;
-			}catch(Throwable t) {
-				sock = null;
-				open = false;
-				failed = true;
-				return;
-			}
-			sock = s;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return failed;
-		}
-
-		@Override
-		public RelayQuery.RateLimit isQueryRateLimit() {
-			return rateLimitStatus;
-		}
-
-		@Override
-		public void close() {
-			if(open && sock != null) {
-				sock.close();
-			}
-			open = false;
-		}
-
-		@Override
-		public List<IPacket07LocalWorlds.LocalWorld> getWorlds() {
-			return worlds;
-		}
-
-		@Override
-		public RelayQuery.VersionMismatch getCompatible() {
-			return versError;
-		}
-
-	}
-
-	private static class RelayWorldsQueryRatelimitDummy implements RelayWorldsQuery {
-
-		private final RelayQuery.RateLimit rateLimit;
-
-		private RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit rateLimit) {
-			this.rateLimit = rateLimit;
-		}
-
-		@Override
-		public boolean isQueryOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isQueryFailed() {
-			return true;
-		}
-
-		@Override
-		public RelayQuery.RateLimit isQueryRateLimit() {
-			return rateLimit;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public List<IPacket07LocalWorlds.LocalWorld> getWorlds() {
-			return new ArrayList(0);
-		}
-
-		@Override
-		public RelayQuery.VersionMismatch getCompatible() {
-			return RelayQuery.VersionMismatch.COMPATIBLE;
-		}
-	}
-
-	public static RelayWorldsQuery openRelayWorldsQuery(String addr) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayWorldsQueryRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayWorldsQueryImpl(addr);
-	}
-
-	private static class RelayServerSocketImpl implements RelayServerSocket {
-
-		private final WebSocketClient sock;
-		private final String uri;
-
-		private boolean open;
-		private boolean closed;
-		private boolean failed;
-
-		private boolean hasRecievedAnyData;
-
-		private final List<Throwable> exceptions = new LinkedList();
-		private final List<IPacket> packets = new LinkedList();
-
-		private RelayServerSocketImpl(String uri, int timeout) {
-			this.uri = uri;
-			WebSocketClient s;
-			try {
-				s = new WebSocketClient(new URI(uri)) {
-					@Override
-					public void onOpen(ServerHandshake serverHandshake) {
-						synchronized (lock4) {
-							open = true;
-						}
-					}
-
-					@Override
-					public void onMessage(String s) {
-						//
-					}
-
-					@Override
-					public void onMessage(ByteBuffer bb) {
-						if(bb != null) {
-							hasRecievedAnyData = true;
-							try {
-								byte[] arr = new byte[bb.remaining()];
-								bb.get(arr);
-								IPacket pkt = IPacket.readPacket(new DataInputStream(new EaglerInputStream(arr)));
-								if(pkt instanceof IPacket70SpecialUpdate) {
-									IPacket70SpecialUpdate ipkt = (IPacket70SpecialUpdate)pkt;
-									if(ipkt.operation == IPacket70SpecialUpdate.OPERATION_UPDATE_CERTIFICATE) {
-										UpdateService.addCertificateToSet(ipkt.updatePacket);
-									}
-								}else {
-									packets.add(pkt);
-								}
-							} catch (IOException e) {
-								exceptions.add(e);
-								logger.error("Relay Socket Error: {}", e.toString());
-								EagRuntime.debugPrintStackTrace(e);
-								synchronized (lock4) {
-									open = false;
-									failed = true;
-								}
-								closed = true;
-								synchronized (lock4) {
-									sock.close();
-								}
-							}
-						}
-					}
-
-					@Override
-					public void onClose(int i, String s, boolean b) {
-						if (!hasRecievedAnyData) {
-							failed = true;
-						}
-						synchronized (lock4) {
-							open = false;
-							closed = true;
-						}
-					}
-
-					@Override
-					public void onError(Exception e) {
-						EagRuntime.debugPrintStackTrace(e);
-					}
-				};
-				s.connect();
-				synchronized (lock4) {
-					open = false;
-					closed = false;
-				}
-				failed = false;
-			}catch(Throwable t) {
-				exceptions.add(t);
-				synchronized (lock4) {
-					sock = null;
-					open = false;
-					closed = true;
-				}
-				failed = true;
-				return;
-			}
-			synchronized (lock4) {
-				sock = s;
-			}
-			new Thread(() -> {
-				EagUtils.sleep(timeout);
-				synchronized (lock4) {
-					if (!open && !closed) {
-						closed = true;
-						sock.close();
-					}
-				}
-			}).start();
-		}
-
-		@Override
-		public boolean isOpen() {
-			return open;
-		}
-
-		@Override
-		public boolean isClosed() {
-			synchronized (lock4) {
-				return closed;
+			synchronized(peerList) {
+				return peerList.size();
 			}
 		}
-
-		@Override
-		public void close() {
-			if(open && sock != null) {
-				synchronized (lock4) {
-					sock.close();
-				}
-			}
-			synchronized (lock4) {
-				open = false;
-				closed = true;
-			}
-		}
-
-		@Override
-		public boolean isFailed() {
-			return failed;
-		}
-
-		@Override
-		public Throwable getException() {
-			if(!exceptions.isEmpty()) {
-				return exceptions.remove(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public void writePacket(IPacket pkt) {
-			try {
-				sock.send(IPacket.writePacket(pkt));
-			} catch (Throwable e) {
-				logger.error("Relay connection error: {}", e.toString());
-				EagRuntime.debugPrintStackTrace(e);
-				exceptions.add(e);
-				failed = true;
-				synchronized (lock4) {
-					open = false;
-					closed = true;
-					sock.close();
-				}
-			}
-		}
-
-		@Override
-		public IPacket readPacket() {
-			if(!packets.isEmpty()) {
-				return packets.remove(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public IPacket nextPacket() {
-			if(!packets.isEmpty()) {
-				return packets.get(0);
-			}else {
-				return null;
-			}
-		}
-
-		@Override
-		public RelayQuery.RateLimit getRatelimitHistory() {
-			if(relayQueryBlocked.containsKey(uri)) {
-				return RelayQuery.RateLimit.LOCKED;
-			}
-			if(relayQueryLimited.containsKey(uri)) {
-				return RelayQuery.RateLimit.BLOCKED;
-			}
-			return RelayQuery.RateLimit.NONE;
-		}
-
-		@Override
-		public String getURI() {
-			return uri;
-		}
-
-	}
-
-	private static class RelayServerSocketRatelimitDummy implements RelayServerSocket {
-
-		private final RelayQuery.RateLimit limit;
-
-		private RelayServerSocketRatelimitDummy(RelayQuery.RateLimit limit) {
-			this.limit = limit;
-		}
-
-		@Override
-		public boolean isOpen() {
-			return false;
-		}
-
-		@Override
-		public boolean isClosed() {
-			return true;
-		}
-
-		@Override
-		public void close() {
-		}
-
-		@Override
-		public boolean isFailed() {
-			return true;
-		}
-
-		@Override
-		public Throwable getException() {
-			return null;
-		}
-
-		@Override
-		public void writePacket(IPacket pkt) {
-		}
-
-		@Override
-		public IPacket readPacket() {
-			return null;
-		}
-
-		@Override
-		public IPacket nextPacket() {
-			return null;
-		}
-
-		@Override
-		public RelayQuery.RateLimit getRatelimitHistory() {
-			return limit;
-		}
-
-		@Override
-		public String getURI() {
-			return "<disconnected>";
-		}
-
-	}
-
-	public static RelayServerSocket openRelayConnection(String addr, int timeout) {
-		long millis = System.currentTimeMillis();
-
-		Long l = relayQueryBlocked.get(addr);
-		if(l != null && millis - l.longValue() < 60000l) {
-			return new RelayServerSocketRatelimitDummy(RelayQuery.RateLimit.LOCKED);
-		}
-
-		l = relayQueryLimited.get(addr);
-		if(l != null && millis - l.longValue() < 10000l) {
-			return new RelayServerSocketRatelimitDummy(RelayQuery.RateLimit.BLOCKED);
-		}
-
-		return new RelayServerSocketImpl(addr, timeout);
 	}
 
 	private static LANClient rtcLANClient = null;
@@ -1453,7 +760,7 @@ public class PlatformWebRTC {
 	public static List<byte[]> clientLANReadAllPacket() {
 		synchronized(clientLANPacketBuffer) {
 			if(!clientLANPacketBuffer.isEmpty()) {
-				List<byte[]> ret = new ArrayList(clientLANPacketBuffer);
+				List<byte[]> ret = new ArrayList<>(clientLANPacketBuffer);
 				clientLANPacketBuffer.clear();
 				return ret;
 			}else {
@@ -1539,7 +846,6 @@ public class PlatformWebRTC {
 		synchronized(serverLANEventBuffer) {
 			serverLANEventBuffer.clear();
 		}
-		rtcLANServer.resetPeerStates();
 		rtcLANServer.setIceServers(servers);
 	}
 
@@ -1588,6 +894,27 @@ public class PlatformWebRTC {
 		rtcLANServer.signalRemoteDescription(peer, description);
 	}
 
+	public static void serverLANPeerMapIPC(String peer, String ipcChannel) {
+		rtcLANServer.serverPeerMapIPC(peer, ipcChannel);
+	}
+
+	public static boolean serverLANPeerPassIPC(IPCPacketData ipcPacket) {
+		if(rtcLANServer != null) {
+			LANPeer peer;
+			synchronized(rtcLANServer.ipcMapList) {
+				peer = rtcLANServer.ipcMapList.get(ipcPacket.channel);
+			}
+			if(peer != null) {
+				rtcLANServer.sendPacketToRemoteClient(peer, new RTCDataChannelBuffer(ByteBuffer.wrap(ipcPacket.contents), true));
+				return true;
+			}else {
+				return false;
+			}
+		}else {
+			return false;
+		}
+	}
+
 	public static void serverLANDisconnectPeer(String peer) {
 		rtcLANServer.signalRemoteDisconnect(peer);
 	}
@@ -1598,4 +925,5 @@ public class PlatformWebRTC {
 		}
 		return rtcLANServer.countPeers();
 	}
+
 }

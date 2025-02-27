@@ -1,8 +1,4 @@
-package net.lax1dude.eaglercraft.v1_8;
-
-import net.lax1dude.eaglercraft.v1_8.crypto.MD5Digest;
-
-/**
+/*
  * Copyright (c) 2022 lax1dude. All Rights Reserved.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -17,10 +13,17 @@ import net.lax1dude.eaglercraft.v1_8.crypto.MD5Digest;
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
+package net.lax1dude.eaglercraft.v1_8;
+
+import net.lax1dude.eaglercraft.v1_8.crypto.MD5Digest;
+
 public class EaglercraftUUID implements Comparable<EaglercraftUUID> {
 
 	public final long msb;
 	public final long lsb;
+	private int hash = 0;
+	private boolean hasHash;
 
 	public EaglercraftUUID(long msb, long lsb) {
 		this.msb = msb;
@@ -125,13 +128,21 @@ public class EaglercraftUUID implements Comparable<EaglercraftUUID> {
 
 	@Override
 	public int hashCode() {
-		long hilo = msb ^ lsb;
-		return ((int) (hilo >> 32)) ^ (int) hilo;
+		if(hash == 0 && !hasHash) {
+			long hilo = msb ^ lsb;
+			hash = ((int) (hilo >> 32)) ^ (int) hilo;
+			hasHash = true;
+		}
+		return hash;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		return (o instanceof EaglercraftUUID) && ((EaglercraftUUID) o).lsb == lsb && ((EaglercraftUUID) o).msb == msb;
+		if(!(o instanceof EaglercraftUUID)) return false;
+		EaglercraftUUID oo = (EaglercraftUUID)o;
+		return (hasHash && oo.hasHash)
+				? (hash == oo.hash && msb == oo.msb && lsb == oo.lsb)
+				: (msb == oo.msb && lsb == oo.lsb);
 	}
 
 	public long getMostSignificantBits() {

@@ -1,24 +1,50 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
 
 > DELETE  2  @  2 : 5
 
-> INSERT  5 : 11  @  5
+> INSERT  1 : 2  @  1
+
++ import java.util.HashMap;
+
+> INSERT  4 : 11  @  4
 
 + import java.util.Set;
 + 
++ import com.carrotsearch.hppc.IntObjectHashMap;
++ import com.carrotsearch.hppc.IntObjectMap;
 + import com.google.common.collect.HashMultimap;
 + import com.google.common.collect.Lists;
-+ import com.google.common.collect.Maps;
 + 
 
 > DELETE  6  @  6 : 9
 
-> CHANGE  62 : 63  @  62 : 63
+> CHANGE  11 : 13  @  11 : 13
+
+~ 	private IntObjectMap<List<PotionEffect>> effectCache = new IntObjectHashMap<>();
+~ 	private static final Map<List<PotionEffect>, Integer> SUB_ITEMS_CACHE = new HashMap<>();
+
+> CHANGE  23 : 24  @  23 : 24
+
+~ 			List<PotionEffect> list = this.effectCache.get(stack.getMetadata());
+
+> CHANGE  2 : 3  @  2 : 3
+
+~ 				this.effectCache.put(stack.getMetadata(), list);
+
+> CHANGE  7 : 8  @  7 : 8
+
+~ 		List<PotionEffect> list = this.effectCache.get(meta);
+
+> CHANGE  2 : 3  @  2 : 3
+
+~ 			this.effectCache.put(meta, list);
+
+> CHANGE  11 : 12  @  11 : 12
 
 ~ 			List<PotionEffect> list = this.getEffects(itemstack);
 

@@ -1,6 +1,6 @@
 
 # Eagler Context Redacted Diff
-# Copyright (c) 2024 lax1dude. All rights reserved.
+# Copyright (c) 2025 lax1dude. All rights reserved.
 
 # Version: 1.0
 # Author: lax1dude
@@ -20,7 +20,16 @@
 
 > DELETE  2  @  2 : 3
 
-> CHANGE  46 : 48  @  46 : 47
+> CHANGE  27 : 29  @  27 : 28
+
+~ 		IChatComponent dname = networkPlayerInfoIn.getDisplayNameProfanityFilter();
+~ 		return dname != null ? dname.getFormattedText()
+
+> CHANGE  1 : 2  @  1 : 2
+
+~ 						networkPlayerInfoIn.getGameProfileNameProfanityFilter());
+
+> CHANGE  16 : 18  @  16 : 17
 
 ~ 		for (int m = 0, n = list.size(); m < n; ++m) {
 ~ 			NetworkPlayerInfo networkplayerinfo = (NetworkPlayerInfo) list.get(m);
